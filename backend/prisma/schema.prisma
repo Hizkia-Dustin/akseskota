@@ -1,0 +1,233 @@
+// AksesKota — Prisma Schema
+// Mirrors entities defined in AksesKota_System_Architecture.md section 5-6
+// Spatial columns use MySQL 8 native spatial types (POINT/LINESTRING, SRID
+// 4326) via `Unsupported("...")` and are queried/written with raw SQL
+// helpers in src/utils/spatial.ts. Requires MySQL 8.0.24+ (ST_Distance_Sphere
+// support for LineString/Polygon, not just Point).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum PersonalMode {
+  WHEELCHAIR
+  ELDERLY
+  STROLLER
+  LOW_VISION
+  GENERAL
+}
+
+enum ObstacleType {
+  STAIRS
+  POTHOLE
+  FLOOD
+  PARKED_VEHICLE
+  CONSTRUCTION
+  FALLEN_TREE
+}
+
+enum ObstacleStatus {
+  TEMPORARY
+  PERMANENT
+}
+
+enum FacilityType {
+  RAMP
+  LIFT
+  BENCH
+  SHELTER
+  DRINKING_WATER
+  ACCESSIBLE_TOILET
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  VERIFIED
+  REJECTED
+  NEEDS_RECHECK
+}
+
+enum ReportTargetType {
+  ROAD_SEGMENT
+  OBSTACLE
+  FACILITY
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  preferences   UserPreference?
+  reports       Report[]
+  verifications Verification[]
+  routeHistory  RouteHistory[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model UserPreference {
+  id             String       @id @default(uuid())
+  userId         String       @unique
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode           PersonalMode @default(GENERAL)
+  // custom weighting, 0-1, applied on top of hard constraints (F002, F009)
+  shadeWeight    Float        @default(0.3)
+  seatingWeight  Float        @default(0.2)
+  lightingWeight Float        @default(0.2)
+  distanceWeight Float        @default(0.3)
+  updatedAt      DateTime     @updatedAt
+
+  @@map("user_preferences")
+}
+
+/// LineString geometry — a walkable street segment
+model RoadSegment {
+  id                 String   @id @default(uuid())
+  // MySQL LINESTRING SRID 4326 — written/read via raw SQL, see spatial.ts
+  geometry            Unsupported("linestring srid 4326")
+  surfaceCondition    String? // e.g. "good", "cracked", "unpaved"
+  widthMeters         Float?
+  hasRamp             Boolean  @default(false)
+  hasStairs           Boolean  @default(false)
+  hasGuidingBlock      Boolean  @default(false)
+  shadeLevel          Float?   // 0-100, latest aggregated observation
+  lightingAvailable   Boolean  @default(false)
+  accessibilityScore  Float?   // 0-100, computed
+  comfortScore        Float?   // 0-100, computed
+  source              String?  // "OSM" | "field_survey" | "community"
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  shadeObservations ShadeObservation[]
+  reports           Report[]
+
+  @@map("road_segments")
+}
+
+model ShadeObservation {
+  id             String      @id @default(uuid())
+  roadSegmentId  String
+  roadSegment    RoadSegment @relation(fields: [roadSegmentId], references: [id], onDelete: Cascade)
+  observedAt     DateTime
+  weather        String?
+  shadePercent   Float // 0-100
+  photoUrl       String?  @db.Text
+  createdAt      DateTime    @default(now())
+
+  @@map("shade_observations")
+}
+
+/// Point geometry — fixed facility
+model Facility {
+  id        String       @id @default(uuid())
+  type      FacilityType
+  // MySQL POINT SRID 4326
+  geometry   Unsupported("point srid 4326")
+  name      String?
+  condition String? // "good" | "damaged" | "unknown"
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  reports Report[]
+
+  @@map("facilities")
+}
+
+/// Point geometry — reported obstacle
+model Obstacle {
+  id          String         @id @default(uuid())
+  type        ObstacleType
+  // MySQL POINT SRID 4326
+  geometry     Unsupported("point srid 4326")
+  status      ObstacleStatus @default(TEMPORARY)
+  description String?        @db.Text
+  expiresAt   DateTime?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  reports Report[]
+
+  @@map("obstacles")
+}
+
+/// Generic citizen report — can target a road segment, obstacle, or facility
+model Report {
+  id                 String              @id @default(uuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id])
+  targetType         ReportTargetType
+  roadSegmentId      String?
+  roadSegment        RoadSegment?        @relation(fields: [roadSegmentId], references: [id])
+  obstacleId         String?
+  obstacle           Obstacle?           @relation(fields: [obstacleId], references: [id])
+  facilityId         String?
+  facility           Facility?           @relation(fields: [facilityId], references: [id])
+  photoUrl           String              @db.Text // wajib, sesuai F011/F012 acceptance criteria
+  description        String?             @db.Text
+  verificationStatus VerificationStatus  @default(UNVERIFIED)
+  createdAt          DateTime            @default(now())
+  expiresAt          DateTime?
+
+  verifications Verification[]
+
+  @@map("reports")
+}
+
+model Verification {
+  id        String              @id @default(uuid())
+  reportId  String
+  report    Report              @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User                @relation(fields: [userId], references: [id])
+  action    VerificationStatus // VERIFIED | REJECTED | NEEDS_RECHECK
+  note      String?             @db.Text
+  createdAt DateTime            @default(now())
+
+  @@map("verifications")
+}
+
+model RouteHistory {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  originLat    Float
+  originLng    Float
+  destLat      Float
+  destLng      Float
+  mode         PersonalMode
+  chosenRouteJson Json?
+  createdAt    DateTime @default(now())
+
+  @@map("route_history")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
