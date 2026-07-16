@@ -11,7 +11,6 @@ export async function createFacility(input: {
   const facility = await prisma.facility.create({
     data: {
       type: input.type as any,
-      geometry: undefined as any,
       name: input.name,
       condition: input.condition,
     },
@@ -35,10 +34,10 @@ export async function listFacilities(filters: { lat?: number; lng?: number; radi
     params.push(filters.type);
   }
   return prisma.$queryRawUnsafe(
-    `SELECT id, type, name, condition, ST_AsGeoJSON(geometry) as geojson,
-            ST_Distance_Sphere(geometry, ST_SRID(POINT(?, ?), 4326)) as distance_m
+    `SELECT id, type, name, \`condition\`, ST_AsGeoJSON(geometry) as geojson,
+            ST_Distance_Sphere(geometry, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')'), 4326)) as distance_m
      FROM facilities
-     WHERE ST_Distance_Sphere(geometry, ST_SRID(POINT(?, ?), 4326)) <= ? ${typeClause}
+     WHERE ST_Distance_Sphere(geometry, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')'), 4326)) <= ? ${typeClause}
      ORDER BY distance_m ASC`,
     ...params,
   );

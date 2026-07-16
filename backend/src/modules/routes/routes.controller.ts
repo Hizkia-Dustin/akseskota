@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { empty, ok } from '../../utils/apiResponse';
-import { getRouteDetail, searchRoutes } from './routes.service';
+import { evaluateMapboxRoutes, getRouteDetail, searchRoutes } from './routes.service';
 
 // F004/F005 - Search Route + Route Comparison combined in one response,
 // since the comparison view needs all candidates at once.
@@ -18,4 +18,8 @@ export const detail = asyncHandler(async (req: Request, res: Response) => {
   const { searchId, routeId } = req.params;
   const route = await getRouteDetail(searchId, routeId);
   return ok(res, route);
+});
+
+export const evaluate = asyncHandler(async (req: Request, res: Response) => {
+  return ok(res, await evaluateMapboxRoutes(req.body));
 });

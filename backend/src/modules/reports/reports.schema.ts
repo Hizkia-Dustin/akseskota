@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const createReportSchema = z.object({
+  title: z.string().trim().min(4).max(100),
   targetType: z.enum([
     'ROAD_SEGMENT',
     'OBSTACLE',

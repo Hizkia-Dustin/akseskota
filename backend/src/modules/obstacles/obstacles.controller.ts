@@ -2,10 +2,11 @@ import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { created, empty, ok } from '../../utils/apiResponse';
 import { listObstacles, reportObstacle } from './obstacles.service';
+import { persistUploadedPhoto } from '../../middlewares/upload';
 
 export const report = asyncHandler(async (req: Request, res: Response) => {
-  const photoUrl = (req.file as Express.Multer.File & { path?: string })?.path;
-  const result = await reportObstacle(req.user!.userId, req.body, photoUrl);
+  const photoUrl = await persistUploadedPhoto(req);
+  const result = await reportObstacle(req.user?.userId, req.body, photoUrl);
   return created(res, result);
 });
 

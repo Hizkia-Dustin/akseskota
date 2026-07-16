@@ -1,6 +1,7 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { ApiError } from '../../middlewares/errorHandler';
-import { UpdatePreferencesInput } from './users.schema';
+import { CreateRouteHistoryInput, UpdatePreferencesInput } from './users.schema';
 
 export async function getMyProfile(userId: string) {
   const user = await prisma.user.findUnique({
@@ -35,6 +36,7 @@ export async function getMyContributions(userId: string) {
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
+      title: true,
       targetType: true,
       photoUrl: true,
       description: true,
@@ -55,5 +57,11 @@ export async function getMyRouteHistory(userId: string) {
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: 50,
+  });
+}
+
+export async function createMyRouteHistory(userId: string, input: CreateRouteHistoryInput) {
+  return prisma.routeHistory.create({
+    data: { ...input, userId, chosenRouteJson: input.chosenRouteJson as Prisma.InputJsonValue },
   });
 }

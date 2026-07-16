@@ -5,10 +5,20 @@ const pointSchema = z.object({
   coordinates: z.tuple([z.number(), z.number()]),
 });
 
+function parseJsonField(value: unknown) {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 // F012: jenis hambatan, status sementara/permanen, dapat diberi masa berlaku
 export const reportObstacleSchema = z.object({
+  title: z.string().trim().min(4, 'Judul minimal 4 karakter').max(100, 'Judul maksimal 100 karakter'),
   type: z.enum(['STAIRS', 'POTHOLE', 'FLOOD', 'PARKED_VEHICLE', 'CONSTRUCTION', 'FALLEN_TREE']),
-  geometry: z.preprocess((v) => (typeof v === 'string' ? JSON.parse(v) : v), pointSchema),
+  geometry: z.preprocess(parseJsonField, pointSchema),
   status: z.enum(['TEMPORARY', 'PERMANENT']).default('TEMPORARY'),
   description: z.string().optional(),
   expiresAt: z.coerce.date().optional(),

@@ -8,7 +8,7 @@ export async function getVerificationQueue() {
   return prisma.report.findMany({
     where: { verificationStatus: 'UNVERIFIED' },
     orderBy: { createdAt: 'asc' },
-    include: { user: { select: { id: true, name: true } }, verifications: true },
+    include: { user: { select: { id: true, name: true } }, obstacle: true, verifications: true },
     take: 100,
   });
 }
@@ -37,7 +37,16 @@ export async function rejectReport(reportId: string, moderatorId: string, note?:
   return report;
 }
 
-async function updateReportStatus(reportId: string, status: 'VERIFIED' | 'REJECTED') {
+export async function markReportNeedsRecheck(reportId: string, moderatorId: string, note?: string) {
+  const report = await updateReportStatus(reportId, 'NEEDS_RECHECK');
+  await logModeratorAction(moderatorId, 'needs_recheck_report', reportId, { note });
+  if (report.targetType === 'OBSTACLE' && report.obstacleId) {
+    await prisma.obstacle.update({ where: { id: report.obstacleId }, data: { isActive: false } });
+  }
+  return report;
+}
+
+async function updateReportStatus(reportId: string, status: 'VERIFIED' | 'REJECTED' | 'NEEDS_RECHECK') {
   const report = await prisma.report.findUnique({ where: { id: reportId } });
   if (!report) throw new ApiError(404, 'Laporan tidak ditemukan.');
   return prisma.report.update({ where: { id: reportId }, data: { verificationStatus: status } });

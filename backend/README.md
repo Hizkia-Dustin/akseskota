@@ -1,11 +1,11 @@
 # AksesKota Backend
 
 Backend REST API untuk **AksesKota** — platform navigasi pejalan kaki inklusif.
-Dibangun dengan **Express.js + TypeScript + Prisma + MySQL 8 (native spatial)**, dikonsumsi oleh frontend **Next.js**.
+Dibangun dengan **Express.js + TypeScript + Prisma + MariaDB 10.4 (native spatial)**, dikonsumsi oleh frontend **Next.js**.
 
 Mengacu pada: `AksesKota_Product_Guide.md`, `AksesKota_Feature_Specification.md`, `AksesKota_System_Architecture.md`.
 
-> Catatan: dokumen System Architecture asli menyebutkan Laravel + Sanctum + PostgreSQL/PostGIS. Tim ini memilih **Express.js + JWT + MySQL** sebagai gantinya — entity, API mapping, dan hard-constraint routing tetap mengikuti dokumen tersebut, hanya lapisan database & auth yang berbeda.
+> Catatan: dokumen System Architecture asli menyebutkan Laravel + Sanctum + PostgreSQL/PostGIS. Tim ini memilih **Express.js + JWT + MariaDB** sebagai gantinya — entity, API mapping, dan hard-constraint routing tetap mengikuti dokumen tersebut, hanya lapisan database & auth yang berbeda.
 
 ---
 
@@ -13,7 +13,7 @@ Mengacu pada: `AksesKota_Product_Guide.md`, `AksesKota_Feature_Specification.md`
 
 ### Requirement
 - Node.js 18+
-- **MySQL 8.0.24+** (spatial types & `ST_Distance_Sphere` untuk LineString/Polygon baru didukung sejak versi ini — versi lebih lama hanya support Point-to-Point)
+- **MariaDB 10.4+** (tersedia pada XAMPP; spatial types sudah built-in)
 - Akun Cloudinary (untuk upload foto laporan)
 
 ### Instalasi
@@ -27,17 +27,14 @@ cp .env.example .env
 ### Setup Database
 
 ```bash
-# 1. Buat database kosong (MySQL sudah punya spatial support built-in,
+# 1. Buat database kosong (MariaDB sudah punya spatial support built-in,
 #    tidak perlu install extension apapun seperti PostGIS di Postgres)
 mysql -u root -p -e "CREATE DATABASE akseskota CHARACTER SET utf8mb4;"
 
 # 2. Generate & jalankan migration
 npx prisma migrate dev --name init
 
-# 3. Tambahkan spatial index (Prisma tidak mengelola SPATIAL INDEX otomatis)
-mysql -u root -p akseskota < prisma/init-mysql.sql
-
-# 4. (opsional) isi data contoh
+# 3. (opsional) isi data contoh
 npm run seed
 ```
 
@@ -58,7 +55,7 @@ Server default di `http://localhost:4000`. Cek `GET /health`.
 src/
   config/        # env, prisma client, cloudinary
   middlewares/    # auth, role guard, validasi, error handler, upload
-  utils/          # jwt, password, response envelope, spatial (MySQL raw SQL)
+  utils/          # jwt, password, response envelope, spatial (MariaDB raw SQL)
   routingEngine/  # accessibility filter, comfort scoring, live condition filter, explain
   modules/
     auth/         # F001
@@ -75,7 +72,7 @@ src/
   server.ts
 prisma/
   schema.prisma
-  init-postgis.sql
+  init-mysql.sql
   seed.ts
 ```
 
@@ -95,7 +92,7 @@ generateCandidateRoutes()          -> kandidat rute dari road_segments (min. 3)
   -> explainRoute()                -> alasan rekomendasi (bukan cuma skor)
 ```
 
-**Catatan penting**: `generateCandidateRoutes` di scaffold ini pakai pendekatan buffer/corridor sederhana (bukan real pathfinding). Ini cukup untuk MVP/demo dan menjaga bentuk data (`CandidateRoute`) tetap sama. Untuk produksi, ganti dengan engine routing pejalan kaki sungguhan — misalnya **OSRM** atau **GraphHopper** (self-hosted, walking profile) di atas graph jaringan jalan yang sebenarnya (pgRouting tidak berlaku karena itu khusus Postgres). Layer accessibility/comfort/live-condition di atasnya tidak perlu berubah.
+**Catatan penting**: `generateCandidateRoutes` di scaffold ini pakai pendekatan buffer/corridor sederhana (bukan real pathfinding). Ini cukup untuk MVP/demo dan menjaga bentuk data (`CandidateRoute`) tetap sama. Untuk produksi, ganti dengan engine routing pejalan kaki sungguhan — misalnya **OSRM** atau **GraphHopper** (self-hosted, walking profile) di atas graph jaringan jalan yang sebenarnya (pgRouting tidak berlaku karena itu khusus Postgres). Pada MariaDB 10.4, jarak LineString dihitung dengan pendekatan planar lokal karena `ST_Distance_Sphere` hanya stabil untuk Point-to-Point. Layer accessibility/comfort/live-condition di atasnya tidak perlu berubah.
 
 ---
 

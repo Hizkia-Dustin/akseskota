@@ -21,7 +21,10 @@ export async function registerUser(input: RegisterInput) {
     select: { id: true, name: true, email: true, role: true, createdAt: true },
   });
 
-  return issueTokens(user.id, user.role);
+  return {
+    user,
+    ...issueTokens(user.id, user.role),
+  };
 }
 
 export async function loginUser(input: LoginInput) {

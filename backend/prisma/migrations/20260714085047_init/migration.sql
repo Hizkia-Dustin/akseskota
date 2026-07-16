@@ -30,7 +30,7 @@ CREATE TABLE `user_preferences` (
 -- CreateTable
 CREATE TABLE `road_segments` (
     `id` VARCHAR(191) NOT NULL,
-    `geometry` linestring srid 4326 NOT NULL,
+    `geometry` linestring NULL,
     `surfaceCondition` VARCHAR(191) NULL,
     `widthMeters` DOUBLE NULL,
     `hasRamp` BOOLEAN NOT NULL DEFAULT false,
@@ -64,7 +64,7 @@ CREATE TABLE `shade_observations` (
 CREATE TABLE `facilities` (
     `id` VARCHAR(191) NOT NULL,
     `type` ENUM('RAMP', 'LIFT', 'BENCH', 'SHELTER', 'DRINKING_WATER', 'ACCESSIBLE_TOILET') NOT NULL,
-    `geometry` point srid 4326 NOT NULL,
+    `geometry` point NULL,
     `name` VARCHAR(191) NULL,
     `condition` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -77,7 +77,7 @@ CREATE TABLE `facilities` (
 CREATE TABLE `obstacles` (
     `id` VARCHAR(191) NOT NULL,
     `type` ENUM('STAIRS', 'POTHOLE', 'FLOOD', 'PARKED_VEHICLE', 'CONSTRUCTION', 'FALLEN_TREE') NOT NULL,
-    `geometry` point srid 4326 NOT NULL,
+    `geometry` point NULL,
     `status` ENUM('TEMPORARY', 'PERMANENT') NOT NULL DEFAULT 'TEMPORARY',
     `description` TEXT NULL,
     `expiresAt` DATETIME(3) NULL,

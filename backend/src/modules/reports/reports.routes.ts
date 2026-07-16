@@ -12,7 +12,9 @@ import {
 import {
   create,
   getById,
+  getGuest,
   list,
+  map,
   verify,
 } from './reports.controller';
 
@@ -33,6 +35,10 @@ router.get(
   validate(listReportsSchema, 'query'),
   list,
 );
+
+// Public map layer. Must stay before /:id so "map" is not parsed as an id.
+router.get('/map', map);
+router.get('/guest/:accessKey', getGuest);
 
 
 router.get('/:id', getById);

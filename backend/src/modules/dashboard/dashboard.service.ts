@@ -8,7 +8,6 @@ export async function getWalkabilityData() {
       id: true,
       accessibilityScore: true,
       comfortScore: true,
-      geometry: false, // exposed separately as GeoJSON via /road-segments
     },
   });
 

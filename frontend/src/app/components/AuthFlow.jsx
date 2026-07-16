@@ -3,14 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
-import {
-  GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-} from "firebase/auth";
-import { auth, isFirebaseConfigured } from "@/lib/firebase";
+import { apiRequest, getStoredSession, storeSession } from "@/lib/api";
 
 const profiles = [
   { id: "wheelchair", icon: "♿", label: "Kursi Roda", detail: "Bebas tangga, ramp tersedia" },
@@ -19,14 +12,6 @@ const profiles = [
   { id: "low-vision", icon: "👁️", label: "Low Vision", detail: "Guiding block & lampu jalan" },
   { id: "walking", icon: "🚶", label: "Pejalan Kaki", detail: "Preferensi kenyamanan umum" },
 ];
-
-const authMessages = {
-  "auth/popup-closed-by-user": "Login Google dibatalkan.",
-  "auth/weak-password": "Password perlu minimal 6 karakter.",
-  "auth/invalid-email": "Format email belum benar.",
-  "auth/email-already-in-use": "Email ini sudah memiliki akun. Silakan masuk.",
-  "auth/network-request-failed": "Koneksi bermasalah. Coba lagi setelah jaringan stabil.",
-};
 
 function GoogleMark() {
   return (
@@ -139,6 +124,7 @@ export default function AuthFlow() {
   const router = useRouter();
   const [stage, setStage] = useState("auth");
   const [mode, setMode] = useState("login");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [profile, setProfile] = useState("walking");
@@ -146,56 +132,36 @@ export default function AuthFlow() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (!auth) return undefined;
-    return onAuthStateChanged(auth, (user) => {
-      if (user) setStage("profile");
-    });
+    const timer = window.setTimeout(() => {
+      if (getStoredSession()) setStage("profile");
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [stage]);
 
-  function reportAuthError(error) {
-    setMessage(authMessages[error?.code] || "Email atau password tidak dapat diproses. Periksa kembali datamu.");
-  }
-
   async function handleEmail(event) {
     event.preventDefault();
     setMessage("");
-    if (!isFirebaseConfigured || !auth) {
-      setMessage("Firebase belum dikonfigurasi. Isi NEXT_PUBLIC_FIREBASE_* di file .env.local.");
-      return;
-    }
     setBusy(true);
     try {
-      if (mode === "register") await createUserWithEmailAndPassword(auth, email, password);
-      else await signInWithEmailAndPassword(auth, email, password);
+      const data = await apiRequest(mode === "register" ? "/auth/register" : "/auth/login", {
+        method: "POST",
+        body: JSON.stringify(mode === "register" ? { name, email, password } : { email, password }),
+      });
+      storeSession(data);
       setStage("profile");
     } catch (error) {
-      reportAuthError(error);
+      setMessage(error instanceof Error ? error.message : "Email atau password tidak dapat diproses.");
     } finally {
       setBusy(false);
     }
   }
 
   async function handleGoogle() {
-    setMessage("");
-    if (!isFirebaseConfigured || !auth) {
-      setMessage("Firebase belum dikonfigurasi. Isi NEXT_PUBLIC_FIREBASE_* di file .env.local.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      await signInWithPopup(auth, provider);
-      setStage("profile");
-    } catch (error) {
-      reportAuthError(error);
-    } finally {
-      setBusy(false);
-    }
+    setMessage("Login Google belum dihubungkan ke backend AksesKota. Gunakan email atau mode tamu.");
   }
 
   function continueAsGuest() {
@@ -248,6 +214,10 @@ export default function AuthFlow() {
         </div>
 
         <form onSubmit={handleEmail} className="mt-6 space-y-4">
+          {mode === "register" && <label className="block">
+            <span className="mb-1.5 block text-[10px] font-bold tracking-[.04em] text-[#4a5565] uppercase">Nama</span>
+            <input type="text" autoComplete="name" required value={name} onChange={(event) => setName(event.target.value)} placeholder="Nama kamu" className="h-[50px] w-full rounded-[15px] border-2 border-[#f0f2f4] bg-[#f9fafb] px-4 text-[13px] font-semibold outline-none focus:border-[#46dfb1] focus:ring-4 focus:ring-[#cbfbf1]/70" />
+          </label>}
           <label className="block">
             <span className="mb-1.5 block text-[10px] font-bold tracking-[.04em] text-[#4a5565] uppercase">Email</span>
             <input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="kamu@email.com" className="h-[50px] w-full rounded-[15px] border-2 border-[#f0f2f4] bg-[#f9fafb] px-4 text-[13px] font-semibold outline-none focus:border-[#46dfb1] focus:ring-4 focus:ring-[#cbfbf1]/70" />

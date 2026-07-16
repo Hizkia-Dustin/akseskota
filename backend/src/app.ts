@@ -2,7 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import expressPath from 'path';
 import { env } from './config/env';
+import { uploadsDirectory } from './middlewares/upload';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 
 import authRoutes from './modules/auth/auth.routes';
@@ -15,6 +17,7 @@ import reportsRoutes from './modules/reports/reports.routes';
 import moderatorRoutes from './modules/moderator/moderator.routes';
 import dashboardRoutes from './modules/dashboard/dashboard.routes';
 import adminRoutes from './modules/admin/admin.routes';
+import communityPlacesRoutes from './modules/communityPlaces/communityPlaces.routes';
 
 export const app = express();
 
@@ -27,6 +30,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(expressPath.resolve(uploadsDirectory)));
 app.use(morgan(env.nodeEnv === 'development' ? 'dev' : 'combined'));
 
 app.get('/health', (_req, res) => res.status(200).json({ success: true, message: 'AksesKota API is running' }));
@@ -43,6 +47,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/moderator', moderatorRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/community-places', communityPlacesRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

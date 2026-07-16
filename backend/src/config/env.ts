@@ -25,6 +25,7 @@ export const env = {
     apiKey: process.env.CLOUDINARY_API_KEY || '',
     apiSecret: process.env.CLOUDINARY_API_SECRET || '',
   },
+  uploadStorage: process.env.UPLOAD_STORAGE || (process.env.NODE_ENV === 'production' ? 'cloudinary' : 'local'),
   reportRateLimit: {
     windowMs: parseInt(process.env.REPORT_RATE_LIMIT_WINDOW_MS || '3600000', 10),
     max: parseInt(process.env.REPORT_RATE_LIMIT_MAX || '10', 10),

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { authenticate } from '../../middlewares/authenticate';
+import { optionalAuthenticate } from '../../middlewares/authenticate';
 import { validate } from '../../middlewares/validate';
 import { uploadReportPhoto } from '../../middlewares/upload';
 import { env } from '../../config/env';
@@ -19,7 +19,7 @@ const reportLimiter = rateLimit({
 router.get('/', validate(listObstaclesSchema, 'query'), list);
 router.post(
   '/',
-  authenticate,
+  optionalAuthenticate,
   reportLimiter,
   uploadReportPhoto.single('photo'),
   validate(reportObstacleSchema),

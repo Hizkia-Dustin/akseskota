@@ -1,5 +1,4 @@
-import { prisma } from '../config/prisma';
-import { findActiveObstaclesNearSegment, findFacilitiesNearSegment } from '../utils/spatial';
+import { findActiveObstaclesNearSegment, findFacilitiesNearSegment, findRoadSegmentsNear } from '../utils/spatial';
 import { CandidateRoute, SegmentData } from './types';
 
 /**
@@ -12,7 +11,7 @@ import { CandidateRoute, SegmentData } from './types';
  * For production-quality routing, replace this with a dedicated pedestrian
  * routing engine — e.g. self-hosted OSRM/GraphHopper with a walking
  * profile, or Valhalla — over a proper street network graph (pgRouting is
- * Postgres-only, not applicable now that the DB is MySQL). Keep the same
+ * Postgres-only, not applicable now that the DB is MariaDB). Keep the same
  * `CandidateRoute` output shape so nothing downstream needs to change.
  */
 export async function generateCandidateRoutes(
@@ -27,21 +26,7 @@ export async function generateCandidateRoutes(
   const midLat = (originLat + destLat) / 2;
   const midLng = (originLng + destLng) / 2;
 
-  const rows = (await prisma.$queryRawUnsafe(
-    `SELECT id, surface_condition, width_meters, has_ramp, has_stairs,
-            has_guiding_block, shade_level, lighting_available,
-            ST_AsGeoJSON(geometry) as geojson,
-            ST_Distance_Sphere(geometry, ST_SRID(POINT(?, ?), 4326)) as distance_m
-     FROM road_segments
-     WHERE ST_Distance_Sphere(geometry, ST_SRID(POINT(?, ?), 4326)) <= ?
-     ORDER BY distance_m ASC
-     LIMIT 60`,
-    midLng,
-    midLat,
-    midLng,
-    midLat,
-    searchRadius,
-  )) as any[];
+  const rows = (await findRoadSegmentsNear(midLat, midLng, searchRadius)) as any[];
 
   if (rows.length === 0) return [];
 
@@ -82,7 +67,9 @@ export async function generateCandidateRoutes(
   const toRoute = (id: string, segments: SegmentData[]): CandidateRoute => ({
     id,
     segments,
-    distanceMeters: segments.reduce((sum, s) => sum + s.distanceM, 0) || corridorMeters,
+    // `distanceM` measures proximity to the search corridor, not segment
+    // length. Never let that make a route shorter than origin-to-destination.
+    distanceMeters: Math.max(corridorMeters, segments.reduce((sum, s) => sum + s.distanceM, 0)),
   });
 
   return [

@@ -1,9 +1,8 @@
 // AksesKota — Prisma Schema
 // Mirrors entities defined in AksesKota_System_Architecture.md section 5-6
-// Spatial columns use MySQL 8 native spatial types (POINT/LINESTRING, SRID
-// 4326) via `Unsupported("...")` and are queried/written with raw SQL
-// helpers in src/utils/spatial.ts. Requires MySQL 8.0.24+ (ST_Distance_Sphere
-// support for LineString/Polygon, not just Point).
+// Spatial columns use MariaDB native POINT/LINESTRING types via
+// `Unsupported("...")` and are queried/written with raw SQL helpers in
+// src/utils/spatial.ts. Geometry values are stored with SRID 4326.
 
 generator client {
   provider = "prisma-client-js"
@@ -78,6 +77,7 @@ model User {
   verifications Verification[]
   routeHistory  RouteHistory[]
   auditLogs     AuditLog[]
+  placePosts    PlacePost[]
 
   @@map("users")
 }
@@ -101,7 +101,7 @@ model UserPreference {
 model RoadSegment {
   id                 String   @id @default(uuid())
   // MySQL LINESTRING SRID 4326 — written/read via raw SQL, see spatial.ts
-  geometry            Unsupported("linestring srid 4326")
+  geometry            Unsupported("linestring")?
   surfaceCondition    String? // e.g. "good", "cracked", "unpaved"
   widthMeters         Float?
   hasRamp             Boolean  @default(false)
@@ -139,7 +139,7 @@ model Facility {
   id        String       @id @default(uuid())
   type      FacilityType
   // MySQL POINT SRID 4326
-  geometry   Unsupported("point srid 4326")
+  geometry   Unsupported("point")?
   name      String?
   condition String? // "good" | "damaged" | "unknown"
   createdAt DateTime     @default(now())
@@ -155,7 +155,7 @@ model Obstacle {
   id          String         @id @default(uuid())
   type        ObstacleType
   // MySQL POINT SRID 4326
-  geometry     Unsupported("point srid 4326")
+  geometry     Unsupported("point")?
   status      ObstacleStatus @default(TEMPORARY)
   description String?        @db.Text
   expiresAt   DateTime?
@@ -171,8 +171,10 @@ model Obstacle {
 /// Generic citizen report — can target a road segment, obstacle, or facility
 model Report {
   id                 String              @id @default(uuid())
-  userId             String
-  user               User                @relation(fields: [userId], references: [id])
+  userId             String?
+  user               User?               @relation(fields: [userId], references: [id])
+  guestAccessKey     String?              @unique
+  title              String              @default("Laporan hambatan")
   targetType         ReportTargetType
   roadSegmentId      String?
   roadSegment        RoadSegment?        @relation(fields: [roadSegmentId], references: [id])
@@ -201,6 +203,7 @@ model Verification {
   note      String?             @db.Text
   createdAt DateTime            @default(now())
 
+  @@unique([reportId, userId])
   @@map("verifications")
 }
 
@@ -230,4 +233,37 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@map("audit_logs")
+}
+
+model CommunityPlace {
+  id          String      @id @default(uuid())
+  externalId  String      @unique
+  name        String
+  address     String?
+  latitude    Float
+  longitude   Float
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  posts       PlacePost[]
+
+  @@map("community_places")
+}
+
+model PlacePost {
+  id                  String         @id @default(uuid())
+  placeId             String
+  place               CommunityPlace @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  authorId            String
+  author              User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title               String
+  content             String         @db.Text
+  rating              Int
+  accessibilityRating Int
+  features             Json?
+  photoUrl            String?        @db.Text
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([placeId, createdAt])
+  @@map("place_posts")
 }

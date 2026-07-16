@@ -1,15 +1,7 @@
--- MySQL 8.0.24+ has spatial data types (POINT/LINESTRING) and functions
--- (ST_Distance_Sphere, ST_GeomFromGeoJSON, ST_AsGeoJSON) built in — no
--- extension needed, unlike PostGIS on Postgres.
+-- MariaDB has spatial POINT/LINESTRING types and the spatial functions used
+-- by AksesKota built in, so no extension is required.
 --
--- Run this AFTER `npx prisma migrate dev` has created the tables, since
--- Prisma's `Unsupported(...)` columns are created but spatial indexes need
--- to be added manually (Prisma does not manage SPATIAL INDEX).
---
--- Requirements for a SPATIAL INDEX in MySQL (already satisfied by the
--- Prisma schema): the geometry column must be NOT NULL and have a SRID
--- attribute — both are true for `geometry` on RoadSegment/Facility/Obstacle.
-
-CREATE SPATIAL INDEX idx_road_segments_geometry ON road_segments (geometry);
-CREATE SPATIAL INDEX idx_facilities_geometry ON facilities (geometry);
-CREATE SPATIAL INDEX idx_obstacles_geometry ON obstacles (geometry);
+-- The MVP intentionally leaves geometry nullable because Prisma cannot write
+-- Unsupported spatial fields during create; raw SQL fills the geometry right
+-- afterward. MariaDB 10.4 requires spatial-indexed columns to be NOT NULL, so
+-- indexes are deferred until those writes become single raw INSERT statements.

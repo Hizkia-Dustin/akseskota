@@ -20,7 +20,6 @@ export async function addRoadSegmentCondition(
     data: {
       // geometry column set via raw SQL right after insert (Prisma cannot
       // write Unsupported() columns directly)
-      geometry: undefined as any,
       surfaceCondition: input.surfaceCondition,
       widthMeters: input.widthMeters,
       hasRamp: input.hasRamp ?? false,

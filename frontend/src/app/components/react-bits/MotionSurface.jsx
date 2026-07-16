@@ -3,6 +3,10 @@
 import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 
+// React Strict Mode menjalankan layout effect dua kali saat development.
+// WeakSet memastikan elemen DOM yang sama tidak memainkan entrance dua kali.
+const animatedElements = new WeakSet();
+
 // React Bits-style entrance motion for UI that appears after an interaction.
 export default function MotionSurface({
   as: Tag = "div",
@@ -16,6 +20,7 @@ export default function MotionSurface({
   ease = "power3.out",
   staggerSelector,
   stagger = 0.07,
+  animate = true,
   ...props
 }) {
   const ref = useRef(null);
@@ -24,10 +29,16 @@ export default function MotionSurface({
     const element = ref.current;
     if (!element) return;
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      gsap.set(element, { clearProps: "all" });
+    if (!animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      gsap.set(element, { clearProps: "transform,opacity,visibility" });
       return;
     }
+
+    if (animatedElements.has(element)) {
+      gsap.set(element, { x: 0, y: 0, autoAlpha: 1, scale: 1, clearProps: "transform,opacity,visibility" });
+      return;
+    }
+    animatedElements.add(element);
 
     const offset = {
       up: { y: distance },
@@ -36,8 +47,7 @@ export default function MotionSurface({
       right: { x: -distance },
     }[direction] ?? { y: distance };
 
-    const context = gsap.context(() => {
-      const timeline = gsap.timeline({ delay });
+    const timeline = gsap.timeline({ delay });
       timeline.fromTo(
         element,
         { ...offset, autoAlpha: 0, scale, transformOrigin: "center center" },
@@ -53,10 +63,13 @@ export default function MotionSurface({
           "-=0.3",
         );
       }
-    }, element);
-
-    return () => context.revert();
-  }, [delay, direction, distance, duration, ease, scale, stagger, staggerSelector]);
+    return () => {
+      timeline.kill();
+      // Jangan revert ke posisi tersembunyi; itu yang menyebabkan kedipan
+      // sebelum Strict Mode menjalankan effect untuk kedua kalinya.
+      gsap.set(element, { x: 0, y: 0, autoAlpha: 1, scale: 1, clearProps: "transform,opacity,visibility" });
+    };
+  }, [animate, delay, direction, distance, duration, ease, scale, stagger, staggerSelector]);
 
   return <Tag ref={ref} className={className} {...props}>{children}</Tag>;
 }

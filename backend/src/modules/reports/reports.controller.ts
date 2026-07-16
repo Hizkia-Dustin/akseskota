@@ -1,10 +1,13 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { created, empty, ok } from '../../utils/apiResponse';
+import { persistUploadedPhoto } from '../../middlewares/upload';
 
 import {
   createReport,
   getReportById,
+  getGuestReport,
+  listMapReports,
   listReports,
   submitCommunityVerification,
 } from './reports.service';
@@ -15,7 +18,8 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const report = await createReport({
-    userId: req.user!.userId,
+    userId: req.user?.userId,
+    title: req.body.title,
     targetType: req.body.targetType,
     roadSegmentId: req.body.roadSegmentId,
     obstacleId: req.body.obstacleId,
@@ -23,7 +27,7 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
     description: req.body.description,
 
     // URL Cloudinary
-    photoUrl: (req.file as any).path,
+    photoUrl: (await persistUploadedPhoto(req))!,
   });
 
   return created(res, report);
@@ -55,4 +59,12 @@ export const verify = asyncHandler(async (req: Request, res: Response) => {
   );
 
   return created(res, verification);
+});
+
+export const getGuest = asyncHandler(async (req: Request, res: Response) => {
+  return ok(res, await getGuestReport(req.params.accessKey));
+});
+
+export const map = asyncHandler(async (_req: Request, res: Response) => {
+  return ok(res, await listMapReports());
 });

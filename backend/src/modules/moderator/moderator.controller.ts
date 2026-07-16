@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { empty, ok } from '../../utils/apiResponse';
-import { approveReport, getVerificationQueue, mergeDuplicateReports, rejectReport } from './moderator.service';
+import { approveReport, getVerificationQueue, markReportNeedsRecheck, mergeDuplicateReports, rejectReport } from './moderator.service';
 
 export const queue = asyncHandler(async (_req: Request, res: Response) => {
   const reports = await getVerificationQueue();
@@ -16,6 +16,11 @@ export const approve = asyncHandler(async (req: Request, res: Response) => {
 
 export const reject = asyncHandler(async (req: Request, res: Response) => {
   const report = await rejectReport(req.params.id, req.user!.userId, req.body.note);
+  return ok(res, report);
+});
+
+export const needsRecheck = asyncHandler(async (req: Request, res: Response) => {
+  const report = await markReportNeedsRecheck(req.params.id, req.user!.userId, req.body.note);
   return ok(res, report);
 });
 

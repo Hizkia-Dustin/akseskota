@@ -49,7 +49,6 @@ async function main() {
   // --- Road segment (Margonda Raya sample, Depok) ---
   const segment = await prisma.roadSegment.create({
     data: {
-      geometry: undefined as any,
       surfaceCondition: 'good',
       widthMeters: 1.8,
       hasRamp: true,
@@ -63,7 +62,7 @@ async function main() {
     },
   });
   await prisma.$executeRawUnsafe(
-    `UPDATE road_segments SET geometry = ST_SRID(ST_GeomFromGeoJSON(?), 4326) WHERE id = ?`,
+    `UPDATE road_segments SET geometry = ST_GeomFromGeoJSON(?, 1, 4326) WHERE id = ?`,
     JSON.stringify({
       type: 'LineString',
       coordinates: [
@@ -76,10 +75,10 @@ async function main() {
 
   // --- Facility (bench near the segment) ---
   const facility = await prisma.facility.create({
-    data: { type: 'BENCH', geometry: undefined as any, name: 'Bangku Margonda', condition: 'good' },
+    data: { type: 'BENCH', name: 'Bangku Margonda', condition: 'good' },
   });
   await prisma.$executeRawUnsafe(
-    `UPDATE facilities SET geometry = ST_SRID(ST_GeomFromGeoJSON(?), 4326) WHERE id = ?`,
+    `UPDATE facilities SET geometry = ST_GeomFromGeoJSON(?, 1, 4326) WHERE id = ?`,
     JSON.stringify({ type: 'Point', coordinates: [106.8238, -6.3724] }),
     facility.id,
   );
@@ -88,14 +87,13 @@ async function main() {
   const obstacle = await prisma.obstacle.create({
     data: {
       type: 'POTHOLE',
-      geometry: undefined as any,
       status: 'TEMPORARY',
       description: 'Lubang kecil dekat halte',
       isActive: true,
     },
   });
   await prisma.$executeRawUnsafe(
-    `UPDATE obstacles SET geometry = ST_SRID(ST_GeomFromGeoJSON(?), 4326) WHERE id = ?`,
+    `UPDATE obstacles SET geometry = ST_GeomFromGeoJSON(?, 1, 4326) WHERE id = ?`,
     JSON.stringify({ type: 'Point', coordinates: [106.8239, -6.3725] }),
     obstacle.id,
   );

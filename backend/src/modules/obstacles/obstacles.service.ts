@@ -1,11 +1,12 @@
 import { prisma } from '../../config/prisma';
+import { randomBytes } from 'crypto';
 import { ApiError } from '../../middlewares/errorHandler';
 import { insertPointGeometry } from '../../utils/spatial';
 import { ReportObstacleInput } from './obstacles.schema';
 
 // F012 - Laporkan Hambatan. Creates the obstacle + a linked Report so it
 // enters the same moderator verification queue as everything else (F013).
-export async function reportObstacle(userId: string, input: ReportObstacleInput, photoUrl: string | undefined) {
+export async function reportObstacle(userId: string | undefined, input: ReportObstacleInput, photoUrl: string | undefined) {
   if (!photoUrl) {
     throw new ApiError(422, 'Foto wajib diunggah untuk melaporkan hambatan.');
   }
@@ -13,10 +14,12 @@ export async function reportObstacle(userId: string, input: ReportObstacleInput,
   const obstacle = await prisma.obstacle.create({
     data: {
       type: input.type,
-      geometry: undefined as any,
       status: input.status,
       description: input.description,
       expiresAt: input.expiresAt,
+      // A community report is visible on the map immediately, but it must
+      // not affect routing until a moderator verifies it.
+      isActive: false,
     },
   });
 
@@ -25,6 +28,8 @@ export async function reportObstacle(userId: string, input: ReportObstacleInput,
   const report = await prisma.report.create({
     data: {
       userId,
+      guestAccessKey: userId ? undefined : randomBytes(24).toString('hex'),
+      title: input.title,
       targetType: 'OBSTACLE',
       obstacleId: obstacle.id,
       photoUrl,
