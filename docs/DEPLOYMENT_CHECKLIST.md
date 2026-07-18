@@ -2,8 +2,8 @@
 
 ## Arsitektur
 
-- Frontend Next.js: Vercel project pertama, Root Directory `frontend`.
-- Backend Express: Vercel project kedua, Root Directory `backend`.
+- Frontend Next.js dan backend Express: satu project Vercel Services dari root
+  repository, dikonfigurasi melalui `vercel.json`.
 - Database: Aiven for MySQL Free Tier.
 - Foto: Cloudinary (`UPLOAD_STORAGE=cloudinary`).
 - Peta, geocoding, dan kandidat berjalan kaki: Mapbox.
@@ -36,7 +36,7 @@ VERIFICATION_RATE_LIMIT_MAX=60
 ## Environment frontend
 
 ```env
-NEXT_PUBLIC_API_URL=https://domain-backend.vercel.app/api
+NEXT_PUBLIC_API_URL=/api
 NEXT_PUBLIC_MAPBOX_TOKEN=pk....
 ```
 
@@ -94,15 +94,14 @@ Jangan menjalankan `seed.ts` pada database production karena berisi data demo la
 
 ## Urutan deployment Vercel
 
-1. Import repository yang sama sebagai project backend dengan Root Directory
-   `backend`, lalu isi seluruh environment backend.
-2. Deploy backend dan pastikan `https://domain-backend.vercel.app/health`
-   mengembalikan HTTP 200.
-3. Import repository lagi sebagai project frontend dengan Root Directory
-   `frontend`.
-4. Isi `NEXT_PUBLIC_API_URL` menggunakan domain backend dan deploy frontend.
-5. Masukkan domain frontend final ke `CLIENT_URL` project backend, lalu redeploy
-   backend agar CORS menerima aplikasi tersebut.
+1. Import repository dari root dan pilih Application Preset **Services**.
+2. Pastikan Vercel mendeteksi service `frontend` (Next.js) dan `backend`
+   (Express).
+3. Isi seluruh environment backend dan frontend pada project yang sama.
+4. Gunakan `NEXT_PUBLIC_API_URL=/api`; rewrite root mengarahkan request tersebut
+   ke service backend tanpa domain API terpisah.
+5. Isi `CLIENT_URL` dengan domain production project, lalu deploy.
+6. Pastikan `https://domain-project.vercel.app/health` mengembalikan HTTP 200.
 
 Pada Vercel, backend berjalan sebagai serverless function. Pembersihan obstacle
 kedaluwarsa melalui timer tidak dijadikan sumber kebenaran; query rute dan peta
