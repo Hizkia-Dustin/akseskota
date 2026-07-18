@@ -19,7 +19,7 @@ import dashboardRoutes from './modules/dashboard/dashboard.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import communityPlacesRoutes from './modules/communityPlaces/communityPlaces.routes';
 
-export const app = express();
+const app = express();
 
 // Railway/Render/Vercel-style proxies terminate HTTPS before forwarding the
 // request. Trust one proxy hop so secure URLs and IP-based rate limits work.
