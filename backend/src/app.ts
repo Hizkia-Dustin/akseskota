@@ -53,10 +53,21 @@ app.get('/health', async (_req, res) => {
     });
   } catch (error) {
     console.error('[Health Check] Database unavailable', error);
+    const errorText = error instanceof Error ? error.message : String(error);
+    const databaseError = /P1011|TLS|certificate/i.test(errorText)
+      ? 'tls'
+      : /P1000|authentication|access denied/i.test(errorText)
+        ? 'authentication'
+        : /P1001|reach database|connect timed out|connection refused/i.test(errorText)
+          ? 'unreachable'
+          : /P1013|database string|connection string|invalid.*url/i.test(errorText)
+            ? 'configuration'
+            : 'unknown';
     return res.status(503).json({
       success: false,
       message: 'AksesKota API aktif, tetapi database belum tersambung.',
       database: 'unavailable',
+      databaseError,
     });
   }
 });
