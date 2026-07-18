@@ -84,7 +84,7 @@ export default function Home() {
       </section>
       </HeroEntrance>
 
-      <section id="fitur" className="mx-auto max-w-[1080px] px-0 py-[75px] text-center">
+      <section id="fitur" className="mx-auto max-w-[1080px] px-0 pb-[75px] pt-[95px] text-center lg:pt-[135px]">
         <div className="min-h-[134px] px-[30px]">
           <span className="rounded-full bg-[#ffe2e2] px-[9px] py-[4px] text-[11px] font-bold text-[#e7000b]">Masalah nyata di jalan</span>
           <h2 className="mt-[17px] text-[34px] leading-[38px] font-extrabold tracking-[-.04em]">Navigasi biasa belum cukup</h2>
