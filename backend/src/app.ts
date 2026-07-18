@@ -6,6 +6,7 @@ import expressPath from 'path';
 import { env } from './config/env';
 import { uploadsDirectory } from './middlewares/upload';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
+import { prisma } from './config/prisma';
 
 import authRoutes from './modules/auth/auth.routes';
 import usersRoutes from './modules/users/users.routes';
@@ -42,7 +43,23 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(expressPath.resolve(uploadsDirectory)));
 app.use(morgan(env.nodeEnv === 'development' ? 'dev' : 'combined'));
 
-app.get('/health', (_req, res) => res.status(200).json({ success: true, message: 'AksesKota API is running' }));
+app.get('/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.status(200).json({
+      success: true,
+      message: 'AksesKota API is running',
+      database: 'connected',
+    });
+  } catch (error) {
+    console.error('[Health Check] Database unavailable', error);
+    return res.status(503).json({
+      success: false,
+      message: 'AksesKota API aktif, tetapi database belum tersambung.',
+      database: 'unavailable',
+    });
+  }
+});
 
 // API modules — mapping follows Feature Specification section 7 / System
 // Architecture section 11.
