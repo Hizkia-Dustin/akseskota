@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma';
 import { ApiError } from '../../middlewares/errorHandler';
+import { clearRouteSearchCache } from '../routes/routeSearchCache';
 
 // F018 - Moderator Verification: Approve / Reject / Merge duplicate.
 // Every action is audit-logged (System Architecture section 13).
@@ -23,6 +24,8 @@ export async function approveReport(reportId: string, moderatorId: string, note?
     await prisma.obstacle.update({ where: { id: report.obstacleId }, data: { isActive: true } });
   }
 
+  clearRouteSearchCache();
+
   return report;
 }
 
@@ -34,6 +37,8 @@ export async function rejectReport(reportId: string, moderatorId: string, note?:
     await prisma.obstacle.update({ where: { id: report.obstacleId }, data: { isActive: false } });
   }
 
+  clearRouteSearchCache();
+
   return report;
 }
 
@@ -43,6 +48,7 @@ export async function markReportNeedsRecheck(reportId: string, moderatorId: stri
   if (report.targetType === 'OBSTACLE' && report.obstacleId) {
     await prisma.obstacle.update({ where: { id: report.obstacleId }, data: { isActive: false } });
   }
+  clearRouteSearchCache();
   return report;
 }
 
@@ -62,22 +68,33 @@ export async function mergeDuplicateReports(primaryReportId: string, duplicateRe
     prisma.report.findUnique({ where: { id: duplicateReportId } }),
   ]);
   if (!primary || !duplicate) throw new ApiError(404, 'Salah satu laporan tidak ditemukan.');
+  if (primary.targetType !== duplicate.targetType) {
+    throw new ApiError(422, 'Laporan dengan jenis target berbeda tidak dapat digabungkan.');
+  }
 
-  // Move verifications from the duplicate onto the primary report, then
-  // mark the duplicate as rejected (merged), preserving history rather
-  // than deleting it.
-  await prisma.$transaction([
-    prisma.verification.updateMany({
-      where: { reportId: duplicateReportId },
-      data: { reportId: primaryReportId },
-    }),
-    prisma.report.update({
+  // Upsert each vote to avoid violating the unique(reportId,userId)
+  // constraint when a user voted on both reports.
+  await prisma.$transaction(async (transaction) => {
+    const duplicateVotes = await transaction.verification.findMany({ where: { reportId: duplicateReportId } });
+    for (const vote of duplicateVotes) {
+      await transaction.verification.upsert({
+        where: { reportId_userId: { reportId: primaryReportId, userId: vote.userId } },
+        update: { action: vote.action, note: vote.note },
+        create: { reportId: primaryReportId, userId: vote.userId, action: vote.action, note: vote.note },
+      });
+    }
+    await transaction.verification.deleteMany({ where: { reportId: duplicateReportId } });
+    await transaction.report.update({
       where: { id: duplicateReportId },
       data: { verificationStatus: 'REJECTED', description: `[Digabung ke laporan ${primaryReportId}]` },
-    }),
-  ]);
+    });
+    if (duplicate.obstacleId) {
+      await transaction.obstacle.update({ where: { id: duplicate.obstacleId }, data: { isActive: false } });
+    }
+  });
 
   await logModeratorAction(moderatorId, 'merge_duplicate', primaryReportId, { duplicateReportId });
+  clearRouteSearchCache();
 
   return { primaryReportId, duplicateReportId, merged: true };
 }

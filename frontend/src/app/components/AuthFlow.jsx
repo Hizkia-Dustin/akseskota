@@ -224,7 +224,7 @@ export default function AuthFlow() {
           </label>
           <label className="block">
             <span className="mb-1.5 block text-[10px] font-bold tracking-[.04em] text-[#4a5565] uppercase">Password</span>
-            <input type="password" autoComplete={mode === "register" ? "new-password" : "current-password"} required minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Minimal 6 karakter" className="h-[50px] w-full rounded-[15px] border-2 border-[#f0f2f4] bg-[#f9fafb] px-4 text-[13px] font-semibold outline-none focus:border-[#46dfb1] focus:ring-4 focus:ring-[#cbfbf1]/70" />
+            <input type="password" autoComplete={mode === "register" ? "new-password" : "current-password"} required minLength={mode === "register" ? 10 : 1} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} placeholder={mode === "register" ? "Minimal 10 karakter" : "Password kamu"} className="h-[50px] w-full rounded-[15px] border-2 border-[#f0f2f4] bg-[#f9fafb] px-4 text-[13px] font-semibold outline-none focus:border-[#46dfb1] focus:ring-4 focus:ring-[#cbfbf1]/70" />
           </label>
           {message && <p role="alert" className="rounded-xl bg-[#fff1f2] px-3 py-2.5 text-[10px] leading-4 font-semibold text-[#b42318]">{message}</p>}
           <button type="submit" disabled={busy} className="h-[52px] w-full rounded-[15px] bg-[#0c6478] text-[14px] font-extrabold text-white shadow-[0_5px_12px_rgba(12,100,120,.25)] disabled:cursor-wait disabled:opacity-60">{busy ? "Memproses..." : mode === "register" ? "Daftar dengan Email" : "Masuk"}</button>

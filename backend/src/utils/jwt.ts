@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
+import { randomUUID } from 'crypto';
 
 export interface JwtPayload {
   userId: string;
@@ -15,6 +16,7 @@ export function signAccessToken(payload: JwtPayload): string {
 export function signRefreshToken(payload: JwtPayload): string {
   return jwt.sign(payload, env.jwt.refreshSecret, {
     expiresIn: env.jwt.refreshExpiresIn as jwt.SignOptions['expiresIn'],
+    jwtid: randomUUID(),
   });
 }
 

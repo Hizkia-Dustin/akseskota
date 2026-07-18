@@ -2,6 +2,7 @@ import { prisma } from '../../config/prisma';
 import { randomBytes } from 'crypto';
 import { ApiError } from '../../middlewares/errorHandler';
 import { CreateReportInput } from './reports.schema';
+import { clearRouteSearchCache } from '../routes/routeSearchCache';
 
 export async function createReport(
   input: CreateReportInput & {
@@ -160,6 +161,10 @@ export async function submitCommunityVerification(
     throw new ApiError(404, 'Laporan tidak ditemukan.');
   }
 
+  if (report.verificationStatus === 'REJECTED') {
+    throw new ApiError(409, 'Laporan yang sudah ditolak tidak dapat diverifikasi kembali.');
+  }
+
   if (report.userId === userId) {
     throw new ApiError(422, 'Pelapor tidak dapat memverifikasi laporannya sendiri.');
   }
@@ -183,6 +188,7 @@ export async function submitCommunityVerification(
     status = 'VERIFIED';
     await prisma.report.update({ where: { id: reportId }, data: { verificationStatus: 'VERIFIED' } });
     if (report.obstacleId) await prisma.obstacle.update({ where: { id: report.obstacleId }, data: { isActive: true } });
+    clearRouteSearchCache();
   } else if (((votes.NEEDS_RECHECK || 0) >= threshold || (votes.REJECTED || 0) >= threshold) && report.verificationStatus === 'UNVERIFIED') {
     status = 'NEEDS_RECHECK';
     await prisma.report.update({ where: { id: reportId }, data: { verificationStatus: 'NEEDS_RECHECK' } });
@@ -201,6 +207,8 @@ export async function listMapReports() {
      JOIN obstacles o ON o.id = r.obstacleId
      WHERE r.targetType = 'OBSTACLE'
        AND r.verificationStatus IN ('UNVERIFIED', 'VERIFIED', 'NEEDS_RECHECK')
+       AND (r.expiresAt IS NULL OR r.expiresAt > NOW())
+       AND (o.expiresAt IS NULL OR o.expiresAt > NOW())
        AND o.geometry IS NOT NULL
      ORDER BY r.createdAt DESC
      LIMIT 500`,

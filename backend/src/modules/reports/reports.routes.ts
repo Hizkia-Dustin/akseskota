@@ -17,8 +17,17 @@ import {
   map,
   verify,
 } from './reports.controller';
+import rateLimit from 'express-rate-limit';
+import { env } from '../../config/env';
 
 const router = Router();
+const verificationLimiter = rateLimit({
+  windowMs: env.verificationRateLimit.windowMs,
+  max: env.verificationRateLimit.max,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Terlalu banyak verifikasi. Coba lagi nanti.' },
+});
 
 
 router.post(
@@ -47,6 +56,7 @@ router.get('/:id', getById);
 router.post(
   '/:id/verify',
   authenticate,
+  verificationLimiter,
   validate(verifyReportSchema),
   verify,
 );

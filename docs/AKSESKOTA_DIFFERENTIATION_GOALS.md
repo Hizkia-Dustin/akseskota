@@ -352,3 +352,25 @@ Rating tempat tidak boleh otomatis menjadi skor jalan menuju tempat tersebut. Ra
 - Riwayat perjalanan disimpan saat pengguna menekan mulai navigasi, bukan saat sekadar melihat kandidat. Detail menyimpan tujuan, mode, waktu, jarak, skor yang tersedia, dan langkah perjalanan.
 - Navigasi suara membaca petunjuk Mapbox dalam Bahasa Indonesia, menyediakan ulangi, bisukan, langkah sebelumnya/berikutnya, serta instruksi teks sebagai fallback.
 - Riwayat akun dan navigasi suara tidak mengubah penilaian aksesibilitas rute; keduanya membantu penggunaan dan audit pengalaman perjalanan.
+
+## 16. Penilaian Weighted Dijkstra
+
+Kriteria penilaian mengacu pada empat asas yang dirangkum dalam penelitian *Peta Aksesibilitas (Denpasar Accessible Map) Bagi Penyandang Disabilitas di Ruang Publik Kota* (Pebriyanti, 2020): keselamatan, kemudahan, kegunaan, dan kemandirian. Atribut pendukungnya mencakup jalur pedestrian, jalur pemandu, ramp, tangga/handrail, akses kursi roda, lift, toilet disabilitas, parkir, rambu/signage, pelican crossing, dan keterhubungan transportasi.
+
+Aturan implementasi:
+
+1. Mapbox Directions menyediakan kandidat dengan geometri yang benar-benar mengikuti jaringan jalan.
+2. Backend mencocokkan titik sampel kandidat dengan ruas dan hambatan AksesKota yang terverifikasi.
+3. Hard constraint membuang kandidat yang terbukti tidak dapat dilalui profil pengguna.
+4. Setiap kandidat yang lolos menjadi edge dengan biaya non-negatif:
+
+   ```text
+   biaya = jarak x (1 + penalti keselamatan + penalti kemudahan + penalti kegunaan + penalti kemandirian)
+   ```
+
+5. Bobot empat penalti berbeda untuk kursi roda, stroller, low vision, lansia, dan pengguna umum.
+6. Weighted Dijkstra memilih biaya terendah. Yen K-shortest paths menggunakan Dijkstra berulang untuk mengurutkan sampai tiga alternatif berbeda.
+7. Nilai `UNKNOWN` diberi penalti ketidakpastian dan tetap ditampilkan sebagai data belum cukup; nilai tersebut tidak disamakan dengan `TIDAK ADA`.
+8. Biaya Dijkstra bukan skor 0-100. UI harus memisahkan biaya pemilihan jalur, skor kondisi, dan persentase cakupan data.
+
+Implementasi sekarang bersifat hybrid pada kumpulan kandidat Mapbox. Setelah jaringan pedestrian Kota Bogor tersedia sebagai graph penuh dari OSM atau data pemerintah, algoritma yang sama dapat dijalankan pada setiap edge jalan tanpa mengubah prinsip penilaian.

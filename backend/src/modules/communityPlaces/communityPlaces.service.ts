@@ -1,8 +1,10 @@
 import { prisma } from '../../config/prisma';
 import { CreatePlacePostInput, SearchCommunityPlacesInput } from './communityPlaces.schema';
+import { deletePersistedPhoto } from '../../middlewares/upload';
 
 const featureList = (posts: Array<{ features: unknown }>) => [...new Set(posts.flatMap((post) => Array.isArray(post.features) ? post.features.filter((feature): feature is string => typeof feature === 'string') : []))];
 const average = (values: number[]) => values.length ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : null;
+const confidence = (count: number) => count >= 4 ? 'TINGGI' : count >= 2 ? 'SEDANG' : 'RENDAH';
 
 export async function getCommunityPlace(externalId: string) {
   const place = await prisma.communityPlace.findUnique({
@@ -24,6 +26,7 @@ export async function getCommunityPlace(externalId: string) {
       rating: average(place.posts.map((post) => post.rating)),
       accessibilityRating: average(place.posts.map((post) => post.accessibilityRating)),
       features: featureList(place.posts),
+      confidence: confidence(place.posts.length),
     },
   };
 }
@@ -57,6 +60,7 @@ export async function searchCommunityPlaces(input: SearchCommunityPlacesInput) {
       rating: average(place.posts.map((post) => post.rating)),
       accessibilityRating: average(place.posts.map((post) => post.accessibilityRating)),
       evidenceCount: place.posts.length,
+      confidence: confidence(place.posts.length),
       features,
       latestPhotoUrl: place.posts.find((post) => post.photoUrl)?.photoUrl ?? null,
       matchedTerms,
@@ -69,22 +73,41 @@ export async function searchCommunityPlaces(input: SearchCommunityPlacesInput) {
 }
 
 export async function createCommunityPlacePost(userId: string, input: CreatePlacePostInput, photoUrl?: string) {
-  const place = await prisma.communityPlace.upsert({
-    where: { externalId: input.externalId },
-    update: { name: input.name, address: input.address, latitude: input.latitude, longitude: input.longitude },
-    create: { externalId: input.externalId, name: input.name, address: input.address, latitude: input.latitude, longitude: input.longitude },
+  let replacedPhotoUrl: string | null | undefined;
+  const post = await prisma.$transaction(async (transaction) => {
+    const place = await transaction.communityPlace.upsert({
+      where: { externalId: input.externalId },
+      update: { name: input.name, address: input.address, latitude: input.latitude, longitude: input.longitude },
+      create: { externalId: input.externalId, name: input.name, address: input.address, latitude: input.latitude, longitude: input.longitude },
+    });
+    const existing = await transaction.placePost.findUnique({
+      where: { placeId_authorId: { placeId: place.id, authorId: userId } },
+      select: { photoUrl: true },
+    });
+    replacedPhotoUrl = photoUrl ? existing?.photoUrl : undefined;
+    return transaction.placePost.upsert({
+      where: { placeId_authorId: { placeId: place.id, authorId: userId } },
+      update: {
+        title: input.title,
+        content: input.content,
+        rating: input.rating,
+        accessibilityRating: input.accessibilityRating,
+        features: input.features,
+        ...(photoUrl ? { photoUrl } : {}),
+      },
+      create: {
+        placeId: place.id,
+        authorId: userId,
+        title: input.title,
+        content: input.content,
+        rating: input.rating,
+        accessibilityRating: input.accessibilityRating,
+        features: input.features,
+        photoUrl,
+      },
+      include: { author: { select: { id: true, name: true } } },
+    });
   });
-  return prisma.placePost.create({
-    data: {
-      placeId: place.id,
-      authorId: userId,
-      title: input.title,
-      content: input.content,
-      rating: input.rating,
-      accessibilityRating: input.accessibilityRating,
-      features: input.features,
-      photoUrl,
-    },
-    include: { author: { select: { id: true, name: true } } },
-  });
+  if (replacedPhotoUrl && replacedPhotoUrl !== photoUrl) await deletePersistedPhoto(replacedPhotoUrl);
+  return post;
 }

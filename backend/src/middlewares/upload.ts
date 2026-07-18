@@ -1,7 +1,7 @@
 import multer from 'multer';
 import { randomUUID } from 'crypto';
 import { mkdirSync } from 'fs';
-import { writeFile } from 'fs/promises';
+import { unlink, writeFile } from 'fs/promises';
 import path from 'path';
 import { Request } from 'express';
 import { cloudinary } from '../config/cloudinary';
@@ -24,7 +24,7 @@ export const uploadReportPhoto = multer({
   },
 });
 
-export async function persistUploadedPhoto(req: Request): Promise<string | undefined> {
+export async function persistUploadedPhoto(req: Request, folder = 'reports'): Promise<string | undefined> {
   const file = req.file;
   if (!file) return undefined;
 
@@ -33,7 +33,7 @@ export async function persistUploadedPhoto(req: Request): Promise<string | undef
       let settled = false;
       const upload = cloudinary.uploader.upload_stream(
         {
-          folder: 'akseskota/reports',
+          folder: `akseskota/${folder}`,
           resource_type: 'image',
           transformation: [{ width: 1600, height: 1600, crop: 'limit' }],
         },
@@ -60,4 +60,29 @@ export async function persistUploadedPhoto(req: Request): Promise<string | undef
   const filename = `${Date.now()}-${randomUUID()}${extension}`;
   await writeFile(path.join(reportUploadsDirectory, filename), file.buffer);
   return `${req.protocol}://${req.get('host')}/uploads/reports/${filename}`;
+}
+
+export async function deletePersistedPhoto(photoUrl: string | undefined): Promise<void> {
+  if (!photoUrl) return;
+  try {
+    const parsed = new URL(photoUrl);
+    if (parsed.hostname === 'res.cloudinary.com') {
+      const uploadMarker = '/upload/';
+      const markerIndex = parsed.pathname.indexOf(uploadMarker);
+      if (markerIndex < 0) return;
+      const afterUpload = parsed.pathname.slice(markerIndex + uploadMarker.length).replace(/^v\d+\//, '');
+      const publicId = decodeURIComponent(afterUpload).replace(/\.[^/.]+$/, '');
+      if (publicId.startsWith('akseskota/')) await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+      return;
+    }
+
+    const uploadPrefix = '/uploads/';
+    const uploadIndex = parsed.pathname.indexOf(uploadPrefix);
+    if (uploadIndex < 0) return;
+    const relativePath = decodeURIComponent(parsed.pathname.slice(uploadIndex + uploadPrefix.length));
+    const target = path.resolve(uploadsDirectory, relativePath);
+    if (target.startsWith(`${uploadsDirectory}${path.sep}`)) await unlink(target).catch(() => undefined);
+  } catch {
+    // Cleanup is best-effort and must not hide the original request error.
+  }
 }

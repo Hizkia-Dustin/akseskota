@@ -14,7 +14,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const refresh = asyncHandler(async (req: Request, res: Response) => {
-  const result = refreshAccessToken(req.body.refreshToken);
+  const result = await refreshAccessToken(req.body.refreshToken);
   return ok(res, result);
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import CountUp from "./react-bits/CountUp";
@@ -66,51 +66,6 @@ const routeTone = {
   blue: { card: "bg-gradient-to-br from-[#4387f7] to-[#2143a5]", badge: "bg-white/20", ring: "border-white", accent: "text-[#3b82f6]" },
 };
 
-const placePreview = {
-  name: "Balai Kota Semarang",
-  category: "Kantor pemerintahan",
-  address: "Jl. Pemuda No.148, Sekayu, Semarang Tengah",
-  accessibilityScore: 88,
-  coordinates: "-6.9839, 110.4108",
-};
-
-function LegacyMapCanvas({ activeRoute = "A", highContrast = false }) {
-  return (
-    <svg aria-label="Peta vektor rute AksesKota" role="img" viewBox="0 0 1440 1024" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 size-full">
-      <rect width="1440" height="1024" fill={highContrast ? "#d6e0e4" : "#e4e9eb"} />
-      <g fill="none" strokeLinecap="round">
-        {[120,260,410,560,720,870].map((y) => <path key={`h-${y}`} d={`M-50 ${y} C240 ${y-80} 430 ${y+90} 720 ${y-10} S1160 ${y-70} 1490 ${y+30}`} stroke="#b9c4ca" strokeWidth="18" />)}
-        {[160,390,640,930,1200].map((x) => <path key={`v-${x}`} d={`M${x} -40 C${x-100} 240 ${x+100} 430 ${x-40} 700 S${x+80} 930 ${x+20} 1080`} stroke="#c6d0d5" strokeWidth="13" />)}
-        <path d="M-40 330 C260 290 380 360 610 315 S1040 290 1490 350" stroke="#8798a3" strokeWidth="28" />
-        <path d="M340 -20 C310 240 490 330 425 530 S410 820 650 1050" stroke="#83949e" strokeWidth="20" />
-        <path d="M1010 -30 C950 220 1110 450 1000 700 S1050 920 1160 1060" stroke="#91a0a9" strokeWidth="17" />
-        <path d="M800 20 C735 180 570 210 585 370 C605 550 500 650 540 820 C570 915 710 920 785 970" stroke="#312783" strokeWidth={activeRoute === "A" ? 13 : 7} />
-        <path d="M800 20 C760 190 610 260 650 410 C690 560 750 650 725 800 C710 900 770 935 785 970" stroke="#4c52ad" strokeWidth={activeRoute === "B" ? 12 : 6} />
-        <path d="M800 20 C830 210 740 330 810 480 C900 660 840 800 785 970" stroke="#6f74cd" strokeWidth={activeRoute === "C" ? 12 : 5} />
-      </g>
-      <g fontFamily="Plus Jakarta Sans" fill="#65717c">
-        <text x="390" y="265" fontSize="37" fontWeight="800" fill="#303b44">Bekasi</text>
-        <text x="535" y="220" fontSize="16">Stadion Patriot Candrabhaga</text>
-        <text x="485" y="465" fontSize="16">Metropolitan Mall Bekasi</text>
-        <text x="825" y="640" fontSize="16">Living World Grand Wisata</text>
-        <text x="620" y="905" fontSize="16" fill="#4e7e62">Funpark Bekasi Timur</text>
-        <text x="1010" y="390" fontSize="16">Gedung Juang 45 Bekasi</text>
-      </g>
-      <g>
-        <circle cx="800" cy="20" r="13" fill="#fff" stroke="#303782" strokeWidth="7" />
-        <circle cx="785" cy="970" r="14" fill="#ef4444" stroke="#fff" strokeWidth="5" />
-        <circle cx="540" cy="820" r="13" fill="#4f8a67" stroke="#fff" strokeWidth="5" />
-      </g>
-      <g fontFamily="Plus Jakarta Sans" fontSize="13" fontWeight="700">
-        <rect x="430" y="785" width="90" height="50" rx="4" fill="#fff" stroke="#6b7280" />
-        <text x="445" y="806" fill="#374151">39 mnt</text><text x="445" y="824" fill="#6b7280">19,4 km</text>
-        <rect x="650" y="620" width="90" height="50" rx="4" fill="#fff" stroke="#9ca3af" />
-        <text x="665" y="641" fill="#374151">43 mnt</text><text x="665" y="659" fill="#6b7280">20,1 km</text>
-      </g>
-    </svg>
-  );
-}
-
 function MapCanvas({ routes, reports, activeRoute = "A", origin, destination, reportDraft, onMapClick, highContrast = false }) {
   return <MapboxMap routes={routes} reports={reports} activeRoute={activeRoute} origin={origin} destination={destination} reportDraft={reportDraft} onMapClick={onMapClick} highContrast={highContrast} />;
 }
@@ -131,7 +86,7 @@ function RouteCard({ route, active = false, onDetail, onSelect }) {
   }
   return (
     <article data-route-card className={`rounded-[18px] p-5 text-white shadow-[0_10px_20px_rgba(20,50,75,.2)] ${tone.card}`}>
-      <div className="flex"><div className="flex-1"><p className="text-[12px] text-white/65">{route.street}</p><span className={`mt-2 inline-block rounded-full px-2 py-1 text-[9px] font-extrabold ${tone.badge}`}>{route.badge}</span><div className="mt-3 flex flex-wrap gap-2 text-[10px]"><b className="rounded-lg bg-white/15 px-2 py-1.5"><Clock3 className="mr-1 inline size-3" />{route.time}</b><b className="rounded-lg bg-white/15 px-2 py-1.5"><Navigation className="mr-1 inline size-3" />{route.distance}</b>{Number.isFinite(route.shade)&&<b className="rounded-lg bg-white/15 px-2 py-1.5">☂ Teduh {route.shade}/100</b>}<b className="rounded-lg bg-white/15 px-2 py-1.5">Data {route.dataCoverage ?? 0}%</b></div></div><ScoreRing score={route.score} /></div>
+      <div className="flex"><div className="flex-1"><p className="text-[12px] text-white/65">{route.street}</p><span className={`mt-2 inline-block rounded-full px-2 py-1 text-[9px] font-extrabold ${tone.badge}`}>{route.badge}</span><div className="mt-3 flex flex-wrap gap-2 text-[10px]"><b className="rounded-lg bg-white/15 px-2 py-1.5"><Clock3 className="mr-1 inline size-3" />{route.time}</b><b className="rounded-lg bg-white/15 px-2 py-1.5"><Navigation className="mr-1 inline size-3" />{route.distance}</b>{Number.isFinite(route.shade)&&<b className="rounded-lg bg-white/15 px-2 py-1.5">☂ Teduh {route.shade}/100</b>}<b className="rounded-lg bg-white/15 px-2 py-1.5">Data {route.dataCoverage ?? 0}%</b>{route.algorithmRank&&<b className="rounded-lg bg-white/15 px-2 py-1.5">Dijkstra #{route.algorithmRank}</b>}</div></div><ScoreRing score={route.score} /></div>
       <div className="mt-4 grid grid-cols-[1fr_auto] gap-2"><button type="button" onClick={onDetail} className="rounded-full bg-white py-2.5 text-[11px] font-extrabold text-[#0c6478] transition hover:-translate-y-0.5 hover:shadow-lg active:scale-95">Lihat Detail</button><button type="button" onClick={onSelect} className="rounded-full bg-white/20 px-4 text-[11px] font-bold transition hover:bg-white/30 active:scale-95">Tutup</button></div>
     </article>
   );
@@ -368,7 +323,7 @@ function DetailPanel({ route, profile, destination, destinationCoordinates, onBa
       <div className="flex items-center border-b border-[#edf0f2] p-4"><button onClick={onBack} className="grid size-9 place-items-center rounded-full bg-[#f5f6f7]"><ChevronLeft className="size-5" /></button><div className="ml-3"><h2 className="text-[13px] font-extrabold">Rute {route.id} — Detail</h2><p className="text-[10px] text-[#99a1af]">Menuju {destination}</p></div></div>
       <div className="grid grid-cols-2 border-b border-[#edf0f2] text-center">{[[route.distance,"Jarak Mapbox"],[route.time,"Waktu berjalan"]].map(([value,label])=><div key={label} className="border-r border-[#edf0f2] py-4 last:border-0"><b className="block text-[18px]">{value}</b><small className="text-[10px] text-[#99a1af]">{label}</small></div>)}</div>
       <div className="flex-1 overflow-y-auto p-4 pb-6">
-        <div className={`rounded-[16px] p-4 ${route.blocked?'bg-[#fff1f2]':'bg-[#effaf8]'}`}><h3 className={`text-[10px] font-extrabold ${route.blocked?'text-[#b42318]':'text-[#006b63]'}`}>{route.blocked?'RUTE TIDAK SESUAI PROFIL':'PENILAIAN AKSESKOTA'}</h3><p className={`mt-2 text-[11px] font-semibold leading-5 ${route.blocked?'text-[#b42318]':'text-[#008b7f]'}`}>{Number.isFinite(route.score)?`Skor aksesibilitas ${route.score}/100 · keteduhan ${Number.isFinite(route.shade)?`${route.shade}/100`:'belum cukup data'} · cakupan data ${route.dataCoverage}%`:`Cakupan data komunitas baru ${route.dataCoverage||0}%. Angka skor belum ditampilkan agar tidak menyesatkan.`}</p>{route.evaluationReasons?.map(reason=><p key={reason} className="mt-2 text-[10px] font-bold text-[#667085]">• {reason}</p>)}</div>
+        <div className={`rounded-[16px] p-4 ${route.blocked?'bg-[#fff1f2]':'bg-[#effaf8]'}`}><h3 className={`text-[10px] font-extrabold ${route.blocked?'text-[#b42318]':'text-[#006b63]'}`}>{route.blocked?'RUTE TIDAK SESUAI PROFIL':'PENILAIAN AKSESKOTA'}</h3><p className={`mt-2 text-[11px] font-semibold leading-5 ${route.blocked?'text-[#b42318]':'text-[#008b7f]'}`}>{Number.isFinite(route.score)?`Skor aksesibilitas ${route.score}/100 · keteduhan ${Number.isFinite(route.shade)?`${route.shade}/100`:'belum cukup data'} · cakupan data ${route.dataCoverage}%`:`Cakupan data komunitas baru ${route.dataCoverage||0}%. Angka skor belum ditampilkan agar tidak menyesatkan.`}</p>{route.algorithmRank&&<p className="mt-2 text-[10px] font-extrabold text-[#173c61]">Peringkat Weighted Dijkstra #{route.algorithmRank} · biaya jalur {route.algorithmCost}</p>}{route.evaluationReasons?.map(reason=><p key={reason} className="mt-2 text-[10px] font-bold text-[#667085]">• {reason}</p>)}</div>
         <h3 className="mt-6 text-[14px] font-extrabold sm:mt-5 sm:text-[12px]">Langkah Perjalanan</h3><div className="mt-3">{steps.map((step,index)=><div key={`${step.instruction}-${index}`} className="relative flex gap-3 pb-4 before:absolute before:bottom-0 before:left-[14px] before:top-7 before:w-px before:bg-[#d9dfe3] last:before:hidden"><span className={`relative z-10 grid size-7 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white ${index===0?'bg-[#0c6478]':index===steps.length-1?'bg-[#f59e0b]':'bg-[#6b7280]'}`}>{index+1}</span><div><b className="text-[13px] sm:text-[11px]">{step.instruction}</b><p className="mt-1 text-[11px] text-[#99a1af] sm:text-[9px]">{step.distance} · petunjuk Mapbox</p></div></div>)}</div>
       </div>
       <div className="grid grid-cols-[82px_105px_1fr] gap-2 border-t border-[#edf0f2] p-3"><button onClick={onReport} className="rounded-xl border-2 border-[#e3e7ea] text-[10px] font-bold"><Flag className="mr-1 inline size-4" />Lapor</button><button onClick={()=>openGoogleStreetView(destinationCoordinates)} className="rounded-xl border-2 border-[#dbeafe] bg-[#eff6ff] text-[10px] font-bold text-[#155dfc]"><Camera className="mr-1 inline size-4" />Street View</button><button onClick={onNavigate} className="rounded-xl bg-[#0c6478] text-[10px] font-extrabold text-white">Mulai →</button></div>
@@ -456,17 +411,29 @@ function RouteHistoryPanel({ session, onClose, onLogin }) {
     return () => { cancelled = true; window.clearTimeout(timer); };
   }, [session]);
 
+  async function removeHistory(historyId) {
+    try {
+      await apiRequest(`/users/me/route-history/${historyId}`, { method: "DELETE" });
+      setHistory((current) => current.filter((item) => item.id !== historyId));
+      setSelectedId(null);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Riwayat gagal dihapus.");
+    }
+  }
+
   return <SideShell title="Riwayat Perjalanan" icon={<History className="size-5"/>} onClose={onClose}><div className="mt-5">
     {!session&&<div className="rounded-[16px] bg-[#fff7ed] p-4"><b className="text-[11px] text-[#9a3412]">Masuk untuk menyimpan perjalanan</b><p className="mt-1 text-[9px] leading-4 text-[#667085]">Riwayat menyimpan rute yang benar-benar kamu mulai.</p><button onClick={onLogin} className="mt-3 rounded-xl bg-[#0c6478] px-4 py-2.5 text-[10px] font-bold text-white">Masuk</button></div>}
     {session&&history.length===0&&<p className="rounded-[15px] bg-[#f8fafc] p-4 text-[10px] text-[#667085]">{message||"Belum ada riwayat. Mulai navigasi sebuah rute agar tersimpan di sini."}</p>}
-    <div className="space-y-3">{history.map(item=>{const route=item.chosenRouteJson||{};const open=selectedId===item.id;return <article key={item.id} className="rounded-[16px] border-2 border-[#edf0f2] p-3"><button onClick={()=>setSelectedId(open?null:item.id)} className="w-full text-left"><div className="flex items-start gap-2"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#effaf8] text-[#0c6478]"><Route className="size-4"/></span><div className="min-w-0 flex-1"><b className="block truncate text-[11px]">{route.destinationName||"Tujuan tersimpan"}</b><p className="mt-1 text-[9px] text-[#667085]">Rute {route.id||"—"} · {route.time||"Waktu tidak tersedia"} · {route.distance||"Jarak tidak tersedia"}</p><small className="mt-1 block text-[8px] text-[#98a2b3]">{new Date(item.createdAt).toLocaleString("id-ID")}</small></div><ChevronLeft className={`size-4 text-[#98a2b3] transition ${open?'-rotate-90':'rotate-180'}`}/></div></button>{open&&<div className="mt-3 border-t border-[#edf0f2] pt-3"><div className="grid grid-cols-2 gap-2"><div className="rounded-xl bg-[#effaf8] p-2"><small className="text-[8px] text-[#667085]">Mode</small><b className="block text-[10px]">{modes.find(mode=>profileModeMap[mode.id]===item.mode)?.label||item.mode}</b></div><div className="rounded-xl bg-[#fff7ed] p-2"><small className="text-[8px] text-[#667085]">Skor akses</small><b className="block text-[10px]">{Number.isFinite(route.score)?`${route.score}/100`:'Data belum cukup'}</b></div></div><p className="mt-3 text-[9px] font-bold text-[#475467]">Langkah perjalanan</p><ol className="mt-2 space-y-2">{(route.steps||[]).map((step,index)=><li key={`${step.instruction}-${index}`} className="flex gap-2 text-[9px] leading-4 text-[#667085]"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#0c6478] text-[8px] font-bold text-white">{index+1}</span>{step.instruction} ({step.distance})</li>)}</ol></div>}</article>})}</div>
+    <p className="mb-3 rounded-xl bg-[#f8fafc] p-3 text-[9px] leading-4 text-[#667085]">Riwayat menyimpan titik perjalanan dan rute yang kamu mulai. Kamu dapat menghapusnya kapan saja.</p><div className="space-y-3">{history.map(item=>{const route=item.chosenRouteJson||{};const open=selectedId===item.id;return <article key={item.id} className="rounded-[16px] border-2 border-[#edf0f2] p-3"><button onClick={()=>setSelectedId(open?null:item.id)} className="w-full text-left"><div className="flex items-start gap-2"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#effaf8] text-[#0c6478]"><Route className="size-4"/></span><div className="min-w-0 flex-1"><b className="block truncate text-[11px]">{route.destinationName||"Tujuan tersimpan"}</b><p className="mt-1 text-[9px] text-[#667085]">Rute {route.id||"—"} · {route.time||"Waktu tidak tersedia"} · {route.distance||"Jarak tidak tersedia"}</p><small className="mt-1 block text-[8px] text-[#98a2b3]">{new Date(item.createdAt).toLocaleString("id-ID")}</small></div><ChevronLeft className={`size-4 text-[#98a2b3] transition ${open?'-rotate-90':'rotate-180'}`}/></div></button>{open&&<div className="mt-3 border-t border-[#edf0f2] pt-3"><div className="grid grid-cols-2 gap-2"><div className="rounded-xl bg-[#effaf8] p-2"><small className="text-[8px] text-[#667085]">Mode</small><b className="block text-[10px]">{modes.find(mode=>profileModeMap[mode.id]===item.mode)?.label||item.mode}</b></div><div className="rounded-xl bg-[#fff7ed] p-2"><small className="text-[8px] text-[#667085]">Skor akses</small><b className="block text-[10px]">{Number.isFinite(route.score)?`${route.score}/100`:'Data belum cukup'}</b></div></div><p className="mt-3 text-[9px] font-bold text-[#475467]">Langkah perjalanan</p><ol className="mt-2 space-y-2">{(route.steps||[]).map((step,index)=><li key={`${step.instruction}-${index}`} className="flex gap-2 text-[9px] leading-4 text-[#667085]"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#0c6478] text-[8px] font-bold text-white">{index+1}</span>{step.instruction} ({step.distance})</li>)}</ol><button type="button" onClick={()=>removeHistory(item.id)} className="mt-3 w-full rounded-xl border border-[#fecaca] py-2 text-[9px] font-bold text-[#b42318]">Hapus riwayat ini</button></div>}</article>})}</div>
   </div></SideShell>;
 }
 
-function SpeechNavigation({ route, destination, onStop }) {
+function SpeechNavigation({ route, destination, onStop, onReroute }) {
   const steps = useMemo(() => route.steps?.length ? route.steps : [{ instruction: `Tiba di ${destination}`, distance: route.distance }], [destination, route.distance, route.steps]);
   const [stepIndex, setStepIndex] = useState(0);
   const [voiceOn, setVoiceOn] = useState(true);
+  const [navigationMessage, setNavigationMessage] = useState("");
+  const rerouteTriggeredRef = useRef(false);
   const supported = typeof window !== "undefined" && "speechSynthesis" in window;
 
   const speak = useCallback((index) => {
@@ -480,10 +447,41 @@ function SpeechNavigation({ route, destination, onStop }) {
 
   useEffect(() => { const timer=window.setTimeout(()=>speak(stepIndex),0); return()=>{window.clearTimeout(timer);window.speechSynthesis?.cancel();}; }, [speak, stepIndex]);
 
+  useEffect(() => {
+    if (!navigator.geolocation) return undefined;
+    const watchId = navigator.geolocation.watchPosition(({ coords }) => {
+      const current = [coords.longitude, coords.latitude];
+      const nextLocation = steps[stepIndex + 1]?.location;
+      if (nextLocation && coordinateDistanceMeters(current, nextLocation) <= 25) {
+        setStepIndex((value) => Math.min(steps.length - 1, value + 1));
+      }
+      const nearestRoutePoint = Math.min(...(route.geometry?.coordinates || []).map((point) => coordinateDistanceMeters(current, point)));
+      if (Number.isFinite(nearestRoutePoint) && nearestRoutePoint > 60 && !rerouteTriggeredRef.current) {
+        rerouteTriggeredRef.current = true;
+        setNavigationMessage("Kamu terdeteksi keluar jalur. Menghitung ulang rute dari posisi sekarang.");
+        onReroute?.(current);
+        window.dispatchEvent(new CustomEvent("akseskota:reroute"));
+      } else if (nearestRoutePoint <= 35) {
+        rerouteTriggeredRef.current = false;
+        setNavigationMessage("");
+      }
+    }, () => setNavigationMessage("Lokasi real-time tidak tersedia. Gunakan tombol langkah secara manual."), {
+      enableHighAccuracy: true,
+      maximumAge: 5_000,
+      timeout: 10_000,
+    });
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [onReroute, route.geometry, stepIndex, steps]);
+
   function stop() { window.speechSynthesis?.cancel(); onStop(); }
   function move(next) { setStepIndex(Math.max(0, Math.min(steps.length-1, next))); }
 
-  return <MotionSurface role="region" aria-label="Navigasi suara" direction="up" distance={20} scale={0.96} className="absolute bottom-4 left-1/2 z-50 w-[min(560px,calc(100%-24px))] -translate-x-1/2 rounded-[20px] bg-[#173c61] p-4 text-white shadow-2xl"><div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#35cbb0]"><Volume2 className="size-5"/></span><div className="min-w-0 flex-1"><p className="text-[9px] font-bold tracking-[.12em] text-[#7be3dc]">LANGKAH {stepIndex+1} DARI {steps.length}</p><b aria-live="polite" className="mt-1 block text-[13px] leading-5">{steps[stepIndex].instruction}</b><p className="mt-1 text-[10px] text-white/65">{steps[stepIndex].distance} · menuju {destination}</p></div><button onClick={stop} aria-label="Hentikan navigasi" className="grid size-9 place-items-center rounded-full bg-white/10"><X className="size-4"/></button></div>{!supported&&<p className="mt-3 rounded-xl bg-white/10 p-2 text-[9px]">Browser ini belum mendukung pembacaan suara, tetapi instruksi teks tetap dapat digunakan.</p>}<div className="mt-3 grid grid-cols-4 gap-2"><button disabled={stepIndex===0} onClick={()=>move(stepIndex-1)} className="rounded-xl bg-white/10 py-2 text-[9px] font-bold disabled:opacity-30">Sebelumnya</button><button onClick={()=>{setVoiceOn(value=>!value);window.speechSynthesis?.cancel();}} className="grid place-items-center rounded-xl bg-white/10 py-2" aria-label={voiceOn?"Matikan suara":"Aktifkan suara"}>{voiceOn?<Volume2 className="size-4"/>:<VolumeX className="size-4"/>}</button><button onClick={()=>speak(stepIndex)} className="grid place-items-center rounded-xl bg-white/10 py-2" aria-label="Ulangi instruksi"><Play className="size-4"/></button><button disabled={stepIndex===steps.length-1} onClick={()=>move(stepIndex+1)} className="rounded-xl bg-[#35cbb0] py-2 text-[9px] font-extrabold text-[#173c61] disabled:opacity-30">Berikutnya</button></div></MotionSurface>;
+  return <MotionSurface role="region" aria-label="Navigasi suara" direction="up" distance={20} scale={0.96} className="absolute bottom-4 left-1/2 z-50 w-[min(560px,calc(100%-24px))] -translate-x-1/2 rounded-[20px] bg-[#173c61] p-4 text-white shadow-2xl"><div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#35cbb0]"><Volume2 className="size-5"/></span><div className="min-w-0 flex-1"><p className="text-[9px] font-bold tracking-[.12em] text-[#7be3dc]">LANGKAH {stepIndex+1} DARI {steps.length}</p><b aria-live="polite" className="mt-1 block text-[13px] leading-5">{steps[stepIndex].instruction}</b><p className="mt-1 text-[10px] text-white/65">{steps[stepIndex].distance} · menuju {destination}</p></div><button onClick={stop} aria-label="Hentikan navigasi" className="grid size-9 place-items-center rounded-full bg-white/10"><X className="size-4"/></button></div>{navigationMessage&&<p role="status" className="mt-3 rounded-xl bg-[#f59e0b]/20 p-2 text-[9px] font-semibold text-[#fde68a]">{navigationMessage}</p>}{!supported&&<p className="mt-3 rounded-xl bg-white/10 p-2 text-[9px]">Browser ini belum mendukung pembacaan suara, tetapi instruksi teks tetap dapat digunakan.</p>}<div className="mt-3 grid grid-cols-4 gap-2"><button disabled={stepIndex===0} onClick={()=>move(stepIndex-1)} className="rounded-xl bg-white/10 py-2 text-[9px] font-bold disabled:opacity-30">Sebelumnya</button><button onClick={()=>{setVoiceOn(value=>!value);window.speechSynthesis?.cancel();}} className="grid place-items-center rounded-xl bg-white/10 py-2" aria-label={voiceOn?"Matikan suara":"Aktifkan suara"}>{voiceOn?<Volume2 className="size-4"/>:<VolumeX className="size-4"/>}</button><button onClick={()=>speak(stepIndex)} className="grid place-items-center rounded-xl bg-white/10 py-2" aria-label="Ulangi instruksi"><Play className="size-4"/></button><button disabled={stepIndex===steps.length-1} onClick={()=>move(stepIndex+1)} className="rounded-xl bg-[#35cbb0] py-2 text-[9px] font-extrabold text-[#173c61] disabled:opacity-30">Berikutnya</button></div></MotionSurface>;
+}
+
+function coordinateDistanceMeters([firstLng, firstLat], [secondLng, secondLat]) {
+  const averageLat = ((firstLat + secondLat) / 2) * Math.PI / 180;
+  return Math.hypot((firstLng - secondLng) * 111_320 * Math.cos(averageLat), (firstLat - secondLat) * 110_540);
 }
 
 const reportTypes = [
@@ -681,10 +679,13 @@ export default function NavigationDashboard({ initialProfile="walking" }) {
             comfort: evaluation.comfort,
             dataCoverage: evaluation.dataCoverage,
             blocked: evaluation.blocked,
+            algorithmCost: evaluation.algorithmCost,
+            algorithmRank: evaluation.algorithmRank,
+            criteriaPenalties: evaluation.criteriaPenalties,
             evaluationReasons: evaluation.reasons,
             badge: evaluation.blocked ? "Tidak sesuai profil" : evaluation.labels[0] || (evaluation.dataStatus === "CUKUP" ? route.badge : "Data komunitas belum cukup"),
           };
-        });
+        }).sort((first, second) => (first.algorithmRank ?? 999) - (second.algorithmRank ?? 999));
       } catch {
         evaluatedRoutes = calculatedRoutes.map((route) => ({ ...route, badge: "Data komunitas belum tersedia", dataCoverage: 0 }));
       }
@@ -726,6 +727,13 @@ export default function NavigationDashboard({ initialProfile="walking" }) {
     }
   }, []);
 
+  const refreshReportsAndRoutes = useCallback(async () => {
+    await refreshReports();
+    if (routeOptions.length > 0 && originCoordinates && destinationCoordinates) {
+      await searchRoutes(false);
+    }
+  }, [destinationCoordinates, originCoordinates, refreshReports, routeOptions.length, searchRoutes]);
+
   useEffect(() => {
     const timer = window.setTimeout(refreshReports, 0);
     return () => window.clearTimeout(timer);
@@ -740,6 +748,12 @@ export default function NavigationDashboard({ initialProfile="walking" }) {
     window.addEventListener("akseskota:open-report", openReport);
     return () => window.removeEventListener("akseskota:open-report", openReport);
   }, []);
+
+  useEffect(() => {
+    const reroute = () => void searchRoutes(false);
+    window.addEventListener("akseskota:reroute", reroute);
+    return () => window.removeEventListener("akseskota:reroute", reroute);
+  }, [searchRoutes]);
 
   async function beginNavigation() {
     if (!activeRoute || !originCoordinates || !destinationCoordinates) return;
@@ -763,6 +777,12 @@ export default function NavigationDashboard({ initialProfile="walking" }) {
             shade: activeRoute.shade,
             dataCoverage: activeRoute.dataCoverage,
             badge: activeRoute.badge,
+            algorithmRank: activeRoute.algorithmRank,
+            algorithmCost: activeRoute.algorithmCost,
+            criteriaPenalties: activeRoute.criteriaPenalties,
+            distanceMeters: activeRoute.distanceMeters,
+            durationSeconds: activeRoute.durationSeconds,
+            geometry: activeRoute.geometry,
             steps: activeRoute.steps || [],
           },
         }),
@@ -786,5 +806,5 @@ export default function NavigationDashboard({ initialProfile="walking" }) {
     return () => { cancelled = true; };
   }, []);
 
-  return <main className={`relative h-dvh min-h-0 overflow-hidden bg-[#dfe5e8] sm:min-h-[620px] ${profile==='low-vision'?'contrast-[1.08]':''}`}><MapCanvas routes={routeOptions} reports={mapReports} activeRoute={selected||detail} origin={originCoordinates} destination={destinationCoordinates} reportDraft={reportDraft} onMapClick={panel==='report'?setReportDraft:null} highContrast={profile==='low-vision'} />{!['report','profile','verify-report','community-place','assistant','history'].includes(panel)&&<LeftRail onReport={()=>setPanel('report')} onAssistant={()=>setPanel('assistant')} onHistory={()=>setPanel('history')} onProfile={()=>setPanel('profile')} />}<SearchBox origin={origin} destination={destination} setOrigin={(value)=>{setOrigin(value);setOriginSelection(null);}} setDestination={(value)=>{setDestination(value);setDestinationSelection(null);}} originCoordinates={originCoordinates} onSelectOrigin={(place)=>{setOrigin(place.name);setOriginSelection(place);setOriginCoordinates(place.coordinates);}} onSelectDestination={(place)=>{setDestination(place.name);setDestinationSelection(place);setPanel('community-place');}} onSearch={()=>searchRoutes(true)} mode={mode} onMode={()=>setPanel(panel==='mode'?null:'mode')} loading={routingStatus==='loading'} />{!panel&&!navigating&&<MobileMapActions onSearch={()=>searchRoutes(true)} />}{panel==='mode'&&<ModePanel current={profile} onChange={changeMode} onClose={()=>setPanel(null)} />}{panel==='assistant'&&<AssistantPanel onClose={()=>setPanel(null)} onChoose={(place)=>{const selectedPlace={id:place.externalId,name:place.name,address:place.address,coordinates:place.coordinates};setDestination(place.name);setDestinationSelection(selectedPlace);setDestinationCoordinates(place.coordinates);setPanel('community-place');}}/>}{panel==='history'&&<RouteHistoryPanel session={session} onClose={()=>setPanel(null)} onLogin={()=>router.push('/masuk')}/>} {panel==='community-place'&&destinationSelection&&<CommunityPlacePanel place={destinationSelection} session={session} onRoute={()=>searchRoutes(true)} onClose={()=>setPanel(null)} onLogin={()=>router.push('/masuk')}/>} {panel==='routes'&&<RoutesPanel routes={routeOptions} destination={resolvedDestination} status={routingStatus} error={routeError} selected={selected} setSelected={setSelected} onDetail={id=>{setDetail(id);setSelected(id);setPanel('detail')}} onClose={()=>setPanel(null)} />}{panel==='detail'&&activeRoute&&<DetailPanel route={activeRoute} profile={profile} destination={resolvedDestination} destinationCoordinates={destinationCoordinates} onBack={()=>setPanel('routes')} onReport={()=>setPanel('report')} onNavigate={beginNavigation} />}{panel==='report'&&<ReportPanel reports={userReports} coordinates={reportDraft} setCoordinates={setReportDraft} session={session} onSubmitted={refreshReports} onClose={()=>{setReportDraft(null);setPanel(null)}} />}{panel==='verify-report'&&selectedReportId&&<CommunityVerificationPanel reportId={selectedReportId} session={session} onClose={()=>setPanel(null)} onUpdated={refreshReports} onLogin={()=>router.push('/masuk')} />}{panel==='profile'&&<ProfilePanel profile={profile} session={session} onClose={()=>setPanel(null)} onModerate={()=>router.push('/admin/laporan')} onLogout={()=>{clearSession();router.push('/masuk')}} />}{navigating&&activeRoute&&<SpeechNavigation route={activeRoute} destination={resolvedDestination} onStop={()=>setNavigating(false)}/>}</main>;
+  return <main className={`relative h-dvh min-h-0 overflow-hidden bg-[#dfe5e8] sm:min-h-[620px] ${profile==='low-vision'?'contrast-[1.08]':''}`}><MapCanvas routes={routeOptions} reports={mapReports} activeRoute={selected||detail} origin={originCoordinates} destination={destinationCoordinates} reportDraft={reportDraft} onMapClick={panel==='report'?setReportDraft:null} highContrast={profile==='low-vision'} />{!['report','profile','verify-report','community-place','assistant','history'].includes(panel)&&<LeftRail onReport={()=>setPanel('report')} onAssistant={()=>setPanel('assistant')} onHistory={()=>setPanel('history')} onProfile={()=>setPanel('profile')} />}<SearchBox origin={origin} destination={destination} setOrigin={(value)=>{setOrigin(value);setOriginSelection(null);}} setDestination={(value)=>{setDestination(value);setDestinationSelection(null);}} originCoordinates={originCoordinates} onSelectOrigin={(place)=>{setOrigin(place.name);setOriginSelection(place);setOriginCoordinates(place.coordinates);}} onSelectDestination={(place)=>{setDestination(place.name);setDestinationSelection(place);setPanel('community-place');}} onSearch={()=>searchRoutes(true)} mode={mode} onMode={()=>setPanel(panel==='mode'?null:'mode')} loading={routingStatus==='loading'} />{!panel&&!navigating&&<MobileMapActions onSearch={()=>searchRoutes(true)} />}{panel==='mode'&&<ModePanel current={profile} onChange={changeMode} onClose={()=>setPanel(null)} />}{panel==='assistant'&&<AssistantPanel onClose={()=>setPanel(null)} onChoose={(place)=>{const selectedPlace={id:place.externalId,name:place.name,address:place.address,coordinates:place.coordinates};setDestination(place.name);setDestinationSelection(selectedPlace);setDestinationCoordinates(place.coordinates);setPanel('community-place');}}/>}{panel==='history'&&<RouteHistoryPanel session={session} onClose={()=>setPanel(null)} onLogin={()=>router.push('/masuk')}/>} {panel==='community-place'&&destinationSelection&&<CommunityPlacePanel place={destinationSelection} session={session} onRoute={()=>searchRoutes(true)} onClose={()=>setPanel(null)} onLogin={()=>router.push('/masuk')}/>} {panel==='routes'&&<RoutesPanel routes={routeOptions} destination={resolvedDestination} status={routingStatus} error={routeError} selected={selected} setSelected={setSelected} onDetail={id=>{setDetail(id);setSelected(id);setPanel('detail')}} onClose={()=>setPanel(null)} />}{panel==='detail'&&activeRoute&&<DetailPanel route={activeRoute} profile={profile} destination={resolvedDestination} destinationCoordinates={destinationCoordinates} onBack={()=>setPanel('routes')} onReport={()=>setPanel('report')} onNavigate={beginNavigation} />}{panel==='report'&&<ReportPanel reports={userReports} coordinates={reportDraft} setCoordinates={setReportDraft} session={session} onSubmitted={refreshReportsAndRoutes} onClose={()=>{setReportDraft(null);setPanel(null)}} />}{panel==='verify-report'&&selectedReportId&&<CommunityVerificationPanel reportId={selectedReportId} session={session} onClose={()=>setPanel(null)} onUpdated={refreshReportsAndRoutes} onLogin={()=>router.push('/masuk')} />}{panel==='profile'&&<ProfilePanel profile={profile} session={session} onClose={()=>setPanel(null)} onModerate={()=>router.push('/admin/laporan')} onLogout={()=>{clearSession();router.push('/masuk')}} />}{navigating&&activeRoute&&<SpeechNavigation route={activeRoute} destination={resolvedDestination} onStop={()=>setNavigating(false)}/>}</main>;
 }

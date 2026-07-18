@@ -65,3 +65,9 @@ export async function createMyRouteHistory(userId: string, input: CreateRouteHis
     data: { ...input, userId, chosenRouteJson: input.chosenRouteJson as Prisma.InputJsonValue },
   });
 }
+
+export async function deleteMyRouteHistory(userId: string, historyId: string) {
+  const deleted = await prisma.routeHistory.deleteMany({ where: { id: historyId, userId } });
+  if (!deleted.count) throw new ApiError(404, 'Riwayat perjalanan tidak ditemukan.');
+  return { id: historyId, deleted: true };
+}

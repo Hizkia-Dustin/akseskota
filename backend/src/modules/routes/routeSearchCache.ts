@@ -25,6 +25,10 @@ export function getSearchResult(searchId: string): CachedSearch | undefined {
   return entry;
 }
 
+export function clearRouteSearchCache() {
+  cache.clear();
+}
+
 function cleanupExpired() {
   const now = Date.now();
   for (const [key, value] of cache.entries()) {

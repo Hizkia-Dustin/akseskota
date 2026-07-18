@@ -2,11 +2,17 @@ import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { created, empty, ok } from '../../utils/apiResponse';
 import { addRoadSegmentCondition, getRoadSegmentById, listRoadSegments } from './roadSegments.service';
+import { deletePersistedPhoto, persistUploadedPhoto } from '../../middlewares/upload';
 
 export const addCondition = asyncHandler(async (req: Request, res: Response) => {
-  const photoUrl = (req.file as Express.Multer.File & { path?: string })?.path;
-  const result = await addRoadSegmentCondition(req.user!.userId, req.body, photoUrl);
-  return created(res, result);
+  const photoUrl = await persistUploadedPhoto(req, 'road-segments');
+  try {
+    const result = await addRoadSegmentCondition(req.user!.userId, req.body, photoUrl);
+    return created(res, result);
+  } catch (error) {
+    await deletePersistedPhoto(photoUrl);
+    throw error;
+  }
 });
 
 export const list = asyncHandler(async (req: Request, res: Response) => {

@@ -265,5 +265,6 @@ model PlacePost {
   updatedAt           DateTime       @updatedAt
 
   @@index([placeId, createdAt])
+  @@unique([placeId, authorId])
   @@map("place_posts")
 }

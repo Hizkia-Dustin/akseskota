@@ -34,9 +34,11 @@ mysql -u root -p -e "CREATE DATABASE akseskota CHARACTER SET utf8mb4;"
 # 2. Generate & jalankan migration
 npx prisma migrate dev --name init
 
-# 3. (opsional) isi data contoh
-npm run seed
+# 3. (opsional, development saja) isi data contoh lama
+npm run seed:demo
 ```
+
+Jangan menjalankan `seed:demo` pada production. Gunakan `npm run seed:admin` dengan `ADMIN_EMAIL` dan `ADMIN_PASSWORD` untuk membuat akun admin tanpa data contoh.
 
 ### Menjalankan server
 

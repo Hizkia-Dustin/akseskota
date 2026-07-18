@@ -73,22 +73,30 @@ export async function searchMapboxPlaces(query, accessToken, proximity, signal) 
 }
 
 export async function requestMapboxWalkingRoutes(origin, destination, accessToken) {
-  const coordinatePath = `${origin.join(",")};${destination.join(",")}`;
-  const params = new URLSearchParams({
-    access_token: accessToken,
-    alternatives: "true",
-    geometries: "geojson",
-    overview: "full",
-    steps: "true",
-    language: "id",
-    walkway_bias: "1",
-  });
-  const response = await fetch(`https://api.mapbox.com/directions/v5/mapbox/walking/${coordinatePath}?${params}`);
-  if (!response.ok) throw new Error("Mapbox belum dapat menghitung rute ini.");
-  const payload = await response.json();
-  if (payload.code !== "Ok" || !payload.routes?.length) throw new Error("Rute jalan kaki tidak ditemukan.");
+  const primaryRoutes = await fetchDirections([origin, destination], accessToken, true);
+  const candidates = [...primaryRoutes];
 
-  return payload.routes.slice(0, 3).map((route, index) => {
+  if (candidates.length < 3) {
+    const detourPoints = alternativeWaypoints(origin, destination);
+    const detours = await Promise.allSettled(
+      detourPoints.map((waypoint) => fetchDirections([origin, waypoint, destination], accessToken, false)),
+    );
+    for (const result of detours) {
+      if (result.status === "fulfilled") candidates.push(...result.value);
+    }
+  }
+
+  // Mapbox may occasionally return alternatives that are effectively the
+  // same path. Keep only genuinely different geometries; never fabricate B/C.
+  const uniqueRoutes = [];
+  for (const route of candidates.sort((first, second) => first.duration - second.duration)) {
+    if (!route.geometry?.coordinates?.length) continue;
+    if (uniqueRoutes.every((existing) => routesAreDistinct(existing, route))) uniqueRoutes.push(route);
+    if (uniqueRoutes.length === 3) break;
+  }
+  if (!uniqueRoutes.length) throw new Error("Mapbox tidak mengembalikan geometri rute yang dapat digunakan.");
+
+  return uniqueRoutes.map((route, index) => {
     const steps = route.legs?.flatMap((leg) => leg.steps ?? []) ?? [];
     const streetNames = [...new Set(steps.map((step) => step.name).filter(Boolean))];
     return {
@@ -106,9 +114,75 @@ export async function requestMapboxWalkingRoutes(origin, destination, accessToke
       steps: steps.map((step) => ({
         instruction: step.maneuver?.instruction ?? step.name ?? "Lanjutkan perjalanan",
         distance: formatDistance(step.distance),
+        distanceMeters: step.distance,
+        location: step.maneuver?.location ?? null,
       })),
     };
   });
+}
+
+async function fetchDirections(points, accessToken, alternatives) {
+  const coordinatePath = points.map((point) => point.join(",")).join(";");
+  const params = new URLSearchParams({
+    access_token: accessToken,
+    alternatives: String(alternatives),
+    geometries: "geojson",
+    overview: "full",
+    steps: "true",
+    language: "id",
+    walkway_bias: "1",
+  });
+  const response = await fetch(`https://api.mapbox.com/directions/v5/mapbox/walking/${coordinatePath}?${params}`);
+  if (!response.ok) throw new Error("Mapbox belum dapat menghitung rute ini.");
+  const payload = await response.json();
+  if (payload.code !== "Ok" || !payload.routes?.length) throw new Error("Rute jalan kaki tidak ditemukan.");
+  return payload.routes;
+}
+
+function alternativeWaypoints(origin, destination) {
+  const [originLng, originLat] = origin;
+  const [destinationLng, destinationLat] = destination;
+  const middleLng = (originLng + destinationLng) / 2;
+  const middleLat = (originLat + destinationLat) / 2;
+  const deltaX = (destinationLng - originLng) * 111_320 * Math.cos((middleLat * Math.PI) / 180);
+  const deltaY = (destinationLat - originLat) * 110_540;
+  const directDistance = Math.max(1, Math.hypot(deltaX, deltaY));
+  const offset = Math.max(180, Math.min(450, directDistance * 0.18));
+  const perpendicularX = (-deltaY / directDistance) * offset;
+  const perpendicularY = (deltaX / directDistance) * offset;
+  const [west, south, east, north] = BOGOR_BOUNDS;
+  const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
+
+  return [-1, 1].map((direction) => [
+    clamp(middleLng + direction * perpendicularX / (111_320 * Math.cos((middleLat * Math.PI) / 180)), west, east),
+    clamp(middleLat + direction * perpendicularY / 110_540, south, north),
+  ]);
+}
+
+function routesAreDistinct(first, second) {
+  const distanceDifference = Math.abs(first.distance - second.distance) / Math.max(first.distance, second.distance, 1);
+  if (distanceDifference > 0.08) return true;
+
+  const firstSamples = sampleCoordinates(first.geometry.coordinates, 24);
+  const secondSamples = sampleCoordinates(second.geometry.coordinates, 24);
+  const averageNearestDistance = firstSamples.reduce((sum, point) => {
+    const nearest = secondSamples.reduce((minimum, candidate) => Math.min(minimum, pointDistanceMeters(point, candidate)), Number.POSITIVE_INFINITY);
+    return sum + nearest;
+  }, 0) / Math.max(1, firstSamples.length);
+
+  return averageNearestDistance > 12;
+}
+
+function sampleCoordinates(coordinates, maximum) {
+  if (coordinates.length <= maximum) return coordinates;
+  return Array.from({ length: maximum }, (_, index) => coordinates[Math.round((coordinates.length - 1) * index / (maximum - 1))]);
+}
+
+function pointDistanceMeters([firstLng, firstLat], [secondLng, secondLat]) {
+  const averageLat = ((firstLat + secondLat) / 2) * Math.PI / 180;
+  const x = (firstLng - secondLng) * 111_320 * Math.cos(averageLat);
+  const y = (firstLat - secondLat) * 110_540;
+  return Math.hypot(x, y);
 }
 
 export function openGoogleStreetView([longitude, latitude]) {

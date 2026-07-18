@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isInsideBogor } from '../../utils/bogor';
 
 export const accessibilityFeatureSchema = z.enum([
   'RAMP',
@@ -26,6 +27,9 @@ export const createPlacePostSchema = z.object({
   rating: z.coerce.number().int().min(1).max(5),
   accessibilityRating: z.coerce.number().int().min(1).max(5),
   features: featuresSchema,
+}).refine((input) => isInsideBogor(input.longitude, input.latitude), {
+  message: 'Tempat harus berada di Kota Bogor.',
+  path: ['latitude'],
 });
 
 export const searchCommunityPlacesSchema = z.object({

@@ -43,10 +43,12 @@ export async function loginUser(input: LoginInput) {
   };
 }
 
-export function refreshAccessToken(refreshToken: string) {
+export async function refreshAccessToken(refreshToken: string) {
   try {
     const payload = verifyRefreshToken(refreshToken);
-    return issueTokens(payload.userId, payload.role);
+    const user = await prisma.user.findUnique({ where: { id: payload.userId }, select: { id: true, role: true } });
+    if (!user) throw new Error('User not found');
+    return issueTokens(user.id, user.role);
   } catch {
     throw new ApiError(401, 'Refresh token tidak valid atau kedaluwarsa.');
   }

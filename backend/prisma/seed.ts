@@ -4,10 +4,18 @@ import { hashPassword } from '../src/utils/password';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.ALLOW_DEMO_SEED !== 'true') {
+    throw new Error('Seed demo dinonaktifkan. Set ALLOW_DEMO_SEED=true hanya pada database development.');
+  }
+  const adminSeedPassword = process.env.DEMO_ADMIN_PASSWORD;
+  const userSeedPassword = process.env.DEMO_USER_PASSWORD;
+  if (!adminSeedPassword || adminSeedPassword.length < 12 || !userSeedPassword || userSeedPassword.length < 12) {
+    throw new Error('DEMO_ADMIN_PASSWORD dan DEMO_USER_PASSWORD minimal 12 karakter wajib diisi.');
+  }
   console.log('Seeding AksesKota database...');
 
   // --- Users ---
-  const adminPassword = await hashPassword('Admin12345');
+  const adminPassword = await hashPassword(adminSeedPassword);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@akseskota.id' },
     update: {},
@@ -20,7 +28,7 @@ async function main() {
     },
   });
 
-  const moderatorPassword = await hashPassword('Moderator123');
+  const moderatorPassword = await hashPassword(adminSeedPassword);
   await prisma.user.upsert({
     where: { email: 'moderator@akseskota.id' },
     update: {},
@@ -33,7 +41,7 @@ async function main() {
     },
   });
 
-  const userPassword = await hashPassword('User12345');
+  const userPassword = await hashPassword(userSeedPassword);
   const demoUser = await prisma.user.upsert({
     where: { email: 'user@akseskota.id' },
     update: {},
@@ -110,7 +118,7 @@ async function main() {
     },
   });
 
-  console.log('Seed complete. Admin login: admin@akseskota.id / Admin12345');
+  console.log('Seed demo selesai. Password tidak dicetak ke log.');
 }
 
 main()

@@ -16,8 +16,11 @@ export async function addRoadSegmentCondition(
     throw new ApiError(422, 'Foto wajib diunggah untuk melaporkan kondisi jalur.');
   }
 
-  const segment = await prisma.roadSegment.create({
-    data: {
+  const accessibilityScore = scoreAccessibility(input);
+  const comfortScore = scoreComfort(input);
+  return prisma.$transaction(async (transaction) => {
+    const segment = await transaction.roadSegment.create({
+      data: {
       // geometry column set via raw SQL right after insert (Prisma cannot
       // write Unsupported() columns directly)
       surfaceCondition: input.surfaceCondition,
@@ -27,34 +30,55 @@ export async function addRoadSegmentCondition(
       hasGuidingBlock: input.hasGuidingBlock ?? false,
       shadeLevel: input.shadeLevel,
       lightingAvailable: input.lightingAvailable ?? false,
+      accessibilityScore,
+      comfortScore,
       source: 'community',
-    },
-  });
-
-  await insertRoadSegmentGeometry(segment.id, input.geometry);
-
-  if (input.shadeLevel !== undefined) {
-    await prisma.shadeObservation.create({
-      data: {
-        roadSegmentId: segment.id,
-        observedAt: new Date(),
-        shadePercent: input.shadeLevel,
-        photoUrl,
       },
     });
-  }
 
-  const report = await prisma.report.create({
-    data: {
-      userId,
-      targetType: 'ROAD_SEGMENT',
-      roadSegmentId: segment.id,
-      photoUrl,
-      description: input.description,
-    },
+    await insertRoadSegmentGeometry(segment.id, input.geometry, transaction);
+
+    if (input.shadeLevel !== undefined) {
+      await transaction.shadeObservation.create({
+        data: {
+          roadSegmentId: segment.id,
+          observedAt: new Date(),
+          shadePercent: input.shadeLevel,
+          photoUrl,
+        },
+      });
+    }
+
+    const report = await transaction.report.create({
+      data: {
+        userId,
+        targetType: 'ROAD_SEGMENT',
+        roadSegmentId: segment.id,
+        photoUrl,
+        description: input.description,
+      },
+    });
+
+    return { segment, report };
   });
+}
 
-  return { segment, report };
+function scoreAccessibility(input: AddRoadSegmentInput): number {
+  let score = 100;
+  if (input.widthMeters === undefined) score -= 15;
+  else if (input.widthMeters < 1.2) score -= 45;
+  if (input.hasStairs && !input.hasRamp) score -= 60;
+  if (input.surfaceCondition && ['cracked', 'unpaved', 'damaged'].includes(input.surfaceCondition.toLowerCase())) {
+    score -= 25;
+  }
+  return Math.max(0, score);
+}
+
+function scoreComfort(input: AddRoadSegmentInput): number | undefined {
+  if (input.shadeLevel === undefined && input.lightingAvailable === undefined) return undefined;
+  const shade = input.shadeLevel ?? 0;
+  const lighting = input.lightingAvailable ? 100 : 0;
+  return Math.round(shade * 0.7 + lighting * 0.3);
 }
 
 export async function listRoadSegments(lat?: number, lng?: number, radiusMeters = 1000) {

@@ -32,6 +32,7 @@ function reportCollection(reports) {
         id: report.id,
         title: report.title || "Laporan hambatan",
         description: report.description || "Laporan hambatan",
+        photoUrl: report.photoUrl || "",
         obstacleType: report.obstacleType,
         verificationStatus: report.verificationStatus,
       },
@@ -215,6 +216,16 @@ export default function MapboxMap({ routes = [], reports = [], activeRoute = "A"
           title.className = "block text-[12px]";
           description.className = "m-0";
           statusText.className = "font-bold text-[#0c6478]";
+          const photoUrl = feature.properties?.photoUrl;
+          if (photoUrl) {
+            const photo = document.createElement("img");
+            photo.src = photoUrl;
+            photo.alt = `Foto ${feature.properties?.title || "laporan hambatan"}`;
+            photo.loading = "lazy";
+            photo.referrerPolicy = "no-referrer";
+            photo.className = "mb-2 h-28 w-56 rounded-lg object-cover";
+            content.append(photo);
+          }
           const action = document.createElement("button");
           action.type = "button";
           action.textContent = "Lihat & verifikasi komunitas";

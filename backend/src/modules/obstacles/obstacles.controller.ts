@@ -2,12 +2,17 @@ import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { created, empty, ok } from '../../utils/apiResponse';
 import { listObstacles, reportObstacle } from './obstacles.service';
-import { persistUploadedPhoto } from '../../middlewares/upload';
+import { deletePersistedPhoto, persistUploadedPhoto } from '../../middlewares/upload';
 
 export const report = asyncHandler(async (req: Request, res: Response) => {
   const photoUrl = await persistUploadedPhoto(req);
-  const result = await reportObstacle(req.user?.userId, req.body, photoUrl);
-  return created(res, result);
+  try {
+    const result = await reportObstacle(req.user?.userId, req.body, photoUrl);
+    return created(res, result);
+  } catch (error) {
+    await deletePersistedPhoto(photoUrl);
+    throw error;
+  }
 });
 
 export const list = asyncHandler(async (req: Request, res: Response) => {

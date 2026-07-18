@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { created, empty, ok } from '../../utils/apiResponse';
-import { createMyRouteHistory, getMyContributions, getMyProfile, getMyRouteHistory, updateMyPreferences } from './users.service';
+import { createMyRouteHistory, deleteMyRouteHistory, getMyContributions, getMyProfile, getMyRouteHistory, updateMyPreferences } from './users.service';
 
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   const profile = await getMyProfile(req.user!.userId);
@@ -27,4 +27,8 @@ export const getRouteHistory = asyncHandler(async (req: Request, res: Response) 
 
 export const createRouteHistory = asyncHandler(async (req: Request, res: Response) => {
   return created(res, await createMyRouteHistory(req.user!.userId, req.body));
+});
+
+export const deleteRouteHistory = asyncHandler(async (req: Request, res: Response) => {
+  return ok(res, await deleteMyRouteHistory(req.user!.userId, req.params.id));
 });

@@ -1,8 +1,12 @@
 import { z } from 'zod';
+import { isInsideBogor } from '../../utils/bogor';
 
 const pointSchema = z.object({
   type: z.literal('Point'),
   coordinates: z.tuple([z.number(), z.number()]),
+}).refine(({ coordinates }) => isInsideBogor(coordinates[0], coordinates[1]), {
+  message: 'Titik laporan harus berada di Kota Bogor.',
+  path: ['coordinates'],
 });
 
 function parseJsonField(value: unknown) {
@@ -20,7 +24,7 @@ export const reportObstacleSchema = z.object({
   type: z.enum(['STAIRS', 'POTHOLE', 'FLOOD', 'PARKED_VEHICLE', 'CONSTRUCTION', 'FALLEN_TREE']),
   geometry: z.preprocess(parseJsonField, pointSchema),
   status: z.enum(['TEMPORARY', 'PERMANENT']).default('TEMPORARY'),
-  description: z.string().optional(),
+  description: z.string().trim().min(10, 'Deskripsi minimal 10 karakter').max(1000).optional(),
   expiresAt: z.coerce.date().optional(),
 });
 

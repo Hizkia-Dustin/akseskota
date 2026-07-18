@@ -1,14 +1,27 @@
 import { z } from 'zod';
+import { isInsideBogor } from '../../utils/bogor';
 
 const lineStringSchema = z.object({
   type: z.literal('LineString'),
   coordinates: z.array(z.tuple([z.number(), z.number()])).min(2),
+}).refine(({ coordinates }) => coordinates.every(([lng, lat]) => isInsideBogor(lng, lat)), {
+  message: 'Seluruh ruas survei harus berada di Kota Bogor.',
+  path: ['coordinates'],
 });
+
+function parseJsonField(value: unknown) {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
 
 // F011: gambar segmen jalan + kondisi. Foto & lokasi wajib (enforced by
 // multer for photo, geometry required here).
 export const addRoadSegmentSchema = z.object({
-  geometry: z.preprocess((v) => (typeof v === 'string' ? JSON.parse(v) : v), lineStringSchema),
+  geometry: z.preprocess(parseJsonField, lineStringSchema),
   surfaceCondition: z.string().optional(),
   widthMeters: z.coerce.number().positive().optional(),
   hasRamp: z.coerce.boolean().optional(),
@@ -17,7 +30,7 @@ export const addRoadSegmentSchema = z.object({
   shadeLevel: z.coerce.number().min(0).max(100).optional(),
   lightingAvailable: z.coerce.boolean().optional(),
   hasSeating: z.coerce.boolean().optional(),
-  description: z.string().optional(),
+  description: z.string().trim().max(1000).optional(),
 });
 
 export const listRoadSegmentsSchema = z.object({

@@ -21,10 +21,19 @@ import communityPlacesRoutes from './modules/communityPlaces/communityPlaces.rou
 
 export const app = express();
 
+// Railway/Render/Vercel-style proxies terminate HTTPS before forwarding the
+// request. Trust one proxy hop so secure URLs and IP-based rate limits work.
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(
   cors({
-    origin: env.clientUrl, // Next.js frontend
+    origin(origin, callback) {
+      // Requests without Origin include health checks and server-to-server calls.
+      if (!origin || env.clientUrls.includes(origin.replace(/\/$/, ''))) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Origin tidak diizinkan oleh CORS: ${origin}`));
+    },
     credentials: true,
   }),
 );

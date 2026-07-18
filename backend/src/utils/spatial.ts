@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
 
 // Prisma does not natively read/write MySQL spatial (GEOMETRY) columns, so
@@ -23,16 +24,18 @@ export interface LineString {
   coordinates: [number, number][];
 }
 
-export async function insertRoadSegmentGeometry(id: string, geojson: LineString) {
-  await prisma.$executeRawUnsafe(
+type SpatialClient = Pick<Prisma.TransactionClient, '$executeRawUnsafe'>;
+
+export async function insertRoadSegmentGeometry(id: string, geojson: LineString, client: SpatialClient = prisma) {
+  await client.$executeRawUnsafe(
     `UPDATE road_segments SET geometry = ST_GeomFromGeoJSON(?, 1, 4326) WHERE id = ?`,
     JSON.stringify(geojson),
     id,
   );
 }
 
-export async function insertPointGeometry(table: 'facilities' | 'obstacles', id: string, geojson: Point) {
-  await prisma.$executeRawUnsafe(
+export async function insertPointGeometry(table: 'facilities' | 'obstacles', id: string, geojson: Point, client: SpatialClient = prisma) {
+  await client.$executeRawUnsafe(
     `UPDATE ${table} SET geometry = ST_GeomFromGeoJSON(?, 1, 4326) WHERE id = ?`,
     JSON.stringify(geojson),
     id,
@@ -47,12 +50,16 @@ export async function insertPointGeometry(table: 'facilities' | 'obstacles', id:
  */
 export async function findRoadSegmentsNear(lat: number, lng: number, radiusMeters: number) {
   const rows = (await prisma.$queryRawUnsafe(
-    `SELECT id, surfaceCondition as surface_condition, widthMeters as width_meters, hasRamp as has_ramp, hasStairs as has_stairs,
-            hasGuidingBlock as has_guiding_block, shadeLevel as shade_level, lightingAvailable as lighting_available,
-            accessibilityScore as accessibility_score, comfortScore as comfort_score,
-            ST_AsGeoJSON(geometry) as geojson
-     FROM road_segments
-     WHERE geometry IS NOT NULL
+    `SELECT rs.id, rs.surfaceCondition as surface_condition, rs.widthMeters as width_meters, rs.hasRamp as has_ramp, rs.hasStairs as has_stairs,
+            rs.hasGuidingBlock as has_guiding_block, rs.shadeLevel as shade_level, rs.lightingAvailable as lighting_available,
+            rs.accessibilityScore as accessibility_score, rs.comfortScore as comfort_score,
+            ST_AsGeoJSON(rs.geometry) as geojson
+     FROM road_segments rs
+     WHERE rs.geometry IS NOT NULL
+       AND (rs.source IS NULL OR rs.source <> 'community' OR EXISTS (
+         SELECT 1 FROM reports r
+         WHERE r.roadSegmentId = rs.id AND r.verificationStatus = 'VERIFIED'
+       ))
      LIMIT 500`,
   )) as Array<Record<string, unknown> & { geojson: string | null }>;
 
@@ -152,4 +159,33 @@ export function lineStringLengthMeters(line: [number, number][]): number {
     total += Math.hypot(deltaX, deltaY);
   }
   return total;
+}
+
+/** Samples a LineString at roughly equal distances without fabricating a new route. */
+export function sampleLineStringMeters(line: [number, number][], spacingMeters = 25, maxSamples = 500): [number, number][] {
+  if (line.length < 2) return [...line];
+  const totalLength = lineStringLengthMeters(line);
+  const sampleCount = Math.min(maxSamples, Math.max(2, Math.ceil(totalLength / spacingMeters) + 1));
+  const targets = Array.from({ length: sampleCount }, (_, index) => (totalLength * index) / (sampleCount - 1));
+  const result: [number, number][] = [];
+  let traversed = 0;
+  let targetIndex = 0;
+
+  for (let index = 1; index < line.length && targetIndex < targets.length; index += 1) {
+    const start = line[index - 1];
+    const end = line[index];
+    const segmentLength = lineStringLengthMeters([start, end]);
+    while (targetIndex < targets.length && targets[targetIndex] <= traversed + segmentLength) {
+      const ratio = segmentLength === 0 ? 0 : (targets[targetIndex] - traversed) / segmentLength;
+      result.push([
+        start[0] + (end[0] - start[0]) * ratio,
+        start[1] + (end[1] - start[1]) * ratio,
+      ]);
+      targetIndex += 1;
+    }
+    traversed += segmentLength;
+  }
+
+  if (result.length < targets.length) result.push(line[line.length - 1]);
+  return result;
 }
