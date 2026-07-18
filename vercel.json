@@ -8,9 +8,11 @@
     "backend": {
       "root": "backend/",
       "framework": "express",
-      "includeFiles": [
-        "prisma/aiven-ca.pem"
-      ]
+      "functions": {
+        "src/app.ts": {
+          "includeFiles": "prisma/aiven-ca.pem"
+        }
+      }
     }
   },
   "rewrites": [
