@@ -60,3 +60,8 @@ app.use('/api/community-places', communityPlacesRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+// Vercel detects this file as an Express entrypoint and invokes the exported
+// app as a serverless function. The named export remains available to the
+// local long-running server in src/server.ts.
+export default app;

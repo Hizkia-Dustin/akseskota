@@ -37,8 +37,8 @@ Thumbs.db
 
 # Credential files
 *.pem
+!backend/prisma/aiven-ca.pem
 *.key
 *.p12
 service-account*.json
 credentials*.json
-
