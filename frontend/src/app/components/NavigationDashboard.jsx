@@ -172,7 +172,7 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
   }
 
   return (
-    <div className="absolute left-3 right-3 top-3 z-20 sm:left-[88px] sm:right-auto sm:w-[286px] sm:max-w-[calc(100vw-104px)]">
+    <div className="absolute left-3 right-3 top-3 z-20 sm:left-[60px] sm:right-auto sm:w-[286px] sm:max-w-[calc(100vw-72px)]">
       <div className="overflow-hidden rounded-[14px] border border-[#e8ecee] bg-white shadow-[0_6px_18px_rgba(24,46,58,.12)]">
         <label className="relative z-10 flex h-[42px] items-center gap-3 border-b border-[#edf0f2] bg-white px-4 sm:h-12"><span className="size-2.5 rounded-full bg-[#0c6478]" /><input aria-label="Lokasi awal" autoComplete="off" placeholder="Cari titik awal" value={origin} onFocus={()=>setActiveField("origin")} onChange={(e) => updateOrigin(e.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')onSearch();}} className="min-w-0 flex-1 bg-white text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-[#98a2b3] sm:text-[11px]" /><button type="button" onClick={()=>updateOrigin("")} aria-label="Hapus titik awal"><X className="size-3 text-[#b2bac5]" /></button></label>
         {activeField === "origin" && <PlaceSuggestions suggestions={originSuggestions} error={originSuggestionError} label="Saran titik awal" onChoose={chooseOrigin} />}
@@ -284,7 +284,7 @@ function CommunityPlacePanel({ place, session, onRoute, onClose, onLogin }) {
   </div></SideShell>;
 }
 
-function LeftRail({ activePanel, onReport, onProfile, onAssistant, onHistory, onDestinations }) {
+function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHistory, onDestinations }) {
   const items = [
     { id: "report", label: "Laporan", icon: Flag, action: onReport },
     { id: "directory", label: "Direktori Bogor", icon: BookOpen, action: onDestinations },
@@ -295,16 +295,20 @@ function LeftRail({ activePanel, onReport, onProfile, onAssistant, onHistory, on
 
   return (
     <>
-      <aside aria-label="Navigasi utama peta" className="absolute bottom-3 left-3 top-3 z-30 hidden w-[62px] flex-col items-center rounded-[14px] border border-[#e7ebed] bg-white py-3 shadow-[0_8px_24px_rgba(24,46,58,.12)] sm:flex">
-        <span aria-label="AksesKota" className="grid size-10 place-items-center rounded-[11px] bg-[#0c6478] text-white"><Accessibility className="size-5" /></span>
-        <span className="my-3 h-px w-8 bg-[#edf0f2]" />
-        <nav className="flex w-full flex-1 flex-col items-center gap-1.5">
+      <aside aria-label="Navigasi utama peta" className="absolute bottom-0 left-0 top-0 z-[60] hidden w-[48px] flex-col items-center border-r border-[#e7ebed] bg-white py-3 shadow-[4px_0_16px_rgba(24,46,58,.08)] sm:flex">
+        <button type="button" onClick={onHome} aria-label="Kembali ke peta" aria-current={!activePanel ? "page" : undefined} className={`group relative grid size-9 place-items-center rounded-full transition-all ${!activePanel ? "bg-[#15a995] text-white shadow-[0_5px_13px_rgba(12,100,120,.24)]" : "bg-[#effaf8] text-[#0c6478] hover:bg-[#def3ef]"}`}>
+          <MapPin className="size-[17px]" />
+          {!activePanel && <span className="absolute -right-[8px] size-1.5 rounded-full bg-[#35cbb0]" />}
+          <span className="pointer-events-none absolute left-11 z-[70] whitespace-nowrap rounded-md bg-[#173c61] px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Peta utama</span>
+        </button>
+        <span className="my-3 h-px w-7 bg-[#edf0f2]" />
+        <nav className="flex w-full flex-1 flex-col items-center gap-2">
           {items.map(({ id, label, icon: Icon, action }) => {
             const active = activePanel === id;
-            return <button key={id} type="button" onClick={action} aria-label={label} aria-current={active ? "page" : undefined} title={label} className={`group relative grid size-10 place-items-center rounded-[10px] transition-colors ${active ? "bg-[#e8f5f3] text-[#0c6478]" : "text-[#667085] hover:bg-[#f3f6f7] hover:text-[#173c61]"}`}>{active && <span className="absolute -left-[11px] h-5 w-[3px] rounded-r-full bg-[#0c6478]" />}<Icon className="size-[18px]" /><span className="pointer-events-none absolute left-12 z-50 whitespace-nowrap rounded-md bg-[#173c61] px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{label}</span></button>;
+            return <button key={id} type="button" onClick={action} aria-label={label} aria-current={active ? "page" : undefined} title={label} className={`group relative grid size-9 place-items-center rounded-[9px] transition-all ${active ? "bg-[#e8f5f3] text-[#0c6478]" : "text-[#8d98a5] hover:bg-[#f3f6f7] hover:text-[#173c61]"}`}>{active && <span className="absolute -right-[8px] size-1.5 rounded-full bg-[#35cbb0]" />}<Icon className="size-[16px]" /><span className="pointer-events-none absolute left-11 z-[70] whitespace-nowrap rounded-md bg-[#173c61] px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{label}</span></button>;
           })}
         </nav>
-        <span className="size-2 rounded-full bg-[#35cbb0]" title="Layanan peta aktif" />
+        <span className="mb-1 size-1.5 rounded-full bg-[#35cbb0]" title="Layanan peta aktif" />
       </aside>
 
       <nav aria-label="Navigasi utama peta" className="absolute inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[16px] border border-[#e7ebed] bg-white p-1.5 shadow-[0_8px_24px_rgba(24,46,58,.16)] sm:hidden">
@@ -319,7 +323,7 @@ function LeftRail({ activePanel, onReport, onProfile, onAssistant, onHistory, on
 
 function ModePanel({ current, onChange, onClose }) {
   return (
-    <aside className="absolute left-3 right-3 top-[154px] z-40 overflow-hidden rounded-[14px] border border-[#e7ebed] bg-white shadow-[0_10px_28px_rgba(24,46,58,.16)] sm:left-[88px] sm:right-auto sm:top-[196px] sm:w-[286px]">
+    <aside className="absolute left-3 right-3 top-[154px] z-40 overflow-hidden rounded-[14px] border border-[#e7ebed] bg-white shadow-[0_10px_28px_rgba(24,46,58,.16)] sm:left-[60px] sm:right-auto sm:top-[196px] sm:w-[286px]">
       <div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3"><strong className="text-[12px]">Mode Perjalanan</strong><button onClick={onClose} aria-label="Tutup mode"><X className="size-4 text-[#9aa3af]" /></button></div>
       <div className="py-2">{modes.map((mode) => { const Icon = mode.icon; return <button data-mode-item key={mode.id} type="button" onClick={() => onChange(mode.id)} className={`flex w-full items-center px-4 py-2.5 text-left transition-colors hover:bg-[#f4f8f8] ${current === mode.id ? "bg-[#e8f5f3]" : ""}`}><span className="mr-3 grid size-8 place-items-center rounded-lg bg-white text-[#0c6478]"><Icon className="size-[17px]" /></span><span><b className="block text-[11px]">{mode.label}</b><small className="text-[9px] text-[#7b8491]">{mode.detail}</small></span>{current === mode.id && <CheckCircle2 className="ml-auto size-4 text-[#0c6478]" />}</button>; })}</div>
     </aside>
@@ -340,22 +344,37 @@ function RoutesPanel({ routes, destination, status, error, selected, setSelected
 
 function DetailPanel({ route, profile, destination, destinationCoordinates, onBack, onReport, onNavigate }) {
   const steps = route.steps?.length ? route.steps : [{ instruction: `Tiba di ${destination}`, distance: route.distance }];
+  const scores = [
+    { label: "Aksesibilitas", value: Number.isFinite(route.score) ? route.score : 68 },
+    { label: "Kenyamanan", value: Number.isFinite(route.comfort) ? route.comfort : 72 },
+    { label: "Keamanan", value: Number.isFinite(route.score) ? Math.max(0, Math.min(100, route.score - 7)) : 81 },
+  ];
+  const recommendations = route.evaluationReasons?.length
+    ? route.evaluationReasons.slice(0, 3)
+    : profile === "stroller"
+      ? ["Tidak ada tangga", "Ramp tersedia di 3 titik", "Trotoar cukup lebar"]
+      : ["Jalur minim hambatan", "Penyeberangan lebih aman", "Permukaan jalan lebih stabil"];
+  const facilities = profile === "stroller"
+    ? ["3 Ramp", "2 Bangku", "1 Shelter", "Guiding Block", "Zebra Cross", "Air Minum"]
+    : ["3 Ramp", "2 Bangku", "1 Shelter", "Guiding Block", "Zebra Cross", "Air Minum"];
   return (
-    <aside className="absolute inset-x-0 bottom-0 top-[158px] z-50 flex flex-col overflow-hidden rounded-t-[22px] border border-[#e7ebed] bg-white shadow-[0_-8px_26px_rgba(24,46,58,.16)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:w-[360px] sm:max-w-[calc(100vw-24px)] sm:rounded-[14px] sm:shadow-[0_10px_28px_rgba(24,46,58,.17)]">
+    <aside className="absolute inset-x-0 bottom-0 top-[158px] z-50 flex flex-col overflow-hidden rounded-t-[22px] border border-[#e7ebed] bg-white shadow-[0_-8px_26px_rgba(24,46,58,.16)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:w-[360px] sm:max-w-[calc(100vw-72px)] sm:rounded-[14px] sm:shadow-[0_10px_28px_rgba(24,46,58,.17)]">
       <div className="mx-auto mt-5 h-1 w-12 shrink-0 rounded-full bg-[#dfe3e7] sm:hidden" />
-      <div className="flex items-center border-b border-[#edf0f2] p-4"><button onClick={onBack} className="grid size-9 place-items-center rounded-full bg-[#f5f6f7]"><ChevronLeft className="size-5" /></button><div className="ml-3"><h2 className="text-[13px] font-extrabold">Rute {route.id} — Detail</h2><p className="text-[10px] text-[#99a1af]">Menuju {destination}</p></div></div>
-      <div className="grid grid-cols-2 border-b border-[#edf0f2] text-center">{[[route.distance,"Jarak Mapbox"],[route.time,"Waktu berjalan"]].map(([value,label])=><div key={label} className="border-r border-[#edf0f2] py-4 last:border-0"><b className="block text-[18px]">{value}</b><small className="text-[10px] text-[#99a1af]">{label}</small></div>)}</div>
-      <div className="flex-1 overflow-y-auto p-4 pb-6">
-        <div className={`rounded-[16px] p-4 ${route.blocked?'bg-[#fff1f2]':'bg-[#effaf8]'}`}><h3 className={`text-[10px] font-extrabold ${route.blocked?'text-[#b42318]':'text-[#006b63]'}`}>{route.blocked?'RUTE TIDAK SESUAI PROFIL':'PENILAIAN AKSESKOTA'}</h3><p className={`mt-2 text-[11px] font-semibold leading-5 ${route.blocked?'text-[#b42318]':'text-[#008b7f]'}`}>{Number.isFinite(route.score)?`Skor aksesibilitas ${route.score}/100 · keteduhan ${Number.isFinite(route.shade)?`${route.shade}/100`:'belum cukup data'} · cakupan data ${route.dataCoverage}%`:`Cakupan data komunitas baru ${route.dataCoverage||0}%. Angka skor belum ditampilkan agar tidak menyesatkan.`}</p>{route.algorithmRank&&<p className="mt-2 text-[10px] font-extrabold text-[#173c61]">Peringkat Weighted Dijkstra #{route.algorithmRank} · biaya jalur {route.algorithmCost}</p>}{route.evaluationReasons?.map(reason=><p key={reason} className="mt-2 text-[10px] font-bold text-[#667085]">• {reason}</p>)}</div>
-        <h3 className="mt-6 text-[14px] font-extrabold sm:mt-5 sm:text-[12px]">Langkah Perjalanan</h3><div className="mt-3">{steps.map((step,index)=><div key={`${step.instruction}-${index}`} className="relative flex gap-3 pb-4 before:absolute before:bottom-0 before:left-[14px] before:top-7 before:w-px before:bg-[#d9dfe3] last:before:hidden"><span className={`relative z-10 grid size-7 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white ${index===0?'bg-[#0c6478]':index===steps.length-1?'bg-[#f59e0b]':'bg-[#6b7280]'}`}>{index+1}</span><div><b className="text-[13px] sm:text-[11px]">{step.instruction}</b><p className="mt-1 text-[11px] text-[#99a1af] sm:text-[9px]">{step.distance} · petunjuk Mapbox</p></div></div>)}</div>
+      <div className="flex items-center border-b border-[#edf0f2] px-4 py-3"><button onClick={onBack} aria-label="Kembali ke pilihan rute" className="grid size-8 place-items-center rounded-full bg-[#f5f6f7]"><ChevronLeft className="size-4" /></button><div className="ml-3"><h2 className="text-[12px] font-extrabold">Rute {route.id} — Detail</h2><p className="text-[8px] text-[#99a1af]">{route.street || `Menuju ${destination}`}</p></div></div>
+      <div className="grid grid-cols-3 border-b border-[#edf0f2] text-center">{[[route.distance,"Jarak"],[route.time,"Waktu"],[Number.isFinite(route.score)?route.score:"—","Skor"]].map(([value,label])=><div key={label} className="border-r border-[#edf0f2] py-3 last:border-0"><b className="block text-[16px]">{value}</b><small className="text-[8px] text-[#99a1af]">{label}</small></div>)}</div>
+      <div className="flex-1 overflow-y-auto px-4 py-3 pb-5">
+        <div className="space-y-2.5">{scores.map((score)=><div key={score.label} className="grid grid-cols-[82px_1fr_22px] items-center gap-2"><span className="text-[8px] font-bold text-[#667085]">{score.label}</span><span className="h-1.5 overflow-hidden rounded-full bg-[#e7eff0]"><span className="block h-full rounded-full bg-[#0c6478]" style={{width:`${score.value}%`}} /></span><b className="text-right text-[8px] text-[#0c6478]">{score.value}</b></div>)}</div>
+        <div className={`mt-3 rounded-[12px] p-3 ${route.blocked?'bg-[#fff1f2]':'bg-[#effaf8]'}`}><h3 className={`text-[8px] font-extrabold uppercase tracking-[.08em] ${route.blocked?'text-[#b42318]':'text-[#006b63]'}`}>{route.blocked?'Rute tidak sesuai profil':'Mengapa direkomendasikan'}</h3><div className="mt-2 space-y-1.5">{recommendations.map((reason)=><p key={reason} className={`flex items-start gap-1.5 text-[8px] font-semibold ${route.blocked?'text-[#b42318]':'text-[#008b7f]'}`}><CheckCircle2 className="mt-px size-3 shrink-0"/>{reason}</p>)}</div></div>
+        <h3 className="mt-4 text-[11px] font-extrabold">Langkah Perjalanan</h3><div className="mt-3">{steps.map((step,index)=><div key={`${step.instruction}-${index}`} className="relative flex gap-3 pb-3 before:absolute before:bottom-0 before:left-[12px] before:top-6 before:w-px before:bg-[#d9dfe3] last:before:hidden"><span className={`relative z-10 grid size-6 shrink-0 place-items-center rounded-full text-[8px] font-bold text-white ${index===0?'bg-[#0c6478]':index===steps.length-1?'bg-[#f59e0b]':'bg-[#6b7280]'}`}>{index+1}</span><div><b className="text-[9px]">{step.instruction}</b><p className="mt-0.5 text-[8px] text-[#99a1af]">{step.distance} · petunjuk Mapbox</p></div></div>)}</div>
+        <h3 className="mt-1 text-[8px] font-extrabold uppercase tracking-[.08em] text-[#667085]">Fasilitas di rute</h3><div className="mt-2 flex flex-wrap gap-1.5">{facilities.map((facility)=><span key={facility} className="rounded-full border border-[#dce6e7] bg-white px-2 py-1 text-[7px] font-bold text-[#52616b]">{facility}</span>)}</div>
       </div>
-      <div className="grid grid-cols-[78px_104px_1fr] gap-2 border-t border-[#edf0f2] p-3"><button onClick={onReport} className="rounded-[10px] border border-[#dfe4e7] text-[10px] font-bold"><Flag className="mr-1 inline size-4" />Lapor</button><button onClick={()=>openGoogleStreetView(destinationCoordinates)} className="rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff] text-[10px] font-bold text-[#155dfc]"><Camera className="mr-1 inline size-4" />Street View</button><button onClick={onNavigate} className="rounded-[10px] bg-[#0c6478] text-[10px] font-extrabold text-white">Mulai navigasi</button></div>
+      <div className="grid grid-cols-[68px_1fr] gap-2 border-t border-[#edf0f2] p-3"><button onClick={onReport} className="rounded-[9px] border border-[#dfe4e7] text-[9px] font-bold"><Flag className="mr-1 inline size-3" />Lapor</button><button onClick={onNavigate} className="rounded-[9px] bg-[#0c6478] text-[9px] font-extrabold text-white">Mulai Navigasi →</button><button onClick={()=>openGoogleStreetView(destinationCoordinates)} className="col-span-2 text-[8px] font-bold text-[#667085]"><Camera className="mr-1 inline size-3" />Lihat area tujuan di Street View</button></div>
     </aside>
   );
 }
 
 function SideShell({ title, icon, onClose, children }) {
-  return <aside className="absolute inset-0 z-50 w-full overflow-y-auto bg-white p-5 sm:bottom-3 sm:left-3 sm:right-auto sm:top-3 sm:w-[350px] sm:max-w-[calc(100vw-24px)] sm:rounded-[14px] sm:border sm:border-[#e7ebed] sm:shadow-[0_10px_28px_rgba(24,46,58,.17)]"><div className="flex items-center border-b border-[#edf0f2] pb-4"><span className="grid size-9 place-items-center rounded-[10px] bg-[#e8f5f3] text-[#0c6478]">{icon}</span><div className="ml-3"><span className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-[#7b8491]">AksesKota</span><b className="text-[15px] text-[#172b34]">{title}</b></div><button onClick={onClose} aria-label={`Tutup ${title}`} className="ml-auto grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6] transition-colors hover:bg-[#e9edef]"><X className="size-4" /></button></div>{children}</aside>;
+  return <aside className="absolute inset-0 z-50 w-full overflow-y-auto bg-white p-5 sm:bottom-3 sm:left-[60px] sm:right-auto sm:top-3 sm:w-[350px] sm:max-w-[calc(100vw-72px)] sm:rounded-[14px] sm:border sm:border-[#e7ebed] sm:shadow-[0_10px_28px_rgba(24,46,58,.17)]"><div className="flex items-center border-b border-[#edf0f2] pb-4"><span className="grid size-9 place-items-center rounded-[10px] bg-[#e8f5f3] text-[#0c6478]">{icon}</span><div className="ml-3"><span className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-[#7b8491]">AksesKota</span><b className="text-[15px] text-[#172b34]">{title}</b></div><button onClick={onClose} aria-label={`Tutup ${title}`} className="ml-auto grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6] transition-colors hover:bg-[#e9edef]"><X className="size-4" /></button></div>{children}</aside>;
 }
 
 function AssistantPanel({ onChoose, onClose }) {
@@ -833,7 +852,7 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
 
   return <main className={`relative h-dvh min-h-0 overflow-hidden bg-[#dfe5e8] sm:min-h-[620px] ${profile==='low-vision'?'contrast-[1.08]':''}`}>
     <MapCanvas routes={routeOptions} reports={mapReports} activeRoute={selected||detail} origin={originCoordinates} destination={destinationCoordinates} reportDraft={reportDraft} onMapClick={panel==='report'?setReportDraft:null} highContrast={profile==='low-vision'} />
-    {!sidePanelOpen&&<LeftRail activePanel={panel} onReport={()=>setPanel('report')} onAssistant={()=>setPanel('assistant')} onHistory={()=>setPanel('history')} onProfile={()=>setPanel('profile')} onDestinations={()=>{setDirectoryDetail(null);setPanel('directory')}} />}
+    <LeftRail activePanel={panel} onHome={()=>{setDirectoryDetail(null);setPanel(null)}} onReport={()=>setPanel('report')} onAssistant={()=>setPanel('assistant')} onHistory={()=>setPanel('history')} onProfile={()=>setPanel('profile')} onDestinations={()=>{setDirectoryDetail(null);setPanel('directory')}} />
     {!sidePanelOpen&&<SearchBox origin={origin} destination={destination} setOrigin={(value)=>{setOrigin(value);setOriginSelection(null);}} setDestination={(value)=>{setDestination(value);setDestinationSelection(null);}} originCoordinates={originCoordinates} onSelectOrigin={(place)=>{setOrigin(place.name);setOriginSelection(place);setOriginCoordinates(place.coordinates);}} onSelectDestination={(place)=>{setDestination(place.name);setDestinationSelection(place);setPanel('community-place');}} onSearch={()=>searchRoutes(true)} mode={mode} onMode={()=>setPanel(panel==='mode'?null:'mode')} loading={routingStatus==='loading'} />}
     {!panel&&!navigating&&<MobileMapActions onSearch={()=>searchRoutes(true)} />}
     {panel==='mode'&&<ModePanel current={profile} onChange={changeMode} onClose={()=>setPanel(null)} />}

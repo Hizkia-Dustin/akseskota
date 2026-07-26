@@ -114,7 +114,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
       as="aside"
       direction="right"
       distance={24}
-      className="absolute inset-0 z-50 flex min-h-0 flex-col overflow-hidden bg-white sm:bottom-3 sm:left-3 sm:right-auto sm:top-3 sm:w-[330px] sm:rounded-[16px] sm:border sm:border-[#e7ebed] sm:shadow-[0_12px_32px_rgba(24,46,58,.18)]"
+      className="absolute inset-0 z-50 flex min-h-0 flex-col overflow-hidden bg-white sm:bottom-3 sm:left-[60px] sm:right-auto sm:top-3 sm:w-[330px] sm:rounded-[16px] sm:border sm:border-[#e7ebed] sm:shadow-[0_12px_32px_rgba(24,46,58,.18)]"
     >
       <DirectoryHeader onClose={onClose} />
       <div className="border-b border-[#edf0f2] px-4 py-3">
