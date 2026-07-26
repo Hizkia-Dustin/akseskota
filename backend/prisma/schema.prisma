@@ -76,6 +76,10 @@ model User {
   reports       Report[]
   verifications Verification[]
   routeHistory  RouteHistory[]
+  notifications Notification[]
+  navigationSessions NavigationSession[]
+  favoriteRoutes FavoriteRoute[]
+  searchHistory SearchHistory[]
   auditLogs     AuditLog[]
   placePosts    PlacePost[]
 
@@ -220,6 +224,68 @@ model RouteHistory {
   createdAt       DateTime     @default(now())
 
   @@map("route_history")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+model NavigationSession {
+  id              String       @id @default(uuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originLat       Float
+  originLng       Float
+  destLat         Float
+  destLng         Float
+  mode            PersonalMode @default(GENERAL)
+  startedAt       DateTime     @default(now())
+  finishedAt      DateTime?
+  distanceMeters  Float?
+  durationSeconds Int?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("navigation_sessions")
+}
+
+model FavoriteRoute {
+  id        String       @id @default(uuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String?
+  originLat Float
+  originLng Float
+  destLat   Float
+  destLng   Float
+  mode      PersonalMode @default(GENERAL)
+  routeJson Json?
+  createdAt DateTime     @default(now())
+
+  @@map("favorite_routes")
+}
+
+model SearchHistory {
+  id        String       @id @default(uuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originLat Float
+  originLng Float
+  destLat   Float
+  destLng   Float
+  mode      PersonalMode @default(GENERAL)
+  createdAt DateTime     @default(now())
+
+  @@map("search_history")
 }
 
 model AuditLog {

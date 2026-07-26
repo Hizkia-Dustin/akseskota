@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { created, ok } from '../../utils/apiResponse';
-import { loginUser, refreshAccessToken, registerUser } from './auth.service';
+import { googleUser, loginUser, refreshAccessToken, registerUser } from './auth.service';
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const result = await registerUser(req.body);
@@ -10,6 +10,11 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const result = await loginUser(req.body);
+  return ok(res, result);
+});
+
+export const google = asyncHandler(async (req: Request, res: Response) => {
+  const result = await googleUser(req.body.idToken);
   return ok(res, result);
 });
 

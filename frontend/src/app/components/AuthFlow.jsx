@@ -3,7 +3,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { apiRequest, getStoredSession, storeSession } from "@/lib/api";
+import { auth, isFirebaseConfigured } from "@/lib/firebase";
 
 const profiles = [
   { id: "wheelchair", icon: "♿", label: "Kursi Roda", detail: "Bebas tangga, ramp tersedia" },
@@ -161,7 +163,28 @@ export default function AuthFlow() {
   }
 
   async function handleGoogle() {
-    setMessage("Login Google belum dihubungkan ke backend AksesKota. Gunakan email atau mode tamu.");
+    setMessage("");
+    if (!isFirebaseConfigured || !auth) {
+      setMessage("Login Google belum dikonfigurasi. Isi konfigurasi Firebase pada environment frontend.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const result = await signInWithPopup(auth, provider);
+      const data = await apiRequest("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ idToken: await result.user.getIdToken() }),
+      });
+      storeSession(data);
+      setStage("profile");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Login Google tidak dapat diproses.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function continueAsGuest() {

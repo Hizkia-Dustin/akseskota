@@ -3,6 +3,10 @@ import { hashPassword, comparePassword } from '../../utils/password';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { ApiError } from '../../middlewares/errorHandler';
 import { LoginInput, RegisterInput } from './auth.schema';
+import { env } from '../../config/env';
+import { getApps, initializeApp, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { randomUUID } from 'node:crypto';
 
 export async function registerUser(input: RegisterInput) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
@@ -40,6 +44,48 @@ export async function loginUser(input: LoginInput) {
   return {
     user: { id: user.id, name: user.name, email: user.email, role: user.role },
     ...tokens,
+  };
+}
+
+export async function googleUser(idToken: string) {
+  if (!env.firebase.projectId || !env.firebase.clientEmail || !env.firebase.privateKey) {
+    throw new ApiError(503, 'Login Google belum dikonfigurasi di backend.');
+  }
+
+  const firebaseApp = getApps()[0] ?? initializeApp({
+    credential: cert({
+      projectId: env.firebase.projectId,
+      clientEmail: env.firebase.clientEmail,
+      privateKey: env.firebase.privateKey,
+    }),
+  });
+
+  let decodedToken;
+  try {
+    decodedToken = await getAuth(firebaseApp).verifyIdToken(idToken);
+  } catch {
+    throw new ApiError(401, 'Token Google tidak valid atau kedaluwarsa.');
+  }
+
+  if (!decodedToken.email || !decodedToken.email_verified) {
+    throw new ApiError(401, 'Email Google belum terverifikasi.');
+  }
+
+  let user = await prisma.user.findUnique({ where: { email: decodedToken.email } });
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        name: decodedToken.name || decodedToken.email.split('@')[0],
+        email: decodedToken.email,
+        passwordHash: await hashPassword(`google:${decodedToken.uid}:${randomUUID()}`),
+        preferences: { create: {} },
+      },
+    });
+  }
+
+  return {
+    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    ...issueTokens(user.id, user.role),
   };
 }
 

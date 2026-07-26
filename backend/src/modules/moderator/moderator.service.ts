@@ -58,6 +58,24 @@ async function updateReportStatus(reportId: string, status: 'VERIFIED' | 'REJECT
   return prisma.report.update({ where: { id: reportId }, data: { verificationStatus: status } });
 }
 
+export async function getModeratorDashboardSummary() {
+  const [pendingReports, verifiedReports, rejectedReports, activeObstacles, totalUsers] = await Promise.all([
+    prisma.report.count({ where: { verificationStatus: 'UNVERIFIED' } }),
+    prisma.report.count({ where: { verificationStatus: 'VERIFIED' } }),
+    prisma.report.count({ where: { verificationStatus: 'REJECTED' } }),
+    prisma.obstacle.count({ where: { isActive: true } }),
+    prisma.user.count(),
+  ]);
+
+  return {
+    pendingReports,
+    verifiedReports,
+    rejectedReports,
+    activeObstacles,
+    totalUsers,
+  };
+}
+
 export async function mergeDuplicateReports(primaryReportId: string, duplicateReportId: string, moderatorId: string) {
   if (primaryReportId === duplicateReportId) {
     throw new ApiError(422, 'Laporan utama dan duplikat tidak boleh sama.');

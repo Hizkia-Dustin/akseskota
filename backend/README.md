@@ -22,6 +22,7 @@ Mengacu pada: `AksesKota_Product_Guide.md`, `AksesKota_Feature_Specification.md`
 npm install
 cp .env.example .env
 # isi .env: DATABASE_URL, JWT secrets, Cloudinary credentials
+# untuk Google: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY
 ```
 
 ### Setup Database
@@ -115,6 +116,7 @@ generateCandidateRoutes()          -> kandidat rute dari road_segments (min. 3)
 |---|---|---|---|
 | Auth | POST /api/auth/register | - | F001 |
 | Auth | POST /api/auth/login | - | F001 |
+| Auth | POST /api/auth/google | - | F001, Firebase ID token ditukar menjadi JWT AksesKota |
 | Auth | POST /api/auth/refresh | - | F001 |
 | Users | GET /api/users/me | User | F019 |
 | Users | PATCH /api/users/me/preferences | User | F002 |
@@ -154,6 +156,8 @@ Semua response pakai format konsisten:
 
 - Base URL: `http://localhost:4000/api`
 - Auth: kirim `Authorization: Bearer <accessToken>` di setiap request yang butuh login.
+- Email login/register menggunakan JWT dari backend. Register membutuhkan `name`, `email`, dan password minimal 8 karakter.
+- Google login membutuhkan Firebase Web config di frontend dan Firebase Admin service-account values di backend: `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, dan `FIREBASE_PRIVATE_KEY` (`\\n` untuk line break di `.env`).
 - CORS sudah diatur ke `CLIENT_URL` di `.env` — samakan dengan origin dev Next.js (default `http://localhost:3000`).
 - Upload foto (F011/F012): gunakan `multipart/form-data` dengan field `photo`.
 - Search rute mengembalikan `searchId` — pakai itu untuk request detail rute (`GET /api/routes/:searchId/:routeId`), hasil pencarian di-cache 15 menit di server.

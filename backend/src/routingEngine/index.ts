@@ -3,7 +3,12 @@ import { applyAccessibilityFilter } from './accessibilityFilter';
 import { computeComfortScore } from './comfortScoring';
 import { applyLiveConditionFilter } from './liveConditionFilter';
 import { buildLabels, explainRoute } from './explainRoute';
-import { PersonalMode, PreferenceWeights, ScoredRoute } from './types';
+import {
+  PersonalMode,
+  PreferenceWeights,
+  ScoredRoute,
+  CandidateRoute,
+} from './types';
 
 export interface RecommendRoutesInput {
   originLat: number;
@@ -14,14 +19,48 @@ export interface RecommendRoutesInput {
   weights: PreferenceWeights;
 }
 
-const DEFAULT_WALK_SPEED_M_PER_MIN = 60; // ~3.6 km/h, conservative for mixed-mobility users
+const DEFAULT_WALK_SPEED_M_PER_MIN = 60;
 
 /**
- * Full pipeline per System Architecture section 7:
- * candidates -> Accessibility Filter (hard) -> Comfort Scoring (soft)
- * -> Live Condition Filter -> ranked recommendation with explanations.
+ * Distance Score
+ *
+ * Route terpendek = 100
+ * Route terpanjang = 0
  */
-export async function recommendRoutes(input: RecommendRoutesInput): Promise<{
+function calculateDistanceScore(
+  distance: number,
+  shortest: number,
+  longest: number,
+): number {
+  if (shortest === longest) return 100;
+
+  return Math.round(
+    ((longest - distance) / (longest - shortest)) * 100,
+  );
+}
+
+/**
+ * Final Recommendation Score
+ *
+ * Accessibility tetap prioritas utama.
+ */
+function calculateFinalScore(
+  accessibility: number,
+  comfort: number,
+  safety: number,
+  distanceScore: number,
+): number {
+  return Math.round(
+    accessibility * 0.4 +
+      comfort * 0.3 +
+      safety * 0.2 +
+      distanceScore * 0.1,
+  );
+}
+
+export async function recommendRoutes(
+  input: RecommendRoutesInput,
+): Promise<{
   routes: ScoredRoute[];
   eliminated: { id: string; reason: string }[];
 }> {
@@ -33,48 +72,146 @@ export async function recommendRoutes(input: RecommendRoutesInput): Promise<{
   );
 
   const eliminated: { id: string; reason: string }[] = [];
-  const survivors: ScoredRoute[] = [];
+
+  const survivors: (ScoredRoute & {
+    candidate: CandidateRoute;
+  })[] = [];
 
   for (const candidate of candidates) {
-    // 1. Hard constraint
-    const accessResult = applyAccessibilityFilter(candidate, input.mode);
+    const accessResult = applyAccessibilityFilter(
+      candidate,
+      input.mode,
+    );
+
     if (!accessResult.passed) {
-      eliminated.push({ id: candidate.id, reason: accessResult.reason || 'Tidak memenuhi accessibility constraint' });
+      eliminated.push({
+        id: candidate.id,
+        reason:
+          accessResult.reason ??
+          'Tidak memenuhi accessibility constraint',
+      });
+
       continue;
     }
 
-    // 2. Live condition (can also reject if actively blocked)
     const liveResult = applyLiveConditionFilter(candidate);
+
     if (!liveResult.passed) {
-      eliminated.push({ id: candidate.id, reason: liveResult.reason || 'Diblokir kondisi aktual jalur' });
+      eliminated.push({
+        id: candidate.id,
+        reason:
+          liveResult.reason ??
+          'Diblokir kondisi aktual jalur',
+      });
+
       continue;
     }
 
-    // 3. Comfort (soft, weighted)
-    const comfort = computeComfortScore(candidate, input.weights);
+    const comfort = computeComfortScore(
+      candidate,
+      input.weights,
+    );
 
-    const safety = Math.max(0, 100 - liveResult.safetyPenalty);
-    const durationMinutes = Math.max(1, Math.round(candidate.distanceMeters / DEFAULT_WALK_SPEED_M_PER_MIN));
+    const safety = Math.max(
+      0,
+      100 - liveResult.safetyPenalty,
+    );
+
+    const durationMinutes = Math.max(
+      1,
+      Math.round(
+        candidate.distanceMeters /
+          DEFAULT_WALK_SPEED_M_PER_MIN,
+      ),
+    );
 
     survivors.push({
+      candidate,
+
       id: candidate.id,
-      distanceMeters: Math.round(candidate.distanceMeters),
+
+      distanceMeters: Math.round(
+        candidate.distanceMeters,
+      ),
+
       durationMinutes,
+
       accessibility: accessResult.score,
+
       comfort,
+
       safety,
-      reasons: explainRoute(candidate, input.mode, liveResult.activeObstacleCount),
+
+      finalScore: 0,
+
+      reasons: explainRoute(
+        candidate,
+        input.mode,
+        liveResult.activeObstacleCount,
+      ),
+
       labels: [],
     });
   }
 
+  if (survivors.length === 0) {
+    return {
+      routes: [],
+      eliminated,
+    };
+  }
+
+  //---------------------------------------
+  // Distance Score
+  //---------------------------------------
+
+  const shortest = Math.min(
+    ...survivors.map((r) => r.distanceMeters),
+  );
+
+  const longest = Math.max(
+    ...survivors.map((r) => r.distanceMeters),
+  );
+
+  //---------------------------------------
+  // Final Score
+  //---------------------------------------
+
+  survivors.forEach((route) => {
+    const distanceScore = calculateDistanceScore(
+      route.distanceMeters,
+      shortest,
+      longest,
+    );
+
+    route.finalScore = calculateFinalScore(
+      route.accessibility,
+      route.comfort,
+      route.safety,
+      distanceScore,
+    );
+  });
+
+  //---------------------------------------
+  // Ranking
+  //---------------------------------------
+
+  survivors.sort(
+    (a, b) => b.finalScore - a.finalScore,
+  );
+
+  //---------------------------------------
+  // Labels
+  //---------------------------------------
+
   const labels = buildLabels(survivors);
-  survivors.forEach((r) => (r.labels = labels.get(r.id) ?? []));
 
-  // Rank: accessibility already guaranteed to pass hard constraint for all
-  // survivors, so sort by a blended score for default ordering.
-  survivors.sort((a, b) => b.accessibility * 0.4 + b.comfort * 0.35 + b.safety * 0.25 -
-    (a.accessibility * 0.4 + a.comfort * 0.35 + a.safety * 0.25));
+  survivors.forEach((r) => {
+    r.labels = labels.get(r.id) ?? [];
+  });
 
-  return { routes: survivors, eliminated };
+  return {
+    routes: survivors.map(({ candidate, ...route }) => route),
+    eliminated,
+  };
 }

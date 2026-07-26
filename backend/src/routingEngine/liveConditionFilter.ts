@@ -3,44 +3,87 @@ import { CandidateRoute } from './types';
 export interface LiveConditionResult {
   passed: boolean;
   reason?: string;
+
   activeObstacleCount: number;
-  safetyPenalty: number; // subtracted from base safety score
+
+  safetyPenalty: number;
 }
 
 /**
- * Live Condition layer (System Architecture section 6 flow step
- * "Live Condition Filter" / Product Guide Layer 3). Obstacles are only
- * considered if `isActive = true` and not expired (`expiresAt` in future or
- * null). Non-blocking obstacles reduce safety score instead of rejecting
- * the route outright.
+ * Severity tiap obstacle.
+ * Semakin besar nilainya semakin berbahaya.
  */
-const BLOCKING_TYPES = ['STAIRS', 'CONSTRUCTION', 'FALLEN_TREE'];
-const DEGRADING_TYPES = ['POTHOLE', 'FLOOD', 'PARKED_VEHICLE'];
+const OBSTACLE_PENALTY: Record<string, number> = {
+  FLOOD: 60,
 
-export function applyLiveConditionFilter(route: CandidateRoute): LiveConditionResult {
-  let blockingCount = 0;
-  let degradingCount = 0;
+  CONSTRUCTION: 45,
+
+  FALLEN_TREE: 50,
+
+  STAIRS: 35,
+
+  POTHOLE: 20,
+
+  PARKED_VEHICLE: 10,
+};
+
+/**
+ * Jika total penalty melewati nilai ini,
+ * rute dianggap tidak layak dipakai.
+ */
+const MAX_ALLOWED_PENALTY = 90;
+
+export function applyLiveConditionFilter(
+  route: CandidateRoute,
+): LiveConditionResult {
+
+  let penalty = 0;
+
+  let obstacleCount = 0;
+
+  const reasons: string[] = [];
 
   for (const segment of route.segments) {
+
     for (const obstacle of segment.activeObstacles) {
-      if (BLOCKING_TYPES.includes(obstacle.type)) blockingCount += 1;
-      if (DEGRADING_TYPES.includes(obstacle.type)) degradingCount += 1;
+
+      obstacleCount++;
+
+      const obstaclePenalty =
+        OBSTACLE_PENALTY[obstacle.type] ?? 15;
+
+      penalty += obstaclePenalty;
+
+      reasons.push(obstacle.type);
     }
   }
 
-  if (blockingCount > 0) {
+  penalty = Math.min(100, penalty);
+
+  if (penalty >= MAX_ALLOWED_PENALTY) {
+
     return {
+
       passed: false,
-      reason: `${blockingCount} hambatan aktif memblokir jalur (belum kedaluwarsa)`,
-      activeObstacleCount: blockingCount + degradingCount,
+
+      reason: `Rute memiliki hambatan berat (${reasons.join(', ')})`,
+
+      activeObstacleCount: obstacleCount,
+
       safetyPenalty: 100,
+
     };
+
   }
 
-  const safetyPenalty = Math.min(60, degradingCount * 15);
   return {
+
     passed: true,
-    activeObstacleCount: degradingCount,
-    safetyPenalty,
+
+    activeObstacleCount: obstacleCount,
+
+    safetyPenalty: penalty,
+
   };
+
 }

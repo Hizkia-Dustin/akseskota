@@ -35,6 +35,7 @@ export interface ScoredRoute {
   accessibility: number; // 0-100
   comfort: number; // 0-100
   safety: number; // 0-100
+  finalScore: number;
   reasons: string[];
   labels: string[];
   eliminated?: { reason: string };

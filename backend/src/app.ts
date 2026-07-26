@@ -20,6 +20,14 @@ import dashboardRoutes from './modules/dashboard/dashboard.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import communityPlacesRoutes from './modules/communityPlaces/communityPlaces.routes';
 import destinationsRoutes from './modules/destinations/destinations.routes';
+import routeHistoryRoutes from './modules/routeHistory/routeHistory.routes';
+import profileRoutes from './modules/profile/profile.routes';
+import preferencesRoutes from './modules/preferences/preferences.routes';
+import navigationRoutes from './modules/navigation/navigation.routes';
+import searchHistoryRoutes from './modules/searchHistory/searchHistory.routes';
+import favoritesRoutes from './modules/favorites/favorites.routes';
+import notificationsRoutes from './modules/notifications/notifications.routes';
+import leaderboardRoutes from './modules/leaderboard/leaderboard.routes';
 
 const app = express();
 
@@ -87,6 +95,14 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/community-places', communityPlacesRoutes);
 app.use('/api/destinations', destinationsRoutes);
+app.use('/api/route-history', routeHistoryRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/preferences', preferencesRoutes);
+app.use('/api/navigation', navigationRoutes);
+app.use('/api/search-history', searchHistoryRoutes);
+app.use('/api/favorites', favoritesRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
