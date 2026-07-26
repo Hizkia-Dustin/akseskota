@@ -36,7 +36,25 @@ const featureNames = {
   WHEELCHAIR_SEATING: "Tempat duduk",
   WHEELCHAIR_RESTROOM: "Toilet aksesibel",
   WHEELCHAIR_PARKING: "Parkir aksesibel",
+  KURSI_KHUSUS_PENGGUNA_KURSI_RODA: "Kursi roda",
+  DUKUNGAN_INSTALASI_BANTU_DENGAR: "Bantuan dengar",
+  PENYEWAAN_KURSI_RODA: "Penyewaan kursi roda",
+  RAMP: "Ramp",
+  LIFT: "Lift",
+  ACCESSIBLE_TOILET: "Toilet aksesibel",
+  ACCESSIBLE_PARKING: "Parkir aksesibel",
+  GUIDING_BLOCK: "Jalur guiding",
+  STEP_FREE: "Bebas tangga",
 };
+
+const reviewFeatures = [
+  ["RAMP", "Ramp"],
+  ["LIFT", "Lift"],
+  ["ACCESSIBLE_TOILET", "Toilet Aksesibel"],
+  ["ACCESSIBLE_PARKING", "Parkir Aksesibel"],
+  ["GUIDING_BLOCK", "Jalur Guiding"],
+  ["STEP_FREE", "Bebas Tangga"],
+];
 
 function matchesCategory(place, activeCategory) {
   if (activeCategory === "all") return true;

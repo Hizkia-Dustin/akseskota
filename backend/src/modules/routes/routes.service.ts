@@ -69,7 +69,10 @@ export async function getRouteDetail(searchId: string, routeId: string) {
 export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
   const roadRows = (await prisma.$queryRawUnsafe(
     `SELECT rs.id, rs.accessibilityScore AS accessibility_score, rs.comfortScore AS comfort_score,
-            rs.shadeLevel AS shade_level, ST_AsGeoJSON(rs.geometry) AS geometry
+            rs.shadeLevel AS shade_level, rs.surfaceCondition AS surface_condition,
+            rs.widthMeters AS width_meters, rs.hasRamp AS has_ramp, rs.hasStairs AS has_stairs,
+            rs.hasGuidingBlock AS has_guiding_block, rs.lightingAvailable AS lighting_available,
+            ST_AsGeoJSON(rs.geometry) AS geometry
      FROM road_segments rs
      WHERE rs.geometry IS NOT NULL
        AND (rs.source IS NULL OR rs.source <> 'community' OR EXISTS (
@@ -77,7 +80,19 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
          WHERE r.roadSegmentId = rs.id AND r.verificationStatus = 'VERIFIED'
        ))
      LIMIT 1000`,
-  )) as Array<{ id: string; accessibility_score: number | null; comfort_score: number | null; shade_level: number | null; geometry: string }>;
+  )) as Array<{
+    id: string;
+    accessibility_score: number | null;
+    comfort_score: number | null;
+    shade_level: number | null;
+    surface_condition: string | null;
+    width_meters: number | null;
+    has_ramp: boolean | number;
+    has_stairs: boolean | number;
+    has_guiding_block: boolean | number;
+    lighting_available: boolean | number;
+    geometry: string;
+  }>;
 
   const obstacleRows = (await prisma.$queryRawUnsafe(
     `SELECT o.id, o.type, ST_AsGeoJSON(o.geometry) AS geometry
@@ -90,8 +105,22 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
        AND (o.expiresAt IS NULL OR o.expiresAt > NOW())`,
   )) as Array<{ id: string; type: string; geometry: string }>;
 
+  const facilityRows = (await prisma.$queryRawUnsafe(
+    `SELECT f.id, f.type, ST_AsGeoJSON(f.geometry) AS geometry
+     FROM facilities f
+     WHERE f.geometry IS NOT NULL
+       AND (
+         NOT EXISTS (SELECT 1 FROM reports r WHERE r.facilityId = f.id)
+         OR EXISTS (
+           SELECT 1 FROM reports r
+           WHERE r.facilityId = f.id AND r.verificationStatus = 'VERIFIED'
+         )
+       )`,
+  )) as Array<{ id: string; type: string; geometry: string }>;
+
   const roads = roadRows.map((row) => ({ ...row, parsed: parseLineString(row.geometry) })).filter((row) => row.parsed);
   const obstacles = obstacleRows.map((row) => ({ ...row, parsed: parsePoint(row.geometry) })).filter((row) => row.parsed);
+  const facilities = facilityRows.map((row) => ({ ...row, parsed: parsePoint(row.geometry) })).filter((row) => row.parsed);
 
   const evaluated = input.routes.map((route) => {
     const routeLine = route.geometry.coordinates as [number, number][];
@@ -99,6 +128,7 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
     const candidateRoads = roads.filter((road) => boundsOverlap(routeBounds, lineBounds(road.parsed!.coordinates)));
     const samples = sampleLineStringMeters(routeLine);
     const sampledRoadValues: Array<{ accessibility: number | null; comfort: number | null; shade: number | null }> = [];
+    const matchedRoads = new Map<string, typeof candidateRoads[number]>();
 
     for (const sample of samples) {
       let nearestDistance = Number.POSITIVE_INFINITY;
@@ -111,6 +141,7 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
         }
       }
       if (nearestRoad && nearestDistance <= 25) {
+        matchedRoads.set(nearestRoad.id, nearestRoad);
         sampledRoadValues.push({
           accessibility: nearestRoad.accessibility_score,
           comfort: nearestRoad.comfort_score,
@@ -121,6 +152,7 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
 
     const coverage = samples.length ? Math.round((sampledRoadValues.length / samples.length) * 100) : 0;
     const routeObstacles = obstacles.filter((obstacle) => distancePointToLineStringMeters(obstacle.parsed!.coordinates, routeLine) <= 18);
+    const routeFacilities = facilities.filter((facility) => distancePointToLineStringMeters(facility.parsed!.coordinates, routeLine) <= 25);
     const values = (key: 'accessibility' | 'comfort' | 'shade') => sampledRoadValues.map((sample) => sample[key]).filter((value): value is number => value !== null);
     const average = (numbers: number[]) => numbers.length ? Math.round(numbers.reduce((sum, value) => sum + value, 0) / numbers.length) : null;
     const rawAccessibility = average(values('accessibility'));
@@ -146,12 +178,39 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
     const algorithmCost = blocking.length > 0
       ? null
       : Math.round(route.distanceMeters * accessibilityCostMultiplier(input.mode, criteriaPenalties));
+    const uniqueRoads = [...matchedRoads.values()];
+    const rampSegments = uniqueRoads.filter((road) => Boolean(road.has_ramp)).length;
+    const guidingBlockSegments = uniqueRoads.filter((road) => Boolean(road.has_guiding_block)).length;
+    const litSegments = uniqueRoads.filter((road) => Boolean(road.lighting_available)).length;
+    const knownWidths = uniqueRoads.map((road) => road.width_meters).filter((value): value is number => value !== null);
+    const minimumWidth = knownWidths.length ? Math.round(Math.min(...knownWidths) * 10) / 10 : null;
+    const knownSurfaces = uniqueRoads.map((road) => road.surface_condition?.toLowerCase()).filter(Boolean);
+    const noStairs = uniqueRoads.length > 0 && uniqueRoads.every((road) => !Boolean(road.has_stairs));
+    const reasons = enoughData ? [
+      ...(noStairs ? ['Tidak ada tangga pada ruas yang memiliki data'] : []),
+      ...(rampSegments ? [`Ramp tercatat pada ${rampSegments} ruas`] : []),
+      ...(shade !== null ? [`${shade}% tingkat keteduhan rata-rata`] : []),
+      ...(guidingBlockSegments ? [`Guiding block tercatat pada ${guidingBlockSegments} ruas`] : []),
+      ...(minimumWidth !== null ? [`Lebar trotoar minimum ${minimumWidth} m pada ruas yang terdata`] : []),
+      ...(knownSurfaces.length && knownSurfaces.every((surface) => surface === 'good') ? ['Permukaan jalan tercatat dalam kondisi baik'] : []),
+      ...(litSegments ? [`Penerangan tercatat pada ${litSegments} ruas`] : []),
+    ] : [];
+    const facilityCounts = routeFacilities.reduce<Record<string, number>>((counts, facility) => {
+      counts[facility.type] = (counts[facility.type] || 0) + 1;
+      return counts;
+    }, {});
+    const safety = enoughData
+      ? blocking.length > 0
+        ? 0
+        : Math.max(0, 100 - routeObstacles.length * 20)
+      : null;
 
     return {
       id: route.id,
       accessibility,
       comfort: enoughData ? comfort : null,
       shade: enoughData ? shade : null,
+      safety,
       dataCoverage: coverage,
       dataStatus: enoughData ? 'CUKUP' : sampledRoadValues.length ? 'TERBATAS' : 'BELUM_ADA',
       verifiedObstacleCount: routeObstacles.length,
@@ -162,8 +221,11 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
       reasons: [
         ...(blocking.length ? [`Ditolak: ${blocking.length} hambatan terverifikasi menghalangi profil ini`] : []),
         ...(routeObstacles.length && !blocking.length ? [`${routeObstacles.length} hambatan terverifikasi di sekitar rute`] : []),
+        ...reasons,
         ...(!enoughData ? [`Cakupan data komunitas baru ${coverage}%`] : []),
       ],
+      routeFacilities: Object.entries(facilityCounts).map(([type, count]) => ({ type, count })),
+      matchedSegmentCount: uniqueRoads.length,
       labels: [] as string[],
     };
   });
@@ -180,11 +242,22 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
   const eligibleAccess = evaluated.filter((route) => route.accessibility !== null && !route.blocked);
   const eligibleShade = evaluated.filter((route) => route.shade !== null && !route.blocked);
   const eligibleComfort = evaluated.filter((route) => route.comfort !== null && !route.blocked);
-  if (eligibleAccess.length) eligibleAccess.sort((a, b) => b.accessibility! - a.accessibility!)[0].labels.push('Paling Aksesibel');
-  if (eligibleShade.length) eligibleShade.sort((a, b) => b.shade! - a.shade!)[0].labels.push('Paling Teduh');
-  if (eligibleComfort.length) eligibleComfort.sort((a, b) => b.comfort! - a.comfort!)[0].labels.push('Paling Nyaman');
+  addUniqueBestLabel(eligibleAccess, 'accessibility', 'Paling Aksesibel');
+  addUniqueBestLabel(eligibleShade, 'shade', 'Paling Teduh');
+  addUniqueBestLabel(eligibleComfort, 'comfort', 'Paling Nyaman');
 
   return evaluated;
+}
+
+function addUniqueBestLabel<T extends { labels: string[] }>(
+  routes: T[],
+  key: keyof T,
+  label: string,
+): void {
+  const ranked = [...routes].sort((first, second) => Number(second[key]) - Number(first[key]));
+  if (!ranked.length) return;
+  if (ranked.length > 1 && Number(ranked[0][key]) === Number(ranked[1][key])) return;
+  ranked[0].labels.push(label);
 }
 
 type Bounds = [number, number, number, number];
