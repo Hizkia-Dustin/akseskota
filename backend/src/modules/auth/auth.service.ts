@@ -7,6 +7,19 @@ import { env } from '../../config/env';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { randomUUID } from 'node:crypto';
+import { decode as decodeJwt, JwtPayload, verify as verifyJwt } from 'jsonwebtoken';
+
+const FIREBASE_CERTIFICATES_URL =
+  'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
+let cachedFirebaseCertificates: Record<string, string> | null = null;
+let firebaseCertificatesExpireAt = 0;
+
+type FirebaseIdentity = {
+  uid: string;
+  email: string;
+  emailVerified: boolean;
+  name?: string;
+};
 
 export async function registerUser(input: RegisterInput) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
@@ -48,36 +61,29 @@ export async function loginUser(input: LoginInput) {
 }
 
 export async function googleUser(idToken: string) {
-  if (!env.firebase.projectId || !env.firebase.clientEmail || !env.firebase.privateKey) {
+  if (!env.firebase.projectId) {
     throw new ApiError(503, 'Login Google belum dikonfigurasi di backend.');
   }
 
-  const firebaseApp = getApps()[0] ?? initializeApp({
-    credential: cert({
-      projectId: env.firebase.projectId,
-      clientEmail: env.firebase.clientEmail,
-      privateKey: env.firebase.privateKey,
-    }),
-  });
-
-  let decodedToken;
+  let identity: FirebaseIdentity;
   try {
-    decodedToken = await getAuth(firebaseApp).verifyIdToken(idToken);
-  } catch {
+    identity = await verifyFirebaseIdentity(idToken);
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new ApiError(401, 'Token Google tidak valid atau kedaluwarsa.');
   }
 
-  if (!decodedToken.email || !decodedToken.email_verified) {
+  if (!identity.emailVerified) {
     throw new ApiError(401, 'Email Google belum terverifikasi.');
   }
 
-  let user = await prisma.user.findUnique({ where: { email: decodedToken.email } });
+  let user = await prisma.user.findUnique({ where: { email: identity.email } });
   if (!user) {
     user = await prisma.user.create({
       data: {
-        name: decodedToken.name || decodedToken.email.split('@')[0],
-        email: decodedToken.email,
-        passwordHash: await hashPassword(`google:${decodedToken.uid}:${randomUUID()}`),
+        name: identity.name || identity.email.split('@')[0],
+        email: identity.email,
+        passwordHash: await hashPassword(`google:${identity.uid}:${randomUUID()}`),
         preferences: { create: {} },
       },
     });
@@ -87,6 +93,84 @@ export async function googleUser(idToken: string) {
     user: { id: user.id, name: user.name, email: user.email, role: user.role },
     ...issueTokens(user.id, user.role),
   };
+}
+
+async function verifyFirebaseIdentity(idToken: string): Promise<FirebaseIdentity> {
+  if (env.firebase.clientEmail && env.firebase.privateKey) {
+    const firebaseApp = getApps()[0] ?? initializeApp({
+      credential: cert({
+        projectId: env.firebase.projectId,
+        clientEmail: env.firebase.clientEmail,
+        privateKey: env.firebase.privateKey,
+      }),
+    });
+    const token = await getAuth(firebaseApp).verifyIdToken(idToken);
+    if (!token.email) throw new Error('Firebase token does not contain an email.');
+    return {
+      uid: token.uid,
+      email: token.email,
+      emailVerified: Boolean(token.email_verified),
+      name: token.name,
+    };
+  }
+
+  const decoded = decodeJwt(idToken, { complete: true });
+  if (
+    !decoded
+    || typeof decoded === 'string'
+    || decoded.header.alg !== 'RS256'
+    || typeof decoded.header.kid !== 'string'
+  ) {
+    throw new Error('Invalid Firebase token header.');
+  }
+
+  const certificates = await getFirebaseCertificates();
+  const certificate = certificates[decoded.header.kid];
+  if (!certificate) throw new Error('Unknown Firebase signing certificate.');
+
+  const payload = verifyJwt(idToken, certificate, {
+    algorithms: ['RS256'],
+    audience: env.firebase.projectId,
+    issuer: `https://securetoken.google.com/${env.firebase.projectId}`,
+  }) as JwtPayload;
+
+  if (
+    typeof payload.sub !== 'string'
+    || !payload.sub
+    || typeof payload.email !== 'string'
+  ) {
+    throw new Error('Firebase token payload is incomplete.');
+  }
+
+  return {
+    uid: payload.sub,
+    email: payload.email,
+    emailVerified: payload.email_verified === true,
+    name: typeof payload.name === 'string' ? payload.name : undefined,
+  };
+}
+
+async function getFirebaseCertificates(): Promise<Record<string, string>> {
+  if (cachedFirebaseCertificates && Date.now() < firebaseCertificatesExpireAt) {
+    return cachedFirebaseCertificates;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(FIREBASE_CERTIFICATES_URL);
+  } catch {
+    throw new ApiError(503, 'Layanan verifikasi Google sedang tidak dapat dijangkau.');
+  }
+  if (!response.ok) {
+    throw new ApiError(503, 'Sertifikat verifikasi Google tidak dapat dimuat.');
+  }
+
+  const certificates = await response.json() as Record<string, string>;
+  const cacheControl = response.headers.get('cache-control') || '';
+  const maxAgeSeconds = Number.parseInt(cacheControl.match(/max-age=(\d+)/)?.[1] || '3600', 10);
+  cachedFirebaseCertificates = certificates;
+  firebaseCertificatesExpireAt = Date.now() + Math.max(300, maxAgeSeconds) * 1000;
+  return certificates;
 }
 
 export async function refreshAccessToken(refreshToken: string) {
