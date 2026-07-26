@@ -3,25 +3,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import CountUp from "./react-bits/CountUp";
 import MotionSurface from "./react-bits/MotionSurface";
 import MapboxMap from "./MapboxMap";
+import { DirectoryDetailPanel, DirectoryPanel } from "./DirectoryPanels";
 import { geocodeMapboxPlace, isInsideBogor, openGoogleStreetView, requestMapboxWalkingRoutes, searchMapboxPlaces } from "../../lib/mapboxRouting";
 import { apiRequest, clearSession, getStoredSession } from "../../lib/api";
 import {
   AlertTriangle,
+  Accessibility,
+  Baby,
   Bot,
   Bookmark,
+  BookOpen,
   Camera,
   Check,
   CheckCircle2,
   ChevronLeft,
   Clock3,
   Flag,
+  Footprints,
   History,
+  Eye,
   LogOut,
   MapPin,
-  Menu,
   Mic,
   Navigation,
   Play,
@@ -38,11 +42,11 @@ import {
 } from "lucide-react";
 
 const modes = [
-  { id: "wheelchair", icon: "♿", label: "Kursi Roda", detail: "Bebas tangga, ramp tersedia" },
-  { id: "elderly", icon: "🧓", label: "Lansia", detail: "Bangku & pencahayaan optimal" },
-  { id: "stroller", icon: "👶", label: "Stroller", detail: "Trotoar lebar & ramp" },
-  { id: "low-vision", icon: "👁️", label: "Low Vision", detail: "Guiding block & lampu jalan" },
-  { id: "walking", icon: "🚶", label: "Pejalan Kaki", detail: "Preferensi kenyamanan umum" },
+  { id: "wheelchair", icon: Accessibility, label: "Kursi Roda", detail: "Utamakan ramp dan jalur bebas tangga" },
+  { id: "elderly", icon: UserRound, label: "Lansia", detail: "Utamakan bangku dan jalur lebih landai" },
+  { id: "stroller", icon: Baby, label: "Stroller", detail: "Utamakan trotoar lebar dan ramp" },
+  { id: "low-vision", icon: Eye, label: "Low Vision", detail: "Utamakan guiding block dan penerangan" },
+  { id: "walking", icon: Footprints, label: "Pejalan Kaki", detail: "Pertimbangkan kenyamanan jalur umum" },
 ];
 
 const accessibilityFeatures = [
@@ -61,9 +65,9 @@ function featureLabel(value) {
 }
 
 const routeTone = {
-  teal: { card: "bg-gradient-to-br from-[#0c7181] to-[#173c61]", badge: "bg-white/20", ring: "border-white", accent: "text-[#0c6478]" },
-  orange: { card: "bg-gradient-to-br from-[#f59e0b] to-[#b94b05]", badge: "bg-white/20", ring: "border-white", accent: "text-[#f59e0b]" },
-  blue: { card: "bg-gradient-to-br from-[#4387f7] to-[#2143a5]", badge: "bg-white/20", ring: "border-white", accent: "text-[#3b82f6]" },
+  teal: { card: "bg-[#0c6478]", badge: "bg-white/12", ring: "border-white", accent: "text-[#0c6478]" },
+  orange: { card: "bg-[#c66a12]", badge: "bg-white/12", ring: "border-white", accent: "text-[#c66a12]" },
+  blue: { card: "bg-[#315fc4]", badge: "bg-white/12", ring: "border-white", accent: "text-[#315fc4]" },
 };
 
 function MapCanvas({ routes, reports, activeRoute = "A", origin, destination, reportDraft, onMapClick, highContrast = false }) {
@@ -72,22 +76,22 @@ function MapCanvas({ routes, reports, activeRoute = "A", origin, destination, re
 
 function ScoreRing({ score, color = "border-white" }) {
   if (!Number.isFinite(score)) return <span className={`grid size-12 place-items-center rounded-full border-2 px-1 text-center text-[7px] font-extrabold leading-3 ${color}`}>DATA<br/>BELUM<br/>CUKUP</span>;
-  return <span className={`grid size-12 place-items-center rounded-full border-[5px] border-dashed text-[14px] font-extrabold ${color}`}><CountUp to={score} duration={0.75} /></span>;
+  return <span className={`grid size-12 place-items-center rounded-full border-[3px] text-[14px] font-extrabold ${color}`}>{score}</span>;
 }
 
 function RouteCard({ route, active = false, onDetail, onSelect }) {
   const tone = routeTone[route.tone];
   if (!active) {
     return (
-      <button data-route-card type="button" onClick={onSelect} className="flex w-full items-center rounded-[18px] border-2 border-[#f0f1f3] bg-[#fafbfc] p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#cddbdc] hover:shadow-md active:scale-[.985]">
+      <button data-route-card type="button" onClick={onSelect} className="flex w-full items-center rounded-[14px] border border-[#e6eaed] bg-white p-4 text-left transition-colors hover:border-[#9abdc4] hover:bg-[#f7fbfb] active:bg-[#eef7f6]">
         <span className="min-w-0 flex-1"><span className="block text-[12px] font-semibold text-[#99a1af]">{route.street}</span><span className={`mt-2 inline-block rounded-full px-2 py-1 text-[9px] font-extrabold ${route.blocked ? "bg-[#fee2e2] text-[#b42318]" : route.tone === "orange" ? "bg-[#fef3c6] text-[#a34b00]" : "bg-[#dbeafe] text-[#155dfc]"}`}>{route.badge}</span><span className="mt-3 flex flex-wrap gap-2 text-[10px] text-[#475467]"><b className="rounded-lg bg-white px-2 py-1.5">◷ {route.time}</b><b className="rounded-lg bg-white px-2 py-1.5">➤ {route.distance}</b>{Number.isFinite(route.shade)&&<b className="rounded-lg bg-white px-2 py-1.5">☂ Teduh {route.shade}</b>}</span></span><ScoreRing score={route.score} color={route.tone === "orange" ? "border-[#f59e0b] text-[#1f2937]" : "border-[#3b82f6] text-[#1f2937]"} />
       </button>
     );
   }
   return (
-    <article data-route-card className={`rounded-[18px] p-5 text-white shadow-[0_10px_20px_rgba(20,50,75,.2)] ${tone.card}`}>
+    <article data-route-card className={`rounded-[14px] p-5 text-white shadow-[0_8px_20px_rgba(20,50,75,.14)] ${tone.card}`}>
       <div className="flex"><div className="flex-1"><p className="text-[12px] text-white/65">{route.street}</p><span className={`mt-2 inline-block rounded-full px-2 py-1 text-[9px] font-extrabold ${tone.badge}`}>{route.badge}</span><div className="mt-3 flex flex-wrap gap-2 text-[10px]"><b className="rounded-lg bg-white/15 px-2 py-1.5"><Clock3 className="mr-1 inline size-3" />{route.time}</b><b className="rounded-lg bg-white/15 px-2 py-1.5"><Navigation className="mr-1 inline size-3" />{route.distance}</b>{Number.isFinite(route.shade)&&<b className="rounded-lg bg-white/15 px-2 py-1.5">☂ Teduh {route.shade}/100</b>}<b className="rounded-lg bg-white/15 px-2 py-1.5">Data {route.dataCoverage ?? 0}%</b>{route.algorithmRank&&<b className="rounded-lg bg-white/15 px-2 py-1.5">Dijkstra #{route.algorithmRank}</b>}</div></div><ScoreRing score={route.score} /></div>
-      <div className="mt-4 grid grid-cols-[1fr_auto] gap-2"><button type="button" onClick={onDetail} className="rounded-full bg-white py-2.5 text-[11px] font-extrabold text-[#0c6478] transition hover:-translate-y-0.5 hover:shadow-lg active:scale-95">Lihat Detail</button><button type="button" onClick={onSelect} className="rounded-full bg-white/20 px-4 text-[11px] font-bold transition hover:bg-white/30 active:scale-95">Tutup</button></div>
+      <div className="mt-4 grid grid-cols-[1fr_auto] gap-2"><button type="button" onClick={onDetail} className="rounded-lg bg-white py-2.5 text-[11px] font-extrabold text-[#0c6478] transition-colors hover:bg-[#f3f8f8]">Lihat detail</button><button type="button" onClick={onSelect} className="rounded-lg border border-white/25 px-4 text-[11px] font-bold transition-colors hover:bg-white/10">Tutup</button></div>
     </article>
   );
 }
@@ -98,6 +102,7 @@ function PlaceSuggestions({ suggestions, error, label, onChoose }) {
 }
 
 function SearchBox({ origin, destination, setOrigin, setDestination, originCoordinates, onSelectOrigin, onSelectDestination, onSearch, mode, onMode, loading }) {
+  const ModeIcon = mode.icon;
   const [activeField, setActiveField] = useState(null);
   const [originSuggestions, setOriginSuggestions] = useState([]);
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
@@ -167,16 +172,16 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
   }
 
   return (
-    <MotionSurface direction="down" distance={18} duration={0.65} className="absolute left-[61px] right-5 top-[22px] z-20 sm:left-[84px] sm:right-auto sm:top-3 sm:w-[272px] sm:max-w-[calc(100vw-100px)]">
-      <div className="overflow-hidden rounded-[16px] bg-white shadow-[0_8px_22px_rgba(30,50,65,.18)]">
+    <div className="absolute left-3 right-3 top-3 z-20 sm:left-[88px] sm:right-auto sm:w-[286px] sm:max-w-[calc(100vw-104px)]">
+      <div className="overflow-hidden rounded-[14px] border border-[#e8ecee] bg-white shadow-[0_6px_18px_rgba(24,46,58,.12)]">
         <label className="relative z-10 flex h-[42px] items-center gap-3 border-b border-[#edf0f2] bg-white px-4 sm:h-12"><span className="size-2.5 rounded-full bg-[#0c6478]" /><input aria-label="Lokasi awal" autoComplete="off" placeholder="Cari titik awal" value={origin} onFocus={()=>setActiveField("origin")} onChange={(e) => updateOrigin(e.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')onSearch();}} className="min-w-0 flex-1 bg-white text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-[#98a2b3] sm:text-[11px]" /><button type="button" onClick={()=>updateOrigin("")} aria-label="Hapus titik awal"><X className="size-3 text-[#b2bac5]" /></button></label>
         {activeField === "origin" && <PlaceSuggestions suggestions={originSuggestions} error={originSuggestionError} label="Saran titik awal" onChoose={chooseOrigin} />}
         <label className="relative z-10 flex h-[42px] items-center gap-3 border-b border-[#edf0f2] bg-white px-4 sm:h-12"><span className="size-2.5 rounded-full bg-[#f59e0b]" /><input aria-label="Tujuan" autoComplete="off" placeholder="Cari gedung, mal, jalan, atau kota" value={destination} onFocus={()=>setActiveField("destination")} onChange={(e) => updateDestination(e.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')onSearch();}} className="min-w-0 flex-1 bg-white text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-[#98a2b3] sm:text-[11px]" /><button type="button" onClick={()=>updateDestination("")} aria-label="Hapus tujuan"><X className="size-3 text-[#b2bac5]" /></button></label>
         {activeField === "destination" && <PlaceSuggestions suggestions={destinationSuggestions} error={destinationSuggestionError} label="Saran tujuan" onChoose={chooseDestination} />}
-        <button type="button" onClick={onSearch} disabled={loading} className="m-3 hidden h-10 w-[calc(100%-24px)] rounded-xl bg-[#0c6478] text-[11px] font-extrabold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-[#09596a] hover:shadow-lg active:scale-[.98] disabled:cursor-wait disabled:opacity-60 sm:block">{loading ? "Menghitung…" : "Cari Rute →"}</button>
+        <button type="button" onClick={onSearch} disabled={loading} className="m-3 hidden h-10 w-[calc(100%-24px)] rounded-[10px] bg-[#0c6478] text-[11px] font-extrabold text-white transition-colors hover:bg-[#09596a] active:bg-[#084e5d] disabled:cursor-wait disabled:opacity-60 sm:block">{loading ? "Menghitung…" : "Cari rute"}</button>
       </div>
-      <button type="button" onClick={onMode} className="mt-2 hidden items-center gap-2 rounded-full bg-white px-3 py-2 text-[10px] font-bold text-[#0c6478] shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl active:scale-95 sm:flex"><span>{mode.icon}</span>{mode.label}<span>›</span></button>
-    </MotionSurface>
+      <button type="button" onClick={onMode} className="mt-2 flex items-center gap-2 rounded-[10px] border border-[#e8ecee] bg-white px-3 py-2 text-[10px] font-bold text-[#0c6478] shadow-[0_4px_12px_rgba(24,46,58,.1)] transition-colors hover:bg-[#f5fafa]"><ModeIcon className="size-4" />{mode.label}<span className="ml-auto text-[#98a2b3]">›</span></button>
+    </div>
   );
 }
 
@@ -206,7 +211,7 @@ function PlaceCard({ place, onRoute, onClose }) {
         </div>
         <span className="absolute left-1/2 top-1/2 grid size-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-4 border-white bg-[#f59e0b] text-white shadow-xl"><MapPin className="size-6" /></span>
         <button type="button" onClick={onClose} aria-label="Tutup detail lokasi" className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/90 text-[#344054] shadow-md backdrop-blur"><X className="size-4" /></button>
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1.5 text-[9px] font-extrabold text-[#0c6478] shadow-sm">DATA LOKASI DEMO</span>
+        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1.5 text-[9px] font-extrabold text-[#0c6478] shadow-sm">DATA LOKASI</span>
       </div>
 
       <div className="p-5 sm:p-5">
@@ -279,46 +284,64 @@ function CommunityPlacePanel({ place, session, onRoute, onClose, onLogin }) {
   </div></SideShell>;
 }
 
-function LeftRail({ onReport, onProfile, onAssistant, onHistory }) {
-  const [open, setOpen] = useState(false);
+function LeftRail({ activePanel, onReport, onProfile, onAssistant, onHistory, onDestinations }) {
+  const items = [
+    { id: "report", label: "Laporan", icon: Flag, action: onReport },
+    { id: "directory", label: "Direktori Bogor", icon: BookOpen, action: onDestinations },
+    { id: "assistant", label: "Asisten akses", icon: Bot, action: onAssistant },
+    { id: "history", label: "Riwayat", icon: History, action: onHistory },
+    { id: "profile", label: "Profil", icon: UserRound, action: onProfile },
+  ];
+
   return (
-    <MotionSurface animate={false} as="aside" className={`absolute left-[10px] top-[22px] z-30 flex w-[52px] flex-col items-center overflow-hidden rounded-[18px] bg-white/95 p-1.5 shadow-[0_8px_22px_rgba(30,50,65,.17)] transition-[max-height,box-shadow] duration-300 ease-out sm:bottom-3 sm:left-3 sm:top-3 sm:max-h-none sm:w-[66px] sm:overflow-visible sm:px-0 sm:py-4 ${open ? "max-h-[280px] shadow-[0_12px_28px_rgba(30,50,65,.2)]" : "max-h-[52px]"}`}>
-      <button type="button" onClick={() => setOpen(value => !value)} aria-label="Buka menu" className="grid size-[42px] place-items-center rounded-full text-[#1f2937] sm:hidden"><Menu className="size-5" /></button>
-      <span className="hidden size-10 place-items-center rounded-full bg-[#35cbb0] text-white sm:grid"><MapPin className="size-5" /></span>
-      <button type="button" onClick={onReport} aria-label="Buka laporan" className={`mt-1 grid size-10 shrink-0 place-items-center rounded-xl text-[#0c6478] transition duration-200 hover:bg-[#effaf8] sm:mt-5 sm:translate-y-0 sm:opacity-100 ${open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-1 opacity-0 sm:pointer-events-auto"}`}><Flag className="size-5" /></button>
-      <button type="button" onClick={onAssistant} aria-label="Buka asisten aksesibilitas" className={`mt-1 grid size-10 shrink-0 place-items-center rounded-xl text-[#7c3aed] transition duration-200 hover:bg-[#f5f3ff] sm:mt-2 sm:translate-y-0 sm:opacity-100 ${open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-1 opacity-0 sm:pointer-events-auto"}`}><Bot className="size-5" /></button>
-      <button type="button" onClick={onHistory} aria-label="Buka riwayat perjalanan" className={`mt-1 grid size-10 shrink-0 place-items-center rounded-xl text-[#f59e0b] transition duration-200 hover:bg-[#fff7ed] sm:mt-2 sm:translate-y-0 sm:opacity-100 ${open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-1 opacity-0 sm:pointer-events-auto"}`}><History className="size-5" /></button>
-      <button type="button" onClick={onProfile} aria-label="Buka profil" className={`mt-1 grid size-10 shrink-0 place-items-center rounded-xl text-[#78909c] transition duration-200 hover:bg-[#effaf8] sm:mt-2 sm:translate-y-0 sm:opacity-100 ${open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-1 opacity-0 sm:pointer-events-auto"}`}><UserRound className="size-5" /></button>
-      <span className="mt-auto hidden size-2 rounded-full bg-[#46dfb1] sm:block" />
-    </MotionSurface>
+    <>
+      <aside aria-label="Navigasi utama peta" className="absolute bottom-3 left-3 top-3 z-30 hidden w-[62px] flex-col items-center rounded-[14px] border border-[#e7ebed] bg-white py-3 shadow-[0_8px_24px_rgba(24,46,58,.12)] sm:flex">
+        <span aria-label="AksesKota" className="grid size-10 place-items-center rounded-[11px] bg-[#0c6478] text-white"><Accessibility className="size-5" /></span>
+        <span className="my-3 h-px w-8 bg-[#edf0f2]" />
+        <nav className="flex w-full flex-1 flex-col items-center gap-1.5">
+          {items.map(({ id, label, icon: Icon, action }) => {
+            const active = activePanel === id;
+            return <button key={id} type="button" onClick={action} aria-label={label} aria-current={active ? "page" : undefined} title={label} className={`group relative grid size-10 place-items-center rounded-[10px] transition-colors ${active ? "bg-[#e8f5f3] text-[#0c6478]" : "text-[#667085] hover:bg-[#f3f6f7] hover:text-[#173c61]"}`}>{active && <span className="absolute -left-[11px] h-5 w-[3px] rounded-r-full bg-[#0c6478]" />}<Icon className="size-[18px]" /><span className="pointer-events-none absolute left-12 z-50 whitespace-nowrap rounded-md bg-[#173c61] px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{label}</span></button>;
+          })}
+        </nav>
+        <span className="size-2 rounded-full bg-[#35cbb0]" title="Layanan peta aktif" />
+      </aside>
+
+      <nav aria-label="Navigasi utama peta" className="absolute inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[16px] border border-[#e7ebed] bg-white p-1.5 shadow-[0_8px_24px_rgba(24,46,58,.16)] sm:hidden">
+        {items.map(({ id, label, icon: Icon, action }) => {
+          const active = activePanel === id;
+          return <button key={id} type="button" onClick={action} aria-label={label} aria-current={active ? "page" : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-[11px] text-[8px] font-bold transition-colors ${active ? "bg-[#e8f5f3] text-[#0c6478]" : "text-[#667085]"}`}><Icon className="size-[17px]" /><span>{label === "Direktori Bogor" ? "Direktori" : label}</span></button>;
+        })}
+      </nav>
+    </>
   );
 }
 
 function ModePanel({ current, onChange, onClose }) {
   return (
-    <MotionSurface direction="down" distance={14} scale={0.97} staggerSelector="[data-mode-item]" className="absolute left-[84px] top-[194px] z-40 hidden w-[260px] rounded-[16px] bg-white shadow-[0_12px_30px_rgba(30,50,65,.22)] sm:block">
+    <aside className="absolute left-3 right-3 top-[154px] z-40 overflow-hidden rounded-[14px] border border-[#e7ebed] bg-white shadow-[0_10px_28px_rgba(24,46,58,.16)] sm:left-[88px] sm:right-auto sm:top-[196px] sm:w-[286px]">
       <div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3"><strong className="text-[12px]">Mode Perjalanan</strong><button onClick={onClose} aria-label="Tutup mode"><X className="size-4 text-[#9aa3af]" /></button></div>
-      <div className="py-2">{modes.map((mode) => <button data-mode-item key={mode.id} type="button" onClick={() => onChange(mode.id)} className={`flex w-full items-center px-4 py-2.5 text-left transition hover:bg-[#effaf8] active:scale-[.98] ${current === mode.id ? "bg-[#effaf8]" : ""}`}><span className="w-8 text-lg">{mode.icon}</span><span><b className="block text-[11px]">{mode.label}</b><small className="text-[9px] text-[#99a1af]">{mode.detail}</small></span>{current === mode.id && <CheckCircle2 className="ml-auto size-4 text-[#0c6478]" />}</button>)}</div>
-    </MotionSurface>
+      <div className="py-2">{modes.map((mode) => { const Icon = mode.icon; return <button data-mode-item key={mode.id} type="button" onClick={() => onChange(mode.id)} className={`flex w-full items-center px-4 py-2.5 text-left transition-colors hover:bg-[#f4f8f8] ${current === mode.id ? "bg-[#e8f5f3]" : ""}`}><span className="mr-3 grid size-8 place-items-center rounded-lg bg-white text-[#0c6478]"><Icon className="size-[17px]" /></span><span><b className="block text-[11px]">{mode.label}</b><small className="text-[9px] text-[#7b8491]">{mode.detail}</small></span>{current === mode.id && <CheckCircle2 className="ml-auto size-4 text-[#0c6478]" />}</button>; })}</div>
+    </aside>
   );
 }
 
 function RoutesPanel({ routes, destination, status, error, selected, setSelected, onDetail, onClose }) {
   return (
-    <MotionSurface as="aside" direction="left" distance={34} staggerSelector="[data-route-card]" className="absolute inset-x-0 bottom-0 z-40 max-h-[52dvh] overflow-y-auto rounded-t-[28px] bg-white p-5 shadow-[0_-8px_30px_rgba(30,50,65,.18)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:max-h-none sm:w-[368px] sm:max-w-[calc(100vw-24px)] sm:rounded-[18px] sm:shadow-[0_12px_35px_rgba(30,50,65,.22)]">
+    <aside className="absolute inset-x-0 bottom-0 z-40 max-h-[70dvh] overflow-y-auto rounded-t-[22px] border border-[#e7ebed] bg-white p-5 shadow-[0_-8px_26px_rgba(24,46,58,.14)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:max-h-none sm:w-[372px] sm:max-w-[calc(100vw-24px)] sm:rounded-[14px] sm:shadow-[0_10px_28px_rgba(24,46,58,.16)]">
       <div className="mx-auto mb-5 h-1 w-12 rounded-full bg-[#dfe3e7] sm:hidden" />
-      <div className="flex items-start justify-between"><div><h2 className="text-[18px] font-extrabold sm:text-[20px]">{status === "loading" ? "Menghitung rute…" : `${routes.length} rute Mapbox`}</h2><p className="mt-1 text-[11px] text-[#99a1af]">Menuju <b className="text-[#344054]">{destination}</b></p></div><button onClick={onClose} aria-label="Tutup rute" className="grid size-9 place-items-center rounded-full bg-[#f4f5f6]"><X className="size-4" /></button></div>
+      <div className="flex items-start justify-between"><div><p className="text-[9px] font-extrabold uppercase tracking-[.12em] text-[#0c6478]">Pilihan perjalanan</p><h2 className="mt-1 text-[18px] font-extrabold sm:text-[20px]">{status === "loading" ? "Menghitung rute…" : `${routes.length} rute alternatif`}</h2><p className="mt-1 max-w-[260px] truncate text-[11px] text-[#7b8491]">Menuju <b className="text-[#344054]">{destination}</b></p></div><button onClick={onClose} aria-label="Tutup rute" className="grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6]"><X className="size-4" /></button></div>
       {error && <p role="alert" className="mt-4 flex items-center gap-2 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-3 py-2.5 text-[10px] font-bold text-[#e7000b]"><AlertTriangle className="size-4" />{error}</p>}
       {status === "loading" && <div className="mt-6 space-y-3">{[1,2,3].map((item)=><div key={item} className="h-28 animate-pulse rounded-[18px] bg-[#eef2f3]" />)}</div>}
       {status === "ready" && <div className="mt-4 space-y-2.5 sm:mt-6 sm:space-y-3">{routes.map((route) => <RouteCard key={route.id} route={route} active={selected === route.id} onSelect={() => setSelected(route.id)} onDetail={() => onDetail(route.id)} />)}</div>}
-    </MotionSurface>
+    </aside>
   );
 }
 
 function DetailPanel({ route, profile, destination, destinationCoordinates, onBack, onReport, onNavigate }) {
   const steps = route.steps?.length ? route.steps : [{ instruction: `Tiba di ${destination}`, distance: route.distance }];
   return (
-    <MotionSurface as="aside" direction="left" distance={34} className="absolute inset-x-0 bottom-0 top-[175px] z-50 flex flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_-8px_30px_rgba(30,50,65,.2)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:w-[352px] sm:max-w-[calc(100vw-24px)] sm:rounded-[18px] sm:shadow-[0_12px_35px_rgba(30,50,65,.24)]">
+    <aside className="absolute inset-x-0 bottom-0 top-[158px] z-50 flex flex-col overflow-hidden rounded-t-[22px] border border-[#e7ebed] bg-white shadow-[0_-8px_26px_rgba(24,46,58,.16)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:w-[360px] sm:max-w-[calc(100vw-24px)] sm:rounded-[14px] sm:shadow-[0_10px_28px_rgba(24,46,58,.17)]">
       <div className="mx-auto mt-5 h-1 w-12 shrink-0 rounded-full bg-[#dfe3e7] sm:hidden" />
       <div className="flex items-center border-b border-[#edf0f2] p-4"><button onClick={onBack} className="grid size-9 place-items-center rounded-full bg-[#f5f6f7]"><ChevronLeft className="size-5" /></button><div className="ml-3"><h2 className="text-[13px] font-extrabold">Rute {route.id} — Detail</h2><p className="text-[10px] text-[#99a1af]">Menuju {destination}</p></div></div>
       <div className="grid grid-cols-2 border-b border-[#edf0f2] text-center">{[[route.distance,"Jarak Mapbox"],[route.time,"Waktu berjalan"]].map(([value,label])=><div key={label} className="border-r border-[#edf0f2] py-4 last:border-0"><b className="block text-[18px]">{value}</b><small className="text-[10px] text-[#99a1af]">{label}</small></div>)}</div>
@@ -326,13 +349,13 @@ function DetailPanel({ route, profile, destination, destinationCoordinates, onBa
         <div className={`rounded-[16px] p-4 ${route.blocked?'bg-[#fff1f2]':'bg-[#effaf8]'}`}><h3 className={`text-[10px] font-extrabold ${route.blocked?'text-[#b42318]':'text-[#006b63]'}`}>{route.blocked?'RUTE TIDAK SESUAI PROFIL':'PENILAIAN AKSESKOTA'}</h3><p className={`mt-2 text-[11px] font-semibold leading-5 ${route.blocked?'text-[#b42318]':'text-[#008b7f]'}`}>{Number.isFinite(route.score)?`Skor aksesibilitas ${route.score}/100 · keteduhan ${Number.isFinite(route.shade)?`${route.shade}/100`:'belum cukup data'} · cakupan data ${route.dataCoverage}%`:`Cakupan data komunitas baru ${route.dataCoverage||0}%. Angka skor belum ditampilkan agar tidak menyesatkan.`}</p>{route.algorithmRank&&<p className="mt-2 text-[10px] font-extrabold text-[#173c61]">Peringkat Weighted Dijkstra #{route.algorithmRank} · biaya jalur {route.algorithmCost}</p>}{route.evaluationReasons?.map(reason=><p key={reason} className="mt-2 text-[10px] font-bold text-[#667085]">• {reason}</p>)}</div>
         <h3 className="mt-6 text-[14px] font-extrabold sm:mt-5 sm:text-[12px]">Langkah Perjalanan</h3><div className="mt-3">{steps.map((step,index)=><div key={`${step.instruction}-${index}`} className="relative flex gap-3 pb-4 before:absolute before:bottom-0 before:left-[14px] before:top-7 before:w-px before:bg-[#d9dfe3] last:before:hidden"><span className={`relative z-10 grid size-7 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white ${index===0?'bg-[#0c6478]':index===steps.length-1?'bg-[#f59e0b]':'bg-[#6b7280]'}`}>{index+1}</span><div><b className="text-[13px] sm:text-[11px]">{step.instruction}</b><p className="mt-1 text-[11px] text-[#99a1af] sm:text-[9px]">{step.distance} · petunjuk Mapbox</p></div></div>)}</div>
       </div>
-      <div className="grid grid-cols-[82px_105px_1fr] gap-2 border-t border-[#edf0f2] p-3"><button onClick={onReport} className="rounded-xl border-2 border-[#e3e7ea] text-[10px] font-bold"><Flag className="mr-1 inline size-4" />Lapor</button><button onClick={()=>openGoogleStreetView(destinationCoordinates)} className="rounded-xl border-2 border-[#dbeafe] bg-[#eff6ff] text-[10px] font-bold text-[#155dfc]"><Camera className="mr-1 inline size-4" />Street View</button><button onClick={onNavigate} className="rounded-xl bg-[#0c6478] text-[10px] font-extrabold text-white">Mulai →</button></div>
-    </MotionSurface>
+      <div className="grid grid-cols-[78px_104px_1fr] gap-2 border-t border-[#edf0f2] p-3"><button onClick={onReport} className="rounded-[10px] border border-[#dfe4e7] text-[10px] font-bold"><Flag className="mr-1 inline size-4" />Lapor</button><button onClick={()=>openGoogleStreetView(destinationCoordinates)} className="rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff] text-[10px] font-bold text-[#155dfc]"><Camera className="mr-1 inline size-4" />Street View</button><button onClick={onNavigate} className="rounded-[10px] bg-[#0c6478] text-[10px] font-extrabold text-white">Mulai navigasi</button></div>
+    </aside>
   );
 }
 
 function SideShell({ title, icon, onClose, children }) {
-  return <MotionSurface as="aside" direction="right" distance={12} duration={0.28} scale={1} ease="power2.out" className="absolute inset-0 z-50 w-full overflow-y-auto bg-white p-[23px] sm:bottom-3 sm:left-3 sm:right-auto sm:top-3 sm:w-[345px] sm:max-w-[calc(100vw-24px)] sm:rounded-[18px] sm:p-5 sm:shadow-[0_12px_35px_rgba(30,50,65,.24)]"><div className="flex items-center"><span className="grid size-9 place-items-center rounded-[14px] bg-gradient-to-br from-[#0c6478] to-[#46dfb1] text-white sm:hidden">{icon}</span><span className="hidden size-10 place-items-center rounded-full bg-[#35cbb0] text-white sm:grid"><MapPin className="size-5" /></span><b className="ml-3 text-[18px]"><span className="sm:hidden">{title}</span><span className="hidden sm:inline">AksesKota</span></b><button onClick={onClose} aria-label={`Tutup ${title}`} className="ml-auto grid size-9 place-items-center rounded-full bg-[#f4f5f6] transition duration-200 hover:bg-[#e9edef]"><X className="size-4" /></button></div><div className="mt-5 hidden items-center gap-3 rounded-[15px] bg-[#effaf8] px-4 py-3 text-[#0c6478] sm:flex">{icon}<b>{title}</b></div>{children}</MotionSurface>;
+  return <aside className="absolute inset-0 z-50 w-full overflow-y-auto bg-white p-5 sm:bottom-3 sm:left-3 sm:right-auto sm:top-3 sm:w-[350px] sm:max-w-[calc(100vw-24px)] sm:rounded-[14px] sm:border sm:border-[#e7ebed] sm:shadow-[0_10px_28px_rgba(24,46,58,.17)]"><div className="flex items-center border-b border-[#edf0f2] pb-4"><span className="grid size-9 place-items-center rounded-[10px] bg-[#e8f5f3] text-[#0c6478]">{icon}</span><div className="ml-3"><span className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-[#7b8491]">AksesKota</span><b className="text-[15px] text-[#172b34]">{title}</b></div><button onClick={onClose} aria-label={`Tutup ${title}`} className="ml-auto grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6] transition-colors hover:bg-[#e9edef]"><X className="size-4" /></button></div>{children}</aside>;
 }
 
 function AssistantPanel({ onChoose, onClose }) {
@@ -386,7 +409,7 @@ function AssistantPanel({ onChoose, onClose }) {
   }
 
   return <SideShell title="Asisten Akses" icon={<Bot className="size-5" />} onClose={onClose}><div className="mt-5">
-    <div className="rounded-[18px] bg-gradient-to-br from-[#173c61] to-[#0c6478] p-4 text-white"><Bot className="size-7 text-[#7be3dc]"/><h2 className="mt-3 text-[16px] font-extrabold">Cari tempat sesuai kebutuhanmu</h2><p className="mt-1 text-[10px] leading-5 text-white/70">Asisten hanya memakai artikel, rating, dan fasilitas yang dilaporkan komunitas AksesKota.</p></div>
+    <div className="rounded-[14px] bg-[#0c6478] p-4 text-white shadow-[0_8px_20px_rgba(12,100,120,.18)]"><span className="grid size-8 place-items-center rounded-[9px] bg-white/12"><Bot className="size-[18px] text-[#8ef0dc]"/></span><h2 className="mt-3 text-[15px] font-extrabold">Cari tempat sesuai kebutuhanmu</h2><p className="mt-1 text-[10px] leading-5 text-white/70">Asisten hanya menyaring artikel, rating, dan fasilitas yang dilaporkan komunitas AksesKota.</p></div>
     <form onSubmit={search} className="mt-4"><div className="relative"><textarea value={prompt} onChange={(event)=>setPrompt(event.target.value)} placeholder="Contoh: Aku pakai kursi roda, cari kafe tanpa tangga dekat IPB" className="h-24 w-full resize-none rounded-[15px] border-2 border-[#e4e7ec] p-3 pr-12 text-[11px] outline-none focus:border-[#35cbb0]"/><button type="button" onClick={startListening} aria-label="Ucapkan pencarian" className={`absolute bottom-3 right-3 grid size-8 place-items-center rounded-full ${listening?'animate-pulse bg-[#fee2e2] text-[#b42318]':'bg-[#effaf8] text-[#0c6478]'}`}><Mic className="size-4"/></button></div>
       <fieldset className="mt-4"><legend className="flex items-center gap-2 text-[10px] font-extrabold text-[#475467]"><SlidersHorizontal className="size-4"/>Quick Filter</legend><div className="mt-2 grid grid-cols-2 gap-2">{accessibilityFeatures.map(feature=><label key={feature.value} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-2.5 text-[9px] font-semibold ${filters.includes(feature.value)?'border-[#35cbb0] bg-[#effaf8] text-[#0c6478]':'border-[#e4e7ec] text-[#667085]'}`}><input type="checkbox" checked={filters.includes(feature.value)} onChange={()=>toggleFilter(feature.value)} className="accent-[#0c6478]"/>{feature.label}</label>)}</div></fieldset>
       <button disabled={status==='loading'} className="mt-4 h-11 w-full rounded-xl bg-[#0c6478] text-[11px] font-extrabold text-white disabled:opacity-50">{status==='loading'?'Mencari data komunitas...':'Cari tempat ramah disabilitas'}</button>
@@ -612,14 +635,14 @@ function CommunityVerificationPanel({ reportId, session, onClose, onUpdated, onL
 
 function ProfilePanel({ profile, session, onClose, onLogout, onModerate }) {
   const mode=modes.find(m=>m.id===profile);
-  return <SideShell title="Profil Saya" icon={<UserRound className="size-5" />} onClose={onClose}><div className="mt-5 flex items-center rounded-[18px] bg-gradient-to-r from-[#0c7181] to-[#173c61] p-5 text-white"><span className="grid size-16 place-items-center rounded-[16px] bg-white/20 text-2xl">?</span><div className="ml-4"><b className="text-[17px]">{session?.user?.name || "Tamu"}</b><p className="mt-1 text-[11px] text-[#7be3dc]">{session?.user?.role || "Mode tamu"}</p></div></div><div className="mt-5 flex items-center rounded-[16px] border-2 border-[#f0f1f3] p-4"><span className="text-xl">{mode.icon}</span><div className="ml-3"><small className="text-[9px] font-bold text-[#99a1af]">MODE PERJALANAN</small><b className="block text-[13px]">{mode.label}</b></div><span className="ml-auto rounded-full bg-[#effaf8] px-3 py-2 text-[9px] font-bold text-[#0c6478]">Aktif</span></div>{['MODERATOR','ADMIN'].includes(session?.user?.role)&&<button onClick={onModerate} className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-[16px] bg-[#0c6478] text-[12px] font-extrabold text-white"><ShieldCheck className="size-4" />Moderasi Laporan</button>}<button onClick={onLogout} className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-[16px] border-2 border-[#fecaca] text-[12px] font-bold text-[#ff5a5f] transition hover:bg-[#fff5f5] active:scale-[.98]"><LogOut className="size-4" />{session ? "Keluar dari Akun" : "Masuk ke Akun"}</button></SideShell>;
+  const ModeIcon = mode.icon;
+  return <SideShell title="Profil Saya" icon={<UserRound className="size-5" />} onClose={onClose}><div className="mt-5 flex items-center rounded-[14px] border border-[#d9e5e6] bg-[#f4f9f9] p-5 text-[#173c61]"><span className="grid size-14 place-items-center rounded-[12px] bg-[#0c6478] text-white"><UserRound className="size-6" /></span><div className="ml-4"><b className="text-[16px]">{session?.user?.name || "Tamu"}</b><p className="mt-1 text-[10px] text-[#667085]">{session?.user?.role || "Mode tamu"}</p></div></div><div className="mt-5 flex items-center rounded-[14px] border border-[#e5e9eb] p-4"><span className="grid size-9 place-items-center rounded-[9px] bg-[#e8f5f3] text-[#0c6478]"><ModeIcon className="size-[18px]" /></span><div className="ml-3"><small className="text-[9px] font-bold text-[#7b8491]">MODE PERJALANAN</small><b className="block text-[13px]">{mode.label}</b></div><span className="ml-auto rounded-full bg-[#e8f5f3] px-3 py-1.5 text-[9px] font-bold text-[#0c6478]">Aktif</span></div>{['MODERATOR','ADMIN'].includes(session?.user?.role)&&<button onClick={onModerate} className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-[11px] bg-[#0c6478] text-[11px] font-extrabold text-white"><ShieldCheck className="size-4" />Moderasi laporan</button>}<button onClick={onLogout} className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-[11px] border border-[#fecaca] text-[11px] font-bold text-[#c9362b] transition-colors hover:bg-[#fff5f5]"><LogOut className="size-4" />{session ? "Keluar dari akun" : "Masuk ke akun"}</button></SideShell>;
 }
 
 function MobileMapActions({ onSearch }) {
   return <>
     <button type="button" onClick={() => window.dispatchEvent(new Event("akseskota:locate"))} aria-label="Pusatkan lokasi saya" className="absolute bottom-[100px] right-[10px] z-30 grid size-12 place-items-center rounded-[18px] bg-white text-[#1f2937] shadow-[0_5px_18px_rgba(30,50,65,.2)] sm:hidden"><Navigation className="size-5 -rotate-12" /></button>
-    <MotionSurface direction="up" distance={20} className="absolute inset-x-0 bottom-0 z-30 rounded-t-[26px] bg-white px-3 pb-4 pt-8 shadow-[0_-8px_24px_rgba(30,50,65,.16)] sm:hidden">
-      <span className="absolute left-1/2 top-3 h-1 w-12 -translate-x-1/2 rounded-full bg-[#dfe3e7]" />
+    <MotionSurface direction="up" distance={20} className="absolute inset-x-0 bottom-[76px] z-30 bg-transparent px-3 sm:hidden">
       <button type="button" onClick={onSearch} className="h-11 w-full rounded-[15px] bg-[#0c6478] text-[14px] font-extrabold text-white active:scale-[.98]">Cari Rute</button>
     </MotionSurface>
   </>;
@@ -636,8 +659,8 @@ function currentCoordinates() {
   });
 }
 
-export default function NavigationDashboard({ initialProfile="walking" }) {
-  const router=useRouter(); const [profile,setProfile]=useState(initialProfile); const [panel,setPanel]=useState(null); const [selected,setSelected]=useState("A"); const [detail,setDetail]=useState("A"); const [origin,setOrigin]=useState("Lokasi saya"); const [originSelection,setOriginSelection]=useState(null); const [destination,setDestination]=useState(""); const [destinationSelection,setDestinationSelection]=useState(null); const [session,setSession]=useState(null); const [mapReports,setMapReports]=useState([]); const [userReports,setUserReports]=useState([]); const [reportDraft,setReportDraft]=useState(null); const [selectedReportId,setSelectedReportId]=useState(null); const [navigating,setNavigating]=useState(false); const [routeOptions,setRouteOptions]=useState([]); const [routingStatus,setRoutingStatus]=useState("idle"); const [routeError,setRouteError]=useState(""); const [originCoordinates,setOriginCoordinates]=useState(null); const [destinationCoordinates,setDestinationCoordinates]=useState(null); const [resolvedDestination,setResolvedDestination]=useState("Tujuan"); const mode=modes.find(m=>m.id===profile)||modes[4]; const activeRoute=routeOptions.find(r=>r.id===detail)||routeOptions[0];
+export default function NavigationDashboard({ initialProfile="walking", initialDestination=null }) {
+  const router=useRouter(); const [profile,setProfile]=useState(initialProfile); const [panel,setPanel]=useState(null); const [selected,setSelected]=useState("A"); const [detail,setDetail]=useState("A"); const [directoryDetail,setDirectoryDetail]=useState(null); const [origin,setOrigin]=useState("Lokasi saya"); const [originSelection,setOriginSelection]=useState(null); const [destination,setDestination]=useState(initialDestination?.name||""); const [destinationSelection,setDestinationSelection]=useState(initialDestination); const [session,setSession]=useState(null); const [mapReports,setMapReports]=useState([]); const [userReports,setUserReports]=useState([]); const [reportDraft,setReportDraft]=useState(null); const [selectedReportId,setSelectedReportId]=useState(null); const [navigating,setNavigating]=useState(false); const [routeOptions,setRouteOptions]=useState([]); const [routingStatus,setRoutingStatus]=useState("idle"); const [routeError,setRouteError]=useState(""); const [originCoordinates,setOriginCoordinates]=useState(null); const [destinationCoordinates,setDestinationCoordinates]=useState(initialDestination?.coordinates||null); const [resolvedDestination,setResolvedDestination]=useState(initialDestination?.name||"Tujuan"); const mode=modes.find(m=>m.id===profile)||modes[4]; const activeRoute=routeOptions.find(r=>r.id===detail)||routeOptions[0];
   function changeMode(id){setProfile(id);localStorage.setItem("akseskota-profile",id);setPanel(null);}
 
   const searchRoutes = useCallback(async (openPanel = true) => {
@@ -806,5 +829,24 @@ export default function NavigationDashboard({ initialProfile="walking" }) {
     return () => { cancelled = true; };
   }, []);
 
-  return <main className={`relative h-dvh min-h-0 overflow-hidden bg-[#dfe5e8] sm:min-h-[620px] ${profile==='low-vision'?'contrast-[1.08]':''}`}><MapCanvas routes={routeOptions} reports={mapReports} activeRoute={selected||detail} origin={originCoordinates} destination={destinationCoordinates} reportDraft={reportDraft} onMapClick={panel==='report'?setReportDraft:null} highContrast={profile==='low-vision'} />{!['report','profile','verify-report','community-place','assistant','history'].includes(panel)&&<LeftRail onReport={()=>setPanel('report')} onAssistant={()=>setPanel('assistant')} onHistory={()=>setPanel('history')} onProfile={()=>setPanel('profile')} />}<SearchBox origin={origin} destination={destination} setOrigin={(value)=>{setOrigin(value);setOriginSelection(null);}} setDestination={(value)=>{setDestination(value);setDestinationSelection(null);}} originCoordinates={originCoordinates} onSelectOrigin={(place)=>{setOrigin(place.name);setOriginSelection(place);setOriginCoordinates(place.coordinates);}} onSelectDestination={(place)=>{setDestination(place.name);setDestinationSelection(place);setPanel('community-place');}} onSearch={()=>searchRoutes(true)} mode={mode} onMode={()=>setPanel(panel==='mode'?null:'mode')} loading={routingStatus==='loading'} />{!panel&&!navigating&&<MobileMapActions onSearch={()=>searchRoutes(true)} />}{panel==='mode'&&<ModePanel current={profile} onChange={changeMode} onClose={()=>setPanel(null)} />}{panel==='assistant'&&<AssistantPanel onClose={()=>setPanel(null)} onChoose={(place)=>{const selectedPlace={id:place.externalId,name:place.name,address:place.address,coordinates:place.coordinates};setDestination(place.name);setDestinationSelection(selectedPlace);setDestinationCoordinates(place.coordinates);setPanel('community-place');}}/>}{panel==='history'&&<RouteHistoryPanel session={session} onClose={()=>setPanel(null)} onLogin={()=>router.push('/masuk')}/>} {panel==='community-place'&&destinationSelection&&<CommunityPlacePanel place={destinationSelection} session={session} onRoute={()=>searchRoutes(true)} onClose={()=>setPanel(null)} onLogin={()=>router.push('/masuk')}/>} {panel==='routes'&&<RoutesPanel routes={routeOptions} destination={resolvedDestination} status={routingStatus} error={routeError} selected={selected} setSelected={setSelected} onDetail={id=>{setDetail(id);setSelected(id);setPanel('detail')}} onClose={()=>setPanel(null)} />}{panel==='detail'&&activeRoute&&<DetailPanel route={activeRoute} profile={profile} destination={resolvedDestination} destinationCoordinates={destinationCoordinates} onBack={()=>setPanel('routes')} onReport={()=>setPanel('report')} onNavigate={beginNavigation} />}{panel==='report'&&<ReportPanel reports={userReports} coordinates={reportDraft} setCoordinates={setReportDraft} session={session} onSubmitted={refreshReportsAndRoutes} onClose={()=>{setReportDraft(null);setPanel(null)}} />}{panel==='verify-report'&&selectedReportId&&<CommunityVerificationPanel reportId={selectedReportId} session={session} onClose={()=>setPanel(null)} onUpdated={refreshReportsAndRoutes} onLogin={()=>router.push('/masuk')} />}{panel==='profile'&&<ProfilePanel profile={profile} session={session} onClose={()=>setPanel(null)} onModerate={()=>router.push('/admin/laporan')} onLogout={()=>{clearSession();router.push('/masuk')}} />}{navigating&&activeRoute&&<SpeechNavigation route={activeRoute} destination={resolvedDestination} onStop={()=>setNavigating(false)}/>}</main>;
+  const sidePanelOpen = ['report','profile','verify-report','community-place','assistant','history','directory'].includes(panel);
+
+  return <main className={`relative h-dvh min-h-0 overflow-hidden bg-[#dfe5e8] sm:min-h-[620px] ${profile==='low-vision'?'contrast-[1.08]':''}`}>
+    <MapCanvas routes={routeOptions} reports={mapReports} activeRoute={selected||detail} origin={originCoordinates} destination={destinationCoordinates} reportDraft={reportDraft} onMapClick={panel==='report'?setReportDraft:null} highContrast={profile==='low-vision'} />
+    {!sidePanelOpen&&<LeftRail activePanel={panel} onReport={()=>setPanel('report')} onAssistant={()=>setPanel('assistant')} onHistory={()=>setPanel('history')} onProfile={()=>setPanel('profile')} onDestinations={()=>{setDirectoryDetail(null);setPanel('directory')}} />}
+    {!sidePanelOpen&&<SearchBox origin={origin} destination={destination} setOrigin={(value)=>{setOrigin(value);setOriginSelection(null);}} setDestination={(value)=>{setDestination(value);setDestinationSelection(null);}} originCoordinates={originCoordinates} onSelectOrigin={(place)=>{setOrigin(place.name);setOriginSelection(place);setOriginCoordinates(place.coordinates);}} onSelectDestination={(place)=>{setDestination(place.name);setDestinationSelection(place);setPanel('community-place');}} onSearch={()=>searchRoutes(true)} mode={mode} onMode={()=>setPanel(panel==='mode'?null:'mode')} loading={routingStatus==='loading'} />}
+    {!panel&&!navigating&&<MobileMapActions onSearch={()=>searchRoutes(true)} />}
+    {panel==='mode'&&<ModePanel current={profile} onChange={changeMode} onClose={()=>setPanel(null)} />}
+    {panel==='directory'&&<DirectoryPanel selectedId={directoryDetail?.externalId} onClose={()=>{setDirectoryDetail(null);setPanel(null)}} onSelect={(place)=>{setDirectoryDetail(place);setDestinationCoordinates(place.coordinates)}} />}
+    {panel==='directory'&&directoryDetail&&<DirectoryDetailPanel detail={directoryDetail} onClose={()=>setDirectoryDetail(null)} onUseAsDestination={(place)=>{const selectedPlace={id:place.externalId,name:place.name,address:place.address,coordinates:place.coordinates};setDestination(place.name);setDestinationSelection(selectedPlace);setDestinationCoordinates(place.coordinates);setResolvedDestination(place.name);setDirectoryDetail(null);setPanel(null)}} />}
+    {panel==='assistant'&&<AssistantPanel onClose={()=>setPanel(null)} onChoose={(place)=>{const selectedPlace={id:place.externalId,name:place.name,address:place.address,coordinates:place.coordinates};setDestination(place.name);setDestinationSelection(selectedPlace);setDestinationCoordinates(place.coordinates);setPanel('community-place');}}/>}
+    {panel==='history'&&<RouteHistoryPanel session={session} onClose={()=>setPanel(null)} onLogin={()=>router.push('/masuk')}/>}
+    {panel==='community-place'&&destinationSelection&&<CommunityPlacePanel place={destinationSelection} session={session} onRoute={()=>searchRoutes(true)} onClose={()=>setPanel(null)} onLogin={()=>router.push('/masuk')}/>}
+    {panel==='routes'&&<RoutesPanel routes={routeOptions} destination={resolvedDestination} status={routingStatus} error={routeError} selected={selected} setSelected={setSelected} onDetail={id=>{setDetail(id);setSelected(id);setPanel('detail')}} onClose={()=>setPanel(null)} />}
+    {panel==='detail'&&activeRoute&&<DetailPanel route={activeRoute} profile={profile} destination={resolvedDestination} destinationCoordinates={destinationCoordinates} onBack={()=>setPanel('routes')} onReport={()=>setPanel('report')} onNavigate={beginNavigation} />}
+    {panel==='report'&&<ReportPanel reports={userReports} coordinates={reportDraft} setCoordinates={setReportDraft} session={session} onSubmitted={refreshReportsAndRoutes} onClose={()=>{setReportDraft(null);setPanel(null)}} />}
+    {panel==='verify-report'&&selectedReportId&&<CommunityVerificationPanel reportId={selectedReportId} session={session} onClose={()=>setPanel(null)} onUpdated={refreshReportsAndRoutes} onLogin={()=>router.push('/masuk')} />}
+    {panel==='profile'&&<ProfilePanel profile={profile} session={session} onClose={()=>setPanel(null)} onModerate={()=>router.push('/admin/laporan')} onLogout={()=>{clearSession();router.push('/masuk')}} />}
+    {navigating&&activeRoute&&<SpeechNavigation route={activeRoute} destination={resolvedDestination} onStop={()=>setNavigating(false)}/>}
+  </main>;
 }

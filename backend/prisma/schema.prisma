@@ -99,21 +99,21 @@ model UserPreference {
 
 /// LineString geometry — a walkable street segment
 model RoadSegment {
-  id                 String   @id @default(uuid())
+  id                 String                     @id @default(uuid())
   // MySQL LINESTRING SRID 4326 — written/read via raw SQL, see spatial.ts
-  geometry            Unsupported("linestring")?
-  surfaceCondition    String? // e.g. "good", "cracked", "unpaved"
-  widthMeters         Float?
-  hasRamp             Boolean  @default(false)
-  hasStairs           Boolean  @default(false)
-  hasGuidingBlock      Boolean  @default(false)
-  shadeLevel          Float?   // 0-100, latest aggregated observation
-  lightingAvailable   Boolean  @default(false)
-  accessibilityScore  Float?   // 0-100, computed
-  comfortScore        Float?   // 0-100, computed
-  source              String?  // "OSM" | "field_survey" | "community"
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  geometry           Unsupported("linestring")?
+  surfaceCondition   String? // e.g. "good", "cracked", "unpaved"
+  widthMeters        Float?
+  hasRamp            Boolean                    @default(false)
+  hasStairs          Boolean                    @default(false)
+  hasGuidingBlock    Boolean                    @default(false)
+  shadeLevel         Float? // 0-100, latest aggregated observation
+  lightingAvailable  Boolean                    @default(false)
+  accessibilityScore Float? // 0-100, computed
+  comfortScore       Float? // 0-100, computed
+  source             String? // "OSM" | "field_survey" | "community"
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
 
   shadeObservations ShadeObservation[]
   reports           Report[]
@@ -122,28 +122,28 @@ model RoadSegment {
 }
 
 model ShadeObservation {
-  id             String      @id @default(uuid())
-  roadSegmentId  String
-  roadSegment    RoadSegment @relation(fields: [roadSegmentId], references: [id], onDelete: Cascade)
-  observedAt     DateTime
-  weather        String?
-  shadePercent   Float // 0-100
-  photoUrl       String?  @db.Text
-  createdAt      DateTime    @default(now())
+  id            String      @id @default(uuid())
+  roadSegmentId String
+  roadSegment   RoadSegment @relation(fields: [roadSegmentId], references: [id], onDelete: Cascade)
+  observedAt    DateTime
+  weather       String?
+  shadePercent  Float // 0-100
+  photoUrl      String?     @db.Text
+  createdAt     DateTime    @default(now())
 
   @@map("shade_observations")
 }
 
 /// Point geometry — fixed facility
 model Facility {
-  id        String       @id @default(uuid())
+  id        String                @id @default(uuid())
   type      FacilityType
   // MySQL POINT SRID 4326
-  geometry   Unsupported("point")?
+  geometry  Unsupported("point")?
   name      String?
   condition String? // "good" | "damaged" | "unknown"
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
 
   reports Report[]
 
@@ -152,16 +152,16 @@ model Facility {
 
 /// Point geometry — reported obstacle
 model Obstacle {
-  id          String         @id @default(uuid())
+  id          String                @id @default(uuid())
   type        ObstacleType
   // MySQL POINT SRID 4326
-  geometry     Unsupported("point")?
-  status      ObstacleStatus @default(TEMPORARY)
-  description String?        @db.Text
+  geometry    Unsupported("point")?
+  status      ObstacleStatus        @default(TEMPORARY)
+  description String?               @db.Text
   expiresAt   DateTime?
-  isActive    Boolean        @default(true)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  isActive    Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 
   reports Report[]
 
@@ -170,22 +170,22 @@ model Obstacle {
 
 /// Generic citizen report — can target a road segment, obstacle, or facility
 model Report {
-  id                 String              @id @default(uuid())
+  id                 String             @id @default(uuid())
   userId             String?
-  user               User?               @relation(fields: [userId], references: [id])
-  guestAccessKey     String?              @unique
-  title              String              @default("Laporan hambatan")
+  user               User?              @relation(fields: [userId], references: [id])
+  guestAccessKey     String?            @unique
+  title              String             @default("Laporan hambatan")
   targetType         ReportTargetType
   roadSegmentId      String?
-  roadSegment        RoadSegment?        @relation(fields: [roadSegmentId], references: [id])
+  roadSegment        RoadSegment?       @relation(fields: [roadSegmentId], references: [id])
   obstacleId         String?
-  obstacle           Obstacle?           @relation(fields: [obstacleId], references: [id])
+  obstacle           Obstacle?          @relation(fields: [obstacleId], references: [id])
   facilityId         String?
-  facility           Facility?           @relation(fields: [facilityId], references: [id])
-  photoUrl           String              @db.Text // wajib, sesuai F011/F012 acceptance criteria
-  description        String?             @db.Text
-  verificationStatus VerificationStatus  @default(UNVERIFIED)
-  createdAt          DateTime            @default(now())
+  facility           Facility?          @relation(fields: [facilityId], references: [id])
+  photoUrl           String             @db.Text // wajib, sesuai F011/F012 acceptance criteria
+  description        String?            @db.Text
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  createdAt          DateTime           @default(now())
   expiresAt          DateTime?
 
   verifications Verification[]
@@ -194,30 +194,30 @@ model Report {
 }
 
 model Verification {
-  id        String              @id @default(uuid())
+  id        String             @id @default(uuid())
   reportId  String
-  report    Report              @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  report    Report             @relation(fields: [reportId], references: [id], onDelete: Cascade)
   userId    String
-  user      User                @relation(fields: [userId], references: [id])
+  user      User               @relation(fields: [userId], references: [id])
   action    VerificationStatus // VERIFIED | REJECTED | NEEDS_RECHECK
-  note      String?             @db.Text
-  createdAt DateTime            @default(now())
+  note      String?            @db.Text
+  createdAt DateTime           @default(now())
 
   @@unique([reportId, userId])
   @@map("verifications")
 }
 
 model RouteHistory {
-  id           String   @id @default(uuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  originLat    Float
-  originLng    Float
-  destLat      Float
-  destLng      Float
-  mode         PersonalMode
+  id              String       @id @default(uuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  originLat       Float
+  originLng       Float
+  destLat         Float
+  destLng         Float
+  mode            PersonalMode
   chosenRouteJson Json?
-  createdAt    DateTime @default(now())
+  createdAt       DateTime     @default(now())
 
   @@map("route_history")
 }
@@ -236,17 +236,96 @@ model AuditLog {
 }
 
 model CommunityPlace {
-  id          String      @id @default(uuid())
-  externalId  String      @unique
-  name        String
-  address     String?
-  latitude    Float
-  longitude   Float
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  posts       PlacePost[]
+  id                       String                       @id @default(uuid())
+  externalId               String                       @unique
+  name                     String
+  category                 String?
+  placeType                String?
+  description              String?                      @db.Text
+  address                  String?                      @db.VarChar(500)
+  latitude                 Float
+  longitude                Float
+  googleRating             Float?
+  googleReviewCount        Int?
+  priceRange               String?
+  businessStatus           String?
+  phone                    String?
+  website                  String?                      @db.Text
+  mapsUrl                  String?                      @db.Text
+  menuUrl                  String?                      @db.Text
+  plusCode                 String?
+  openingHours             Json?
+  popularTimes             Json?
+  wheelchairEntrance       Boolean?
+  wheelchairSeating        Boolean?
+  wheelchairRestroom       Boolean?
+  wheelchairParking        Boolean?
+  accessibilityReviewCount Int                          @default(0)
+  accessibilityStatus      String?
+  sourceVerificationStatus VerificationStatus           @default(UNVERIFIED)
+  primaryImageUrl          String?                      @db.Text
+  scrapedAt                DateTime?
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
+  posts                    PlacePost[]
+  accessibilityEvidence    PlaceAccessibilityEvidence[]
+  scrapedReviews           ScrapedPlaceReview[]
+  images                   PlaceImage[]
 
   @@map("community_places")
+}
+
+model PlaceAccessibilityEvidence {
+  id                 String             @id @default(uuid())
+  placeId            String
+  place              CommunityPlace     @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  featureCode        String
+  featureName        String
+  available          Boolean?
+  evidenceSource     String
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  sourceUrl          String?            @db.Text
+  collectedAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([placeId, featureCode, evidenceSource], map: "place_access_evidence_unique")
+  @@index([featureCode, available], map: "place_access_feature_available_idx")
+  @@map("place_accessibility_evidence")
+}
+
+model ScrapedPlaceReview {
+  id                 String             @id @default(uuid())
+  sourceId           String             @unique
+  placeId            String
+  place              CommunityPlace     @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  rating             Float?
+  text               String?            @db.Text
+  matchedKeywords    Json?
+  publishedAt        String?
+  source             String?
+  sourceUrl          String?            @db.Text
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([placeId])
+  @@map("scraped_place_reviews")
+}
+
+model PlaceImage {
+  id        String         @id @default(uuid())
+  sourceId  String         @unique
+  placeId   String
+  place     CommunityPlace @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  order     Int            @default(0)
+  imageUrl  String         @db.Text
+  sourceUrl String?        @db.Text
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([placeId, order])
+  @@map("place_images")
 }
 
 model PlacePost {
@@ -259,12 +338,12 @@ model PlacePost {
   content             String         @db.Text
   rating              Int
   accessibilityRating Int
-  features             Json?
+  features            Json?
   photoUrl            String?        @db.Text
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
-  @@index([placeId, createdAt])
   @@unique([placeId, authorId])
+  @@index([placeId, createdAt])
   @@map("place_posts")
 }

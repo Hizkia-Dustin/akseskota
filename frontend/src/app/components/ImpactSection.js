@@ -1,5 +1,4 @@
 ﻿/* eslint-disable @next/next/no-img-element */
-import CountUp from "./react-bits/CountUp";
 
 const imgIcon = "/images/figma/impact-section/asset-1.svg";
 const imgIcon1 = "/images/figma/impact-section/asset-2.svg";
@@ -42,14 +41,14 @@ export default function ImpactSection() {
                       <div className="relative shrink-0 w-full" data-node-id="7:4387" data-name="Container">
                         <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex flex-col items-start relative size-full">
                           <p className="[word-break:break-word] font-sans font-extrabold leading-[29.98px] relative shrink-0 text-[#005f5a] text-[22.485px] whitespace-nowrap" data-node-id="7:4388">
-                            <CountUp to={73} suffix="%" />
+                            5 mode
                           </p>
                         </div>
                       </div>
                       <div className="h-[19.675px] relative shrink-0 w-[213.611px]" data-node-id="7:4390" data-name="Paragraph">
                         <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex flex-col items-start pt-[3.748px] relative size-full">
                           <p className="[word-break:break-word] font-sans font-normal leading-[15.459px] relative shrink-0 text-[#6a7282] text-[11.243px] whitespace-nowrap" data-node-id="7:4391">
-                            Pengguna temukan rute lebih baik
+                            Preferensi mobilitas tersedia
                           </p>
                         </div>
                       </div>
@@ -58,14 +57,14 @@ export default function ImpactSection() {
                       <div className="relative shrink-0 w-full" data-node-id="7:4395" data-name="Container">
                         <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex flex-col items-start relative size-full">
                           <p className="[word-break:break-word] font-sans font-extrabold leading-[29.98px] relative shrink-0 text-[#1447e6] text-[22.485px] whitespace-nowrap" data-node-id="7:4396">
-                            <CountUp to={2.1} decimals={1} suffix="×" />
+                            6 fitur
                           </p>
                         </div>
                       </div>
                       <div className="h-[19.675px] relative shrink-0 w-[213.611px]" data-node-id="7:4398" data-name="Paragraph">
                         <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex flex-col items-start pt-[3.748px] relative size-full">
                           <p className="[word-break:break-word] font-sans font-normal leading-[15.459px] relative shrink-0 text-[#6a7282] text-[11.243px] whitespace-nowrap" data-node-id="7:4399">
-                            Peningkatan data kondisi jalur
+                            Fasilitas dapat diverifikasi
                           </p>
                         </div>
                       </div>
@@ -74,14 +73,14 @@ export default function ImpactSection() {
                       <div className="relative shrink-0 w-full" data-node-id="7:4403" data-name="Container">
                         <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex flex-col items-start relative size-full">
                           <p className="[word-break:break-word] font-sans font-extrabold leading-[29.98px] relative shrink-0 text-[#bb4d00] text-[22.485px] whitespace-nowrap" data-node-id="7:4404">
-                            <CountUp to={4} suffix=" kota" />
+                            Bogor
                           </p>
                         </div>
                       </div>
                       <div className="h-[19.675px] relative shrink-0 w-[213.611px]" data-node-id="7:4406" data-name="Paragraph">
                         <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex flex-col items-start pt-[3.748px] relative size-full">
                           <p className="[word-break:break-word] font-sans font-normal leading-[15.459px] relative shrink-0 text-[#6a7282] text-[11.243px] whitespace-nowrap" data-node-id="7:4407">
-                            Sedang diujicobakan
+                            Fokus cakupan saat ini
                           </p>
                         </div>
                       </div>

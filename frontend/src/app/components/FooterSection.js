@@ -1,5 +1,4 @@
 ﻿/* eslint-disable @next/next/no-img-element */
-import NewsletterForm from "./NewsletterForm";
 
 const imgVector = "/images/figma/footer-section/asset-1.svg";
 const imgSocialMediaIconSquareFacebook = "/images/figma/footer-section/asset-2.svg";
@@ -35,19 +34,22 @@ export default function FooterSection() {
             <p className="font-sans font-bold leading-[normal] relative shrink-0 text-[19.333px] tracking-[-0.7733px]" data-node-id="26:6524">
               Support
             </p>
-            <p className="font-sans font-normal leading-[27.12px] relative shrink-0 text-[16.436px]" data-node-id="26:6525">
-              link.supportkaloada
-            </p>
+            <div className="flex flex-col gap-2 font-sans text-[15px]">
+              <a href="/navigasi" className="hover:text-[#7be3dc]">Buat laporan jalan</a>
+              <a href="/destinasi" className="hover:text-[#7be3dc]">Nilai fasilitas tempat</a>
+            </div>
           </div>
           <div className="content-stretch flex flex-col gap-[16.436px] items-start relative shrink-0" data-node-id="26:6526">
             <p className="[word-break:break-word] font-sans font-bold leading-[27.12px] relative shrink-0 text-[25.568px] text-white whitespace-nowrap" data-node-id="26:6527">
-              Subscribe to our newsletter
+              Jelajahi Kota Bogor
             </p>
             <div className="content-stretch flex flex-col gap-[23.199px] h-[215.213px] items-start relative shrink-0 w-[346.024px]" data-node-id="26:6528" data-name="24px">
               <p className="[word-break:break-word] font-sans font-medium leading-[27.12px] relative shrink-0 text-[14.61px] text-white w-[345.411px]" data-node-id="26:6529">
-                Dapatkan informasi terbaru seputar aksesibilitas, pembaruan fitur, serta tips mobilitas untuk menciptakan perjalanan yang lebih aman.
+                Lihat tempat, bukti aksesibilitas komunitas, dan rute yang dapat dibandingkan secara transparan.
               </p>
-              <NewsletterForm />
+              <a href="/destinasi" className="rounded-full bg-[#3bb8b0] px-[23.199px] py-[17.399px] text-[14.61px] font-medium text-[#073d47] hover:bg-[#52cbc3]">
+                Buka direktori
+              </a>
             </div>
           </div>
         </div>

@@ -83,7 +83,7 @@ export default function CtaSection() {
               <div className="relative shrink-0 w-full" data-node-id="7:4485" data-name="Paragraph:margin">
                 <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex flex-col items-center pb-[29.98px] pt-[14.99px] relative size-full">
                   <p className="[word-break:break-word] font-sans font-normal leading-[26.233px] relative shrink-0 text-[16.864px] text-[rgba(255,255,255,0.8)] text-center w-[419.727px]" data-node-id="7:4479">
-                    Bergabung bersama ribuan pengguna yang menemukan rute lebih baik setiap hari.
+                    Cari rute, lihat alasan rekomendasi, dan bantu memperbarui kondisi akses di Kota Bogor.
                   </p>
                 </div>
               </div>

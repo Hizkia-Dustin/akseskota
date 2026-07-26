@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -12,8 +10,8 @@ body { margin: 0; background: #fff; color: #101828; font-family: var(--font-jaka
 .mapboxgl-map { font-family: var(--font-jakarta), sans-serif; }
 .mapboxgl-ctrl-bottom-right { right: 12px; bottom: 12px; }
 .mapboxgl-ctrl-attrib { font-size: 9px; }
-a, button { transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease; cursor: pointer; }
-a:hover, button:hover { opacity: .9; transform: translateY(-1px); }
+a, button { cursor: pointer; }
+button:focus-visible, a:focus-visible { outline: 3px solid rgba(53, 203, 176, .42); outline-offset: 2px; }
 .wave { position: relative; z-index: 2; height: 72px; margin-bottom: -1px; background: #f0fdf9; clip-path: polygon(0 35%,8% 49%,20% 44%,31% 51%,43% 41%,55% 48%,67% 38%,79% 47%,90% 39%,100% 47%,100% 100%,0 100%); }
 .wave-dark { background: #0c7181; }
 .wave-flip { clip-path: polygon(0 0,100% 0,100% 53%,90% 61%,79% 53%,67% 62%,55% 52%,43% 59%,31% 49%,20% 56%,8% 51%,0 65%); }

@@ -15,8 +15,6 @@ import WheelchairIcon from "./components/WheelchairIcon";
 import ScrollStack, { ScrollStackItem } from "./components/react-bits/ScrollStack";
 import AnimatedContent from './components/react-bits/AnimatedContent';
 import ScrollFloat from "./components/react-bits/ScrollFloat";
-import CountUp from "./components/react-bits/CountUp";
-import NewsletterForm from "./components/NewsletterForm";
 import CtaMotion from "./components/CtaMotion";
 import HeroEntrance from "./components/HeroEntrance";
 import Link from "next/link";
@@ -77,7 +75,7 @@ export default function Home() {
             <a href="#fitur" className="rounded-full border-2 border-[#e5e7eb] px-8 py-4 text-[14px] font-bold text-[#4a5565]">Pelajari Lebih Lanjut</a>
           </div>
           <div className="hero-stats mt-8 flex gap-8">
-            {[[12400,"Rute dihasilkan"],[3800,"Laporan terverifikasi"],[920,"Kontributor"]].map(([value,label]) => <div key={label}><strong className="block text-[22px] font-extrabold"><CountUp to={value} suffix="+" /></strong><span className="text-[10px] font-semibold text-[#99a1af]">{label}</span></div>)}
+            {[["5","Mode mobilitas"],["6","Filter fasilitas"],["Bogor","Cakupan kota"]].map(([value,label]) => <div key={label}><strong className="block text-[22px] font-extrabold">{value}</strong><span className="text-[10px] font-semibold text-[#99a1af]">{label}</span></div>)}
           </div>
         </div>
         <div role="img" aria-label="Ilustrasi navigasi AksesKota" className="hero-illustration flex justify-center lg:justify-end"><div className="aspect-[515/462] w-full max-w-[516px]"><HeroIllustration /></div></div>
@@ -176,7 +174,7 @@ export default function Home() {
       <section id="dampak" className="hidden h-[554px] min-[1200px]:block"><AnimatedContent className="h-full" distance={35} duration={0.8} scale={0.985} threshold={0.18}><ImpactSection /></AnimatedContent></section>
       <section className="bg-[#f0fdf9] py-[75px] min-[1200px]:hidden">
         <div className="mx-auto grid max-w-[1080px] gap-12 px-[30px] lg:grid-cols-2">
-          <div><span className="rounded-full bg-[#dbeafe] px-3 py-1 text-[11px] font-bold text-[#155dfc]">SDG 11 — Kota Inklusif</span><h2 className="mt-5 max-w-[480px] text-[34px] leading-[1.15] font-extrabold tracking-[-.04em]">Data bersama untuk kota yang lebih baik</h2><p className="mt-5 max-w-[500px] text-[14px] leading-[1.65] text-[#99a1af]">Setiap laporan warga membantu sistem dan pemerintah memahami kondisi jalur aktual prioritas perbaikan jadi lebih tepat sasaran.</p><div className="mt-8 grid grid-cols-2 gap-4"><div className="metric"><b><CountUp to={73} suffix="%" /></b><span>Pengguna temukan rute lebih baik</span></div><div className="metric bg-[#eff6ff]!"><b className="text-[#155dfc]!"><CountUp to={2.1} decimals={1} suffix="×" /></b><span>Peningkatan data kondisi jalur</span></div><div className="metric bg-[#fffbeb]!"><b className="text-[#bb4d00]!"><CountUp to={4} suffix=" kota" /></b><span>Sedang diujicobakan</span></div></div></div>
+          <div><span className="rounded-full bg-[#dbeafe] px-3 py-1 text-[11px] font-bold text-[#155dfc]">SDG 11 — Kota Inklusif</span><h2 className="mt-5 max-w-[480px] text-[34px] leading-[1.15] font-extrabold tracking-[-.04em]">Data bersama untuk kota yang lebih baik</h2><p className="mt-5 max-w-[500px] text-[14px] leading-[1.65] text-[#99a1af]">Setiap laporan warga membantu sistem dan pemerintah memahami kondisi jalur aktual sehingga prioritas perbaikan lebih tepat sasaran.</p><div className="mt-8 grid grid-cols-2 gap-4"><div className="metric"><b>5 mode</b><span>Preferensi mobilitas tersedia</span></div><div className="metric bg-[#eff6ff]!"><b className="text-[#155dfc]!">6 fitur</b><span>Fasilitas dapat diverifikasi</span></div><div className="metric bg-[#fffbeb]!"><b className="text-[#bb4d00]!">Bogor</b><span>Fokus cakupan saat ini</span></div></div></div>
           <div className="space-y-4 pt-3">{[["♿","Inclusive by Default","Sistem menyesuaikan diri terhadap pengguna, bukan sebaliknya."],["♡","Transparent Recommendation","Setiap rekomendasi rute disertai alasan konkret yang bisa dipahami."],["⌂","Community Driven","Kondisi kota diperbarui oleh warga, diverifikasi moderator, langsung berdampak."]].map(([i,t,d]) => <div key={t} className="flex items-center rounded-[16px] bg-white p-5 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#f0fdfa] text-[#0c6478]">{i}</span><div className="ml-4"><h3 className="text-[15px] font-extrabold">{t}</h3><p className="mt-1 text-[12px] text-[#99a1af]">{d}</p></div></div>)}</div>
         </div>
       </section>
@@ -185,7 +183,7 @@ export default function Home() {
 
       <div className="min-[1200px]:hidden"><Wave dark /></div>
       <section className="cta relative bg-[#0c7181] px-6 pb-[165px] pt-14 text-center text-white min-[1200px]:hidden">
-        <div className="text-4xl">🗺️</div><h2 className="mt-5 text-[34px] font-extrabold tracking-[-.04em]">Siap berjalan lebih cerdas?</h2><p className="mx-auto mt-3 max-w-[420px] text-[14px] leading-relaxed text-white/65">Bergabung bersama ribuan pengguna yang menemukan rute lebih baik setiap hari.</p><Link href="/masuk" className="relative z-10 mt-8 inline-block min-w-[270px] rounded-full bg-white px-10 py-4 text-[14px] font-bold text-[#0c6478] shadow-lg transition hover:scale-[1.02] active:scale-[0.98]">Mulai Sekarang</Link><div className="pointer-events-none cityline" />
+        <div className="text-4xl">🗺️</div><h2 className="mt-5 text-[34px] font-extrabold tracking-[-.04em]">Siap mencoba rute yang lebih sesuai?</h2><p className="mx-auto mt-3 max-w-[420px] text-[14px] leading-relaxed text-white/65">Cari rute, lihat alasan rekomendasi, dan bantu memperbarui kondisi akses di Kota Bogor.</p><Link href="/masuk" className="relative z-10 mt-8 inline-block min-w-[270px] rounded-full bg-white px-10 py-4 text-[14px] font-bold text-[#0c6478] shadow-lg transition hover:scale-[1.02] active:scale-[0.98]">Mulai Sekarang</Link><div className="pointer-events-none cityline" />
       </section>
 
       <footer className="hidden h-[515px] overflow-hidden bg-[#0c6478] min-[1200px]:block"><FooterSection /></footer>
@@ -194,8 +192,8 @@ export default function Home() {
         <div className="mx-auto grid max-w-[1230px] gap-10 border-t border-white/15 pt-16 md:grid-cols-[1.4fr_.6fr_.7fr_1.25fr]">
           <div><Logo light /><p className="mt-5 max-w-[385px] text-[12px] leading-[1.55] text-white/70">AksesKota membantu pejalan kaki menemukan rute yang lebih aman, nyaman, dan ramah bagi semua melalui informasi aksesibilitas dan kondisi jalur secara aktual.</p></div>
           <div><h3 className="font-bold">Akses</h3><div className="mt-6 space-y-2 text-[12px] text-white/70"><a className="block" href="#cara-kerja">› Cara Kerja</a><a className="block" href="#fitur">› Fitur</a><a className="block" href="#dampak">› Dampak</a></div></div>
-          <div><h3 className="font-bold">Support</h3><p className="mt-6 text-[12px] text-white/70">link.supportkaloada</p></div>
-          <div><h3 className="text-[20px] font-bold">Subscribe to our newsletter</h3><p className="mt-4 text-[12px] leading-relaxed text-white/70">Dapatkan informasi terbaru seputar aksesibilitas, pembaruan fitur, serta tips mobilitas untuk menciptakan perjalanan yang lebih aman.</p><NewsletterForm compact /></div>
+          <div><h3 className="font-bold">Kontribusi</h3><div className="mt-6 space-y-2 text-[12px] text-white/70"><Link className="block" href="/navigasi">Buat laporan jalan</Link><Link className="block" href="/destinasi">Nilai fasilitas tempat</Link></div></div>
+          <div><h3 className="text-[20px] font-bold">Jelajahi Kota Bogor</h3><p className="mt-4 text-[12px] leading-relaxed text-white/70">Lihat tempat, bukti aksesibilitas komunitas, dan rute yang dapat dibandingkan secara transparan.</p><Link href="/destinasi" className="mt-5 inline-flex rounded-full bg-[#41c5bd] px-6 py-3 text-[12px] font-bold text-[#083f4a]">Buka direktori</Link></div>
         </div>
         <div className="mx-auto mt-16 flex max-w-[1230px] flex-col gap-5 border-t border-white/10 pt-7 text-[10px] tracking-[.2em] text-white/60 sm:flex-row sm:items-center sm:justify-between"><span>🧡 © 2026 AKSESKOTA | PRIVACY POLICY | TERMS OF SERVICE</span><span className="text-sm tracking-[.5em] text-white">f  ♥  ◎  in  ▶</span></div>
       </footer>

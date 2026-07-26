@@ -1,0 +1,77 @@
+ALTER TABLE `community_places`
+  MODIFY COLUMN `address` VARCHAR(500) NULL,
+  ADD COLUMN `category` VARCHAR(191) NULL,
+  ADD COLUMN `placeType` VARCHAR(191) NULL,
+  ADD COLUMN `description` TEXT NULL,
+  ADD COLUMN `googleRating` DOUBLE NULL,
+  ADD COLUMN `googleReviewCount` INTEGER NULL,
+  ADD COLUMN `priceRange` VARCHAR(191) NULL,
+  ADD COLUMN `businessStatus` VARCHAR(191) NULL,
+  ADD COLUMN `phone` VARCHAR(191) NULL,
+  ADD COLUMN `website` TEXT NULL,
+  ADD COLUMN `mapsUrl` TEXT NULL,
+  ADD COLUMN `menuUrl` TEXT NULL,
+  ADD COLUMN `plusCode` VARCHAR(191) NULL,
+  ADD COLUMN `openingHours` JSON NULL,
+  ADD COLUMN `popularTimes` JSON NULL,
+  ADD COLUMN `wheelchairEntrance` BOOLEAN NULL,
+  ADD COLUMN `wheelchairSeating` BOOLEAN NULL,
+  ADD COLUMN `wheelchairRestroom` BOOLEAN NULL,
+  ADD COLUMN `wheelchairParking` BOOLEAN NULL,
+  ADD COLUMN `accessibilityReviewCount` INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN `accessibilityStatus` VARCHAR(191) NULL,
+  ADD COLUMN `sourceVerificationStatus` ENUM('UNVERIFIED', 'VERIFIED', 'REJECTED', 'NEEDS_RECHECK') NOT NULL DEFAULT 'UNVERIFIED',
+  ADD COLUMN `primaryImageUrl` TEXT NULL,
+  ADD COLUMN `scrapedAt` DATETIME(3) NULL;
+
+CREATE TABLE `place_accessibility_evidence` (
+  `id` VARCHAR(191) NOT NULL,
+  `placeId` VARCHAR(191) NOT NULL,
+  `featureCode` VARCHAR(191) NOT NULL,
+  `featureName` VARCHAR(191) NOT NULL,
+  `available` BOOLEAN NULL,
+  `evidenceSource` VARCHAR(191) NOT NULL,
+  `verificationStatus` ENUM('UNVERIFIED', 'VERIFIED', 'REJECTED', 'NEEDS_RECHECK') NOT NULL DEFAULT 'UNVERIFIED',
+  `sourceUrl` TEXT NULL,
+  `collectedAt` DATETIME(3) NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `place_access_evidence_unique` (`placeId`, `featureCode`, `evidenceSource`),
+  INDEX `place_access_feature_available_idx` (`featureCode`, `available`),
+  CONSTRAINT `place_accessibility_evidence_placeId_fkey` FOREIGN KEY (`placeId`) REFERENCES `community_places`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE `scraped_place_reviews` (
+  `id` VARCHAR(191) NOT NULL,
+  `sourceId` VARCHAR(191) NOT NULL,
+  `placeId` VARCHAR(191) NOT NULL,
+  `rating` DOUBLE NULL,
+  `text` TEXT NULL,
+  `matchedKeywords` JSON NULL,
+  `publishedAt` VARCHAR(191) NULL,
+  `source` VARCHAR(191) NULL,
+  `sourceUrl` TEXT NULL,
+  `verificationStatus` ENUM('UNVERIFIED', 'VERIFIED', 'REJECTED', 'NEEDS_RECHECK') NOT NULL DEFAULT 'UNVERIFIED',
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `scraped_place_reviews_sourceId_key` (`sourceId`),
+  INDEX `scraped_place_reviews_placeId_idx` (`placeId`),
+  CONSTRAINT `scraped_place_reviews_placeId_fkey` FOREIGN KEY (`placeId`) REFERENCES `community_places`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE `place_images` (
+  `id` VARCHAR(191) NOT NULL,
+  `sourceId` VARCHAR(191) NOT NULL,
+  `placeId` VARCHAR(191) NOT NULL,
+  `order` INTEGER NOT NULL DEFAULT 0,
+  `imageUrl` TEXT NOT NULL,
+  `sourceUrl` TEXT NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `place_images_sourceId_key` (`sourceId`),
+  INDEX `place_images_placeId_order_idx` (`placeId`, `order`),
+  CONSTRAINT `place_images_placeId_fkey` FOREIGN KEY (`placeId`) REFERENCES `community_places`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

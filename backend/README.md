@@ -40,6 +40,17 @@ npm run seed:demo
 
 Jangan menjalankan `seed:demo` pada production. Gunakan `npm run seed:admin` dengan `ADMIN_EMAIL` dan `ADMIN_PASSWORD` untuk membuat akun admin tanpa data contoh.
 
+### Impor katalog destinasi scraper
+
+Setelah scraper menghasilkan `output/processed/database_import.json`, terapkan migration lalu jalankan importer. Proses ini idempoten: destinasi diperbarui berdasarkan `externalId`, bukan digandakan.
+
+```bash
+npm run prisma:migrate:deploy
+npm run import:destinations -- "C:\\path\\ke\\database_import.json"
+```
+
+Katalog tersedia di `GET /api/destinations`, detailnya di `GET /api/destinations/:externalId`, dan UI-nya di frontend `/destinasi`. Data hasil scraping selalu masuk sebagai `UNVERIFIED`; bukti komunitas tetap menjadi sumber verifikasi aksesibilitas.
+
 ### Menjalankan server
 
 ```bash
@@ -117,6 +128,8 @@ generateCandidateRoutes()          -> kandidat rute dari road_segments (min. 3)
 | Obstacles | GET /api/obstacles?activeOnly | - | F010 |
 | Facilities | GET /api/facilities?lat&lng&type | - | - |
 | Facilities | POST /api/facilities | Admin/Mod | - |
+| Destinations | GET /api/destinations?query&features&limit | - | Katalog tempat hasil impor |
+| Destinations | GET /api/destinations/:externalId | - | Detail, foto, jam buka, dan bukti akses |
 | Reports | GET /api/reports?status&targetType | - | - |
 | Reports | POST /api/reports/:id/verify | User | F013 |
 | Moderator | GET /api/moderator/queue | Moderator/Admin | F018 |

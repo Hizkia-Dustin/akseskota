@@ -6,10 +6,22 @@ export const metadata = {
 };
 
 export default async function NavigationPage({ searchParams }) {
-  const requestedProfile = (await searchParams).profile;
+  const params = await searchParams;
+  const requestedProfile = params.profile;
   const initialProfile = ["wheelchair", "elderly", "stroller", "low-vision", "walking"].includes(requestedProfile)
     ? requestedProfile
     : "walking";
 
-  return <NavigationDashboard initialProfile={initialProfile} />;
+  const longitude = Number(params.lng);
+  const latitude = Number(params.lat);
+  const initialDestination = params.destination && Number.isFinite(longitude) && Number.isFinite(latitude)
+    ? {
+        id: params.externalId || params.destination,
+        name: params.destination,
+        address: "Destinasi katalog AksesKota",
+        coordinates: [longitude, latitude],
+      }
+    : null;
+
+  return <NavigationDashboard initialProfile={initialProfile} initialDestination={initialDestination} />;
 }

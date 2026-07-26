@@ -19,6 +19,7 @@ import moderatorRoutes from './modules/moderator/moderator.routes';
 import dashboardRoutes from './modules/dashboard/dashboard.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import communityPlacesRoutes from './modules/communityPlaces/communityPlaces.routes';
+import destinationsRoutes from './modules/destinations/destinations.routes';
 
 const app = express();
 
@@ -85,6 +86,7 @@ app.use('/api/moderator', moderatorRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/community-places', communityPlacesRoutes);
+app.use('/api/destinations', destinationsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
