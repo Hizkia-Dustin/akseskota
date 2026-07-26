@@ -15,6 +15,14 @@ const profiles = [
   { id: "walking", icon: "🚶", label: "Pejalan Kaki", detail: "Preferensi kenyamanan umum" },
 ];
 
+const googleAuthMessages = {
+  "auth/unauthorized-domain":
+    "Domain website belum diizinkan di Firebase. Tambahkan akseskota.vercel.app ke Authorized domains.",
+  "auth/popup-closed-by-user": "Login Google dibatalkan.",
+  "auth/popup-blocked": "Popup Google diblokir browser. Izinkan popup lalu coba lagi.",
+  "auth/network-request-failed": "Koneksi ke Google bermasalah. Coba lagi setelah jaringan stabil.",
+};
+
 function GoogleMark() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5">
@@ -181,7 +189,14 @@ export default function AuthFlow() {
       storeSession(data);
       setStage("profile");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Login Google tidak dapat diproses.");
+      const code =
+        typeof error === "object" && error !== null && "code" in error
+          ? error.code
+          : "";
+      setMessage(
+        googleAuthMessages[code]
+          || (error instanceof Error ? error.message : "Login Google tidak dapat diproses."),
+      );
     } finally {
       setBusy(false);
     }
