@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import {
   GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
+import { authRequest, saveSession } from "@/lib/api";
 
 const profiles = [
   { id: "wheelchair", icon: "♿", label: "Kursi Roda", detail: "Bebas tangga, ramp tersedia" },
@@ -140,40 +138,22 @@ export default function AuthFlow() {
   const [stage, setStage] = useState("auth");
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [profile, setProfile] = useState("walking");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    if (!auth) return undefined;
-    return onAuthStateChanged(auth, (user) => {
-      if (user) setStage("profile");
-    });
-  }, []);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-  }, [stage]);
-
-  function reportAuthError(error) {
-    setMessage(authMessages[error?.code] || "Email atau password tidak dapat diproses. Periksa kembali datamu.");
-  }
-
   async function handleEmail(event) {
     event.preventDefault();
     setMessage("");
-    if (!isFirebaseConfigured || !auth) {
-      setMessage("Firebase belum dikonfigurasi. Isi NEXT_PUBLIC_FIREBASE_* di file .env.local.");
-      return;
-    }
     setBusy(true);
     try {
-      if (mode === "register") await createUserWithEmailAndPassword(auth, email, password);
-      else await signInWithEmailAndPassword(auth, email, password);
+      const data = await authRequest(mode === "register" ? "register" : "login", mode === "register" ? { name, email, password } : { email, password });
+      saveSession(data);
       setStage("profile");
     } catch (error) {
-      reportAuthError(error);
+      setMessage(error.message);
     } finally {
       setBusy(false);
     }
@@ -189,10 +169,12 @@ export default function AuthFlow() {
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const data = await authRequest("google", { idToken: await result.user.getIdToken() });
+      saveSession(data);
       setStage("profile");
     } catch (error) {
-      reportAuthError(error);
+      setMessage(error.message || authMessages[error?.code] || "Login Google tidak dapat diproses.");
     } finally {
       setBusy(false);
     }
@@ -248,13 +230,17 @@ export default function AuthFlow() {
         </div>
 
         <form onSubmit={handleEmail} className="mt-6 space-y-4">
+          {mode === "register" && <label className="block">
+            <span className="mb-1.5 block text-[10px] font-bold tracking-[.04em] text-[#4a5565] uppercase">Nama</span>
+            <input type="text" autoComplete="name" required minLength={2} value={name} onChange={(event) => setName(event.target.value)} placeholder="Nama kamu" className="h-[50px] w-full rounded-[15px] border-2 border-[#f0f2f4] bg-[#f9fafb] px-4 text-[13px] font-semibold outline-none focus:border-[#46dfb1] focus:ring-4 focus:ring-[#cbfbf1]/70" />
+          </label>}
           <label className="block">
             <span className="mb-1.5 block text-[10px] font-bold tracking-[.04em] text-[#4a5565] uppercase">Email</span>
             <input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="kamu@email.com" className="h-[50px] w-full rounded-[15px] border-2 border-[#f0f2f4] bg-[#f9fafb] px-4 text-[13px] font-semibold outline-none focus:border-[#46dfb1] focus:ring-4 focus:ring-[#cbfbf1]/70" />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-[10px] font-bold tracking-[.04em] text-[#4a5565] uppercase">Password</span>
-            <input type="password" autoComplete={mode === "register" ? "new-password" : "current-password"} required minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Minimal 6 karakter" className="h-[50px] w-full rounded-[15px] border-2 border-[#f0f2f4] bg-[#f9fafb] px-4 text-[13px] font-semibold outline-none focus:border-[#46dfb1] focus:ring-4 focus:ring-[#cbfbf1]/70" />
+            <input type="password" autoComplete={mode === "register" ? "new-password" : "current-password"} required minLength={mode === "register" ? 8 : 1} value={password} onChange={(event) => setPassword(event.target.value)} placeholder={mode === "register" ? "Minimal 8 karakter" : "Password kamu"} className="h-[50px] w-full rounded-[15px] border-2 border-[#f0f2f4] bg-[#f9fafb] px-4 text-[13px] font-semibold outline-none focus:border-[#46dfb1] focus:ring-4 focus:ring-[#cbfbf1]/70" />
           </label>
           {message && <p role="alert" className="rounded-xl bg-[#fff1f2] px-3 py-2.5 text-[10px] leading-4 font-semibold text-[#b42318]">{message}</p>}
           <button type="submit" disabled={busy} className="h-[52px] w-full rounded-[15px] bg-[#0c6478] text-[14px] font-extrabold text-white shadow-[0_5px_12px_rgba(12,100,120,.25)] disabled:cursor-wait disabled:opacity-60">{busy ? "Memproses..." : mode === "register" ? "Daftar dengan Email" : "Masuk"}</button>
