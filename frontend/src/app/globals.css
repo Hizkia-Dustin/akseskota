@@ -61,6 +61,12 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(53, 203, 176, .4
   display: none;
 }
 
+.app-scroll-region {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
 .destinations-layout {
   display: block;
 }

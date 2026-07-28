@@ -504,7 +504,7 @@ function ModePanel({ current, onChange, onClose }) {
 
 function RoutesPanel({ routes, destination, status, error, selected, setSelected, onDetail, onClose }) {
   return (
-    <aside className="absolute inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-40 max-h-[72dvh] overflow-y-auto rounded-[24px] border border-[#e7ebed] bg-white p-5 shadow-[0_-8px_26px_rgba(24,46,58,.14)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:max-h-none sm:w-[372px] sm:max-w-[calc(100vw-24px)] sm:rounded-[14px] sm:shadow-[0_10px_28px_rgba(24,46,58,.16)]">
+    <aside data-lenis-prevent="true" className="app-scroll-region absolute inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-40 max-h-[72dvh] overflow-y-auto rounded-[24px] border border-[#e7ebed] bg-white p-5 shadow-[0_-8px_26px_rgba(24,46,58,.14)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:max-h-none sm:w-[372px] sm:max-w-[calc(100vw-24px)] sm:rounded-[14px] sm:shadow-[0_10px_28px_rgba(24,46,58,.16)]">
       <div className="mx-auto mb-5 h-1 w-12 rounded-full bg-[#dfe3e7] sm:hidden" />
       <div className="flex items-start justify-between"><div><p className="text-[9px] font-extrabold uppercase tracking-[.12em] text-[#0c6478]">Pilihan perjalanan</p><h2 className="mt-1 text-[18px] font-extrabold sm:text-[20px]">{status === "loading" ? "Menghitung rute…" : `${routes.length} rute alternatif`}</h2><p className="mt-1 max-w-[260px] truncate text-[11px] text-[#7b8491]">Menuju <b className="text-[#344054]">{destination}</b></p></div><button onClick={onClose} aria-label="Tutup rute" className="grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6]"><X className="size-4" /></button></div>
       {error && <p role="alert" className="mt-4 flex items-center gap-2 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-3 py-2.5 text-[10px] font-bold text-[#e7000b]"><AlertTriangle className="size-4" />{error}</p>}
@@ -559,7 +559,7 @@ function DetailPanel({ route, destination, destinationCoordinates, onBack, onRep
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5 [scrollbar-color:#8b8d8f_transparent] [scrollbar-width:thin]">
+      <div data-lenis-prevent="true" className="app-scroll-region min-h-0 flex-1 overflow-y-auto px-3 py-5">
         {steps.map((step, index) => (
           <div
             key={`${step.instruction}-${index}`}
@@ -614,7 +614,7 @@ function DetailPanel({ route, destination, destinationCoordinates, onBack, onRep
 }
 
 function SideShell({ title, icon, onClose, children }) {
-  return <aside className="absolute inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] top-[max(12px,env(safe-area-inset-top))] z-50 w-auto overflow-y-auto rounded-[24px] bg-white p-5 shadow-[0_12px_34px_rgba(24,46,58,.2)] sm:bottom-3 sm:left-[80px] sm:right-auto sm:top-3 sm:w-[350px] sm:max-w-[calc(100vw-92px)] sm:rounded-[16px] sm:border sm:border-white/80 sm:shadow-[0_12px_30px_rgba(24,46,58,.17)]"><div className="flex items-center border-b border-[#edf0f2] pb-4"><span className="grid size-9 place-items-center rounded-[10px] bg-[#e8f5f3] text-[#0c6478]">{icon}</span><div className="ml-3"><span className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-[#7b8491]">AksesKota</span><b className="text-[15px] text-[#172b34]">{title}</b></div><button onClick={onClose} aria-label={`Tutup ${title}`} className="ml-auto grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6] transition-colors hover:bg-[#e9edef]"><X className="size-4" /></button></div>{children}</aside>;
+  return <aside data-lenis-prevent="true" className="app-scroll-region absolute inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] top-[max(12px,env(safe-area-inset-top))] z-50 w-auto overflow-y-auto rounded-[24px] bg-white p-5 shadow-[0_12px_34px_rgba(24,46,58,.2)] sm:bottom-3 sm:left-[80px] sm:right-auto sm:top-3 sm:w-[350px] sm:max-w-[calc(100vw-92px)] sm:rounded-[16px] sm:border sm:border-white/80 sm:shadow-[0_12px_30px_rgba(24,46,58,.17)]"><div className="flex items-center border-b border-[#edf0f2] pb-4"><span className="grid size-9 place-items-center rounded-[10px] bg-[#e8f5f3] text-[#0c6478]">{icon}</span><div className="ml-3"><span className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-[#7b8491]">AksesKota</span><b className="text-[15px] text-[#172b34]">{title}</b></div><button onClick={onClose} aria-label={`Tutup ${title}`} className="ml-auto grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6] transition-colors hover:bg-[#e9edef]"><X className="size-4" /></button></div>{children}</aside>;
 }
 
 function AssistantPanel({ onChoose, onClose }) {

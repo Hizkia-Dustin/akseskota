@@ -196,7 +196,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
         </p>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+      <div data-lenis-prevent="true" className="app-scroll-region min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {status === "loading" &&
           [1, 2, 3, 4].map((item) => (
             <div key={item} className="h-[112px] animate-pulse rounded-[14px] bg-[#eef2f3]" />
@@ -313,7 +313,8 @@ export function DirectoryDetailPanel({ detail, onClose, onUseAsDestination }) {
       as="aside"
       direction="left"
       distance={26}
-      className="absolute inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-[55] h-[76dvh] overflow-y-auto rounded-[24px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.22)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:h-auto lg:w-[360px] lg:rounded-[16px] lg:shadow-[0_14px_36px_rgba(24,46,58,.22)]"
+      data-lenis-prevent="true"
+      className="app-scroll-region absolute inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-[55] h-[76dvh] overflow-y-auto rounded-[24px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.22)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:h-auto lg:w-[360px] lg:rounded-[16px] lg:shadow-[0_14px_36px_rgba(24,46,58,.22)]"
     >
       <div className="relative h-44 overflow-hidden bg-[#dff4f0]">
         {imageUrl ? (

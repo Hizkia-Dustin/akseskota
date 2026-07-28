@@ -12,6 +12,7 @@ export default function SmoothScroll() {
         wheelMultiplier: 0.9,
         touchMultiplier: 1,
         anchors: true,
+        prevent: (node) => Boolean(node?.closest?.("[data-lenis-prevent]")),
       }}
     />
   );
