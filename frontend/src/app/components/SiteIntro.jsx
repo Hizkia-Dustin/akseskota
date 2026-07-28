@@ -3,18 +3,14 @@
 import { MapPinned } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const INTRO_KEY = "akseskota-intro-v1";
-
 export default function SiteIntro() {
   const [visible, setVisible] = useState(true);
   const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
-    const alreadySeen = window.sessionStorage.getItem(INTRO_KEY);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (alreadySeen || reducedMotion) {
-      document.documentElement.dataset.introSeen = "true";
+    if (reducedMotion) {
       const hideTimer = window.setTimeout(() => setVisible(false), 0);
       return () => window.clearTimeout(hideTimer);
     }
@@ -62,8 +58,6 @@ export default function SiteIntro() {
           if (cancelled) return;
           setExiting(true);
           finishTimer = window.setTimeout(() => {
-            window.sessionStorage.setItem(INTRO_KEY, "true");
-            document.documentElement.dataset.introSeen = "true";
             document.documentElement.classList.remove("site-intro-active");
             setVisible(false);
           }, 700);
