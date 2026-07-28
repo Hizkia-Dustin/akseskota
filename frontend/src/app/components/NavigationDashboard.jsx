@@ -177,16 +177,16 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
   }
 
   return (
-    <div className="absolute left-3 right-3 top-3 z-20 sm:left-[60px] sm:right-auto sm:w-[286px] sm:max-w-[calc(100vw-72px)]">
-      <div className="overflow-hidden rounded-[14px] border border-[#e8ecee] bg-white shadow-[0_6px_18px_rgba(24,46,58,.12)]">
-        <label className="relative z-10 flex h-[42px] items-center gap-3 border-b border-[#edf0f2] bg-white px-4 sm:h-12"><span className="size-2.5 rounded-full bg-[#0c6478]" /><input aria-label="Lokasi awal" autoComplete="off" placeholder="Cari titik awal" value={origin} onFocus={()=>setActiveField("origin")} onChange={(e) => updateOrigin(e.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')onSearch();}} className="min-w-0 flex-1 bg-white text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-[#98a2b3] sm:text-[11px]" /><button type="button" onClick={()=>updateOrigin("")} aria-label="Hapus titik awal"><X className="size-3 text-[#b2bac5]" /></button></label>
+    <div className="absolute left-3 right-3 top-3 z-20 sm:left-[80px] sm:right-auto sm:w-[340px] sm:max-w-[calc(100vw-92px)]">
+      <div className="overflow-hidden rounded-[16px] border border-white/80 bg-white/95 shadow-[0_10px_28px_rgba(24,46,58,.15)] backdrop-blur-xl">
+        <label className="relative z-10 flex h-[46px] items-center gap-3 border-b border-[#edf0f2] bg-white/95 px-4 sm:h-[52px]"><span className="size-2.5 shrink-0 rounded-full bg-[#0c6478]" /><input aria-label="Lokasi awal" autoComplete="off" placeholder="Cari titik awal" value={origin} onFocus={()=>setActiveField("origin")} onChange={(e) => updateOrigin(e.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')onSearch();}} className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-[#98a2b3] sm:text-[11px]" /><button type="button" onClick={()=>updateOrigin("")} aria-label="Hapus titik awal" className="grid size-7 shrink-0 place-items-center rounded-full transition hover:bg-[#f2f5f6]"><X className="size-3 text-[#b2bac5]" /></button></label>
         {activeField === "origin" && <PlaceSuggestions suggestions={originSuggestions} error={originSuggestionError} label="Saran titik awal" onChoose={chooseOrigin} />}
-        <label className="relative z-10 flex h-[42px] items-center gap-3 border-b border-[#edf0f2] bg-white px-4 sm:h-12"><span className="size-2.5 rounded-full bg-[#f59e0b]" /><input aria-label="Tujuan" autoComplete="off" placeholder="Cari gedung, mal, jalan, atau kota" value={destination} onFocus={()=>setActiveField("destination")} onChange={(e) => updateDestination(e.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')onSearch();}} className="min-w-0 flex-1 bg-white text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-[#98a2b3] sm:text-[11px]" /><button type="button" onClick={()=>updateDestination("")} aria-label="Hapus tujuan"><X className="size-3 text-[#b2bac5]" /></button></label>
+        <label className="relative z-10 flex h-[46px] items-center gap-3 border-b border-[#edf0f2] bg-white/95 px-4 sm:h-[52px]"><span className="size-2.5 shrink-0 rounded-full bg-[#f59e0b]" /><input aria-label="Tujuan" autoComplete="off" placeholder="Cari gedung, mal, jalan, atau kota" value={destination} onFocus={()=>setActiveField("destination")} onChange={(e) => updateDestination(e.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')onSearch();}} className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-[#98a2b3] sm:text-[11px]" /><button type="button" onClick={()=>updateDestination("")} aria-label="Hapus tujuan" className="grid size-7 shrink-0 place-items-center rounded-full transition hover:bg-[#f2f5f6]"><X className="size-3 text-[#b2bac5]" /></button></label>
         {activeField === "destination" && <PlaceSuggestions suggestions={destinationSuggestions} error={destinationSuggestionError} label="Saran tujuan" onChoose={chooseDestination} />}
-        <button type="button" onClick={onSearch} disabled={loading} className="m-3 hidden h-10 w-[calc(100%-24px)] rounded-[10px] bg-[#0c6478] text-[11px] font-extrabold text-white transition-colors hover:bg-[#09596a] active:bg-[#084e5d] disabled:cursor-wait disabled:opacity-60 sm:block">{loading ? "Menghitung…" : "Cari rute"}</button>
+        <button type="button" onClick={onSearch} disabled={loading} className="m-3.5 hidden h-[42px] w-[calc(100%-28px)] rounded-[12px] bg-[#0c6478] text-[11px] font-extrabold text-white shadow-[0_5px_14px_rgba(12,100,120,.18)] transition hover:-translate-y-0.5 hover:bg-[#09596a] active:translate-y-0 active:bg-[#084e5d] disabled:cursor-wait disabled:opacity-60 sm:block">{loading ? "Menghitung…" : "Cari rute"}</button>
       </div>
-      <div className="mt-2 flex gap-2">
-        <button type="button" onClick={onMode} className="flex min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-[#e8ecee] bg-white px-3 py-2 text-[10px] font-bold text-[#0c6478] shadow-[0_4px_12px_rgba(24,46,58,.1)] transition-colors hover:bg-[#f5fafa]"><ModeIcon className="size-4 shrink-0" /><span className="truncate">{mode.label}</span><span className="ml-auto text-[#98a2b3]">›</span></button>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <button type="button" onClick={onMode} className="flex h-11 min-w-0 items-center gap-2 rounded-[12px] border border-white/80 bg-white/95 px-3 text-[10px] font-bold text-[#0c6478] shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#f5fafa]"><ModeIcon className="size-4 shrink-0" /><span className="truncate">{mode.label}</span><span className="ml-auto text-[#98a2b3]">›</span></button>
         <button
           type="button"
           onClick={() => {
@@ -195,7 +195,7 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
           }}
           aria-expanded={showShadeGuide}
           aria-pressed={shadeDataAvailable ? preferShade : undefined}
-          className={`flex items-center gap-1.5 rounded-[10px] border px-3 py-2 text-[10px] font-extrabold shadow-[0_4px_12px_rgba(24,46,58,.1)] transition ${preferShade ? "border-[#22a06b] bg-[#e9f8ef] text-[#087443]" : "border-[#e8ecee] bg-white text-[#52616b] hover:bg-[#f5fafa]"}`}
+          className={`flex h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[12px] border px-2.5 text-[10px] font-extrabold shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:-translate-y-0.5 ${preferShade ? "border-[#22a06b] bg-[#e9f8ef] text-[#087443]" : "border-white/80 bg-white/95 text-[#52616b] hover:bg-[#f5fafa]"}`}
         >
           <TreePine className="size-4" />
           Rute teduh
@@ -203,7 +203,7 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
         </button>
       </div>
       {showShadeGuide && (
-        <MotionSurface direction="down" distance={10} className="mt-2 overflow-hidden rounded-[14px] border border-[#dfe7e8] bg-white shadow-[0_10px_26px_rgba(24,46,58,.16)]">
+        <MotionSurface direction="down" distance={10} className="mt-3 overflow-hidden rounded-[16px] border border-white/80 bg-white/95 shadow-[0_12px_30px_rgba(24,46,58,.17)] backdrop-blur-xl">
           <div className="bg-gradient-to-r from-[#e8f7ef] to-[#effaf8] p-3.5">
             <div className="flex items-start gap-2.5">
               <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-white text-[#087443] shadow-sm"><TreePine className="size-4" /></span>
@@ -241,13 +241,13 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
 function MapLayerControls({ destinationCount, onDirectory, heatEnabled, setHeatEnabled, heatHour, setHeatHour, weather, shadeDataAvailable }) {
   const hourLabel = `${String(heatHour).padStart(2, "0")}:00`;
   return (
-    <div className="absolute right-3 top-[126px] z-30 flex max-w-[calc(100vw-24px)] flex-col items-end gap-2 sm:right-[76px] sm:top-3">
-      <div className="flex gap-2">
-        <button type="button" onClick={onDirectory} className="flex h-11 items-center gap-2 rounded-[13px] border border-white/80 bg-white/95 px-4 text-[11px] font-extrabold text-[#0c6478] shadow-[0_9px_24px_rgba(23,60,97,.16)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#effaf8]"><BookOpen className="size-4" /><span>Direktori</span><span className="rounded-full bg-[#e5f6f2] px-2 py-1 text-[9px]">{destinationCount || 0}</span></button>
-        <button type="button" onClick={() => setHeatEnabled((value) => !value)} aria-pressed={heatEnabled} className={`flex h-11 items-center gap-2 rounded-[13px] border px-4 text-[11px] font-extrabold shadow-[0_9px_24px_rgba(23,60,97,.16)] backdrop-blur transition hover:-translate-y-0.5 ${heatEnabled ? "border-[#f59e0b] bg-[#fff7e8] text-[#a34b00]" : "border-white/80 bg-white/95 text-[#0c6478]"}`}><SunMedium className="size-4" />Paparan panas</button>
+    <div className="absolute left-3 right-3 top-[174px] z-30 flex max-w-[calc(100vw-24px)] flex-col items-end gap-3 sm:left-auto sm:right-[76px] sm:top-3">
+      <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:gap-2">
+        <button type="button" onClick={onDirectory} className="flex h-11 min-w-0 items-center justify-center gap-2 rounded-[13px] border border-white/80 bg-white/95 px-3 text-[11px] font-extrabold text-[#0c6478] shadow-[0_9px_24px_rgba(23,60,97,.16)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#effaf8] sm:px-4"><BookOpen className="size-4 shrink-0" /><span>Direktori</span><span className="rounded-full bg-[#e5f6f2] px-2 py-1 text-[9px]">{destinationCount || 0}</span></button>
+        <button type="button" onClick={() => setHeatEnabled((value) => !value)} aria-pressed={heatEnabled} className={`flex h-11 min-w-0 items-center justify-center gap-2 rounded-[13px] border px-3 text-[11px] font-extrabold shadow-[0_9px_24px_rgba(23,60,97,.16)] backdrop-blur transition hover:-translate-y-0.5 sm:px-4 ${heatEnabled ? "border-[#f59e0b] bg-[#fff7e8] text-[#a34b00]" : "border-white/80 bg-white/95 text-[#0c6478]"}`}><SunMedium className="size-4 shrink-0" />Paparan panas</button>
       </div>
       {heatEnabled && (
-        <MotionSurface direction="down" distance={12} className="w-[300px] max-w-full rounded-[16px] border border-white/80 bg-white/95 p-4 shadow-[0_14px_34px_rgba(23,60,97,.18)] backdrop-blur-xl">
+        <MotionSurface direction="down" distance={12} className="w-full rounded-[16px] border border-white/80 bg-white/95 p-4 shadow-[0_14px_34px_rgba(23,60,97,.18)] backdrop-blur-xl sm:w-[300px]">
           <div className="flex items-center justify-between"><div><p className="text-[11px] font-extrabold text-[#172b3a]">Estimasi paparan panas</p><p className="mt-0.5 text-[9px] text-[#687784]">Bogor · {hourLabel}</p></div>{Number.isFinite(weather?.apparentTemperature) && <span className="rounded-full bg-[#fff1db] px-2.5 py-1 text-[10px] font-extrabold text-[#b45309]">Terasa {Math.round(weather.apparentTemperature)}°C</span>}</div>
           <input aria-label="Waktu estimasi paparan panas" type="range" min="6" max="18" step="1" value={heatHour} onChange={(event) => setHeatHour(Number(event.target.value))} className="mt-3 w-full accent-[#f59e0b]" />
           <div className="mt-1 flex justify-between text-[8px] font-bold text-[#8b96a5]"><span>06.00</span><span>12.00</span><span>18.00</span></div>
@@ -495,7 +495,7 @@ function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHis
 
 function ModePanel({ current, onChange, onClose }) {
   return (
-    <aside className="absolute left-3 right-3 top-[154px] z-40 overflow-hidden rounded-[14px] border border-[#e7ebed] bg-white shadow-[0_10px_28px_rgba(24,46,58,.16)] sm:left-[60px] sm:right-auto sm:top-[196px] sm:w-[286px]">
+    <aside className="absolute left-3 right-3 top-[162px] z-40 overflow-hidden rounded-[16px] border border-white/80 bg-white/95 shadow-[0_12px_30px_rgba(24,46,58,.17)] backdrop-blur-xl sm:left-[80px] sm:right-auto sm:top-[250px] sm:w-[340px]">
       <div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3"><strong className="text-[12px]">Mode Perjalanan</strong><button onClick={onClose} aria-label="Tutup mode"><X className="size-4 text-[#9aa3af]" /></button></div>
       <div className="py-2">{modes.map((mode) => { const Icon = mode.icon; return <button data-mode-item key={mode.id} type="button" onClick={() => onChange(mode.id)} className={`flex w-full items-center px-4 py-2.5 text-left transition-colors hover:bg-[#f4f8f8] ${current === mode.id ? "bg-[#e8f5f3]" : ""}`}><span className="mr-3 grid size-8 place-items-center rounded-lg bg-white text-[#0c6478]"><Icon className="size-[17px]" /></span><span><b className="block text-[11px]">{mode.label}</b><small className="text-[9px] text-[#7b8491]">{mode.detail}</small></span>{current === mode.id && <CheckCircle2 className="ml-auto size-4 text-[#0c6478]" />}</button>; })}</div>
     </aside>
@@ -614,7 +614,7 @@ function DetailPanel({ route, destination, destinationCoordinates, onBack, onRep
 }
 
 function SideShell({ title, icon, onClose, children }) {
-  return <aside className="absolute inset-0 z-50 w-full overflow-y-auto bg-white p-5 sm:bottom-3 sm:left-[60px] sm:right-auto sm:top-3 sm:w-[350px] sm:max-w-[calc(100vw-72px)] sm:rounded-[14px] sm:border sm:border-[#e7ebed] sm:shadow-[0_10px_28px_rgba(24,46,58,.17)]"><div className="flex items-center border-b border-[#edf0f2] pb-4"><span className="grid size-9 place-items-center rounded-[10px] bg-[#e8f5f3] text-[#0c6478]">{icon}</span><div className="ml-3"><span className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-[#7b8491]">AksesKota</span><b className="text-[15px] text-[#172b34]">{title}</b></div><button onClick={onClose} aria-label={`Tutup ${title}`} className="ml-auto grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6] transition-colors hover:bg-[#e9edef]"><X className="size-4" /></button></div>{children}</aside>;
+  return <aside className="absolute inset-0 z-50 w-full overflow-y-auto bg-white p-5 sm:bottom-3 sm:left-[80px] sm:right-auto sm:top-3 sm:w-[350px] sm:max-w-[calc(100vw-92px)] sm:rounded-[16px] sm:border sm:border-white/80 sm:shadow-[0_12px_30px_rgba(24,46,58,.17)]"><div className="flex items-center border-b border-[#edf0f2] pb-4"><span className="grid size-9 place-items-center rounded-[10px] bg-[#e8f5f3] text-[#0c6478]">{icon}</span><div className="ml-3"><span className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-[#7b8491]">AksesKota</span><b className="text-[15px] text-[#172b34]">{title}</b></div><button onClick={onClose} aria-label={`Tutup ${title}`} className="ml-auto grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6] transition-colors hover:bg-[#e9edef]"><X className="size-4" /></button></div>{children}</aside>;
 }
 
 function AssistantPanel({ onChoose, onClose }) {

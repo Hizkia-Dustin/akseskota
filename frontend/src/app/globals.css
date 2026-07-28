@@ -28,6 +28,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(53, 203, 176, .4
 
 @media (max-width: 767px) {
   .mapboxgl-ctrl-bottom-right { display: none; }
+  .mapboxgl-ctrl-compass { display: none !important; }
   .mapboxgl-ctrl-bottom-left { bottom: 92px; }
   h1 { font-size: 38px !important; }
   h2 { font-size: 29px !important; }
