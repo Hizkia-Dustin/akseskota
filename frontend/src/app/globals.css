@@ -591,6 +591,18 @@ html.site-intro-active {
   isolation: isolate;
 }
 
+.global-page-transition-home {
+  color: #effffb;
+  background: #061f29;
+  transform: translateY(0);
+  transition: transform .68s cubic-bezier(.76, 0, .24, 1);
+}
+
+.global-page-transition-home.is-reveal {
+  pointer-events: none;
+  transform: translateY(-100%);
+}
+
 .global-page-transition-panel {
   position: absolute;
   inset: 0;

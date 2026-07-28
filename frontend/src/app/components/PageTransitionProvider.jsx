@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { MapPinned } from "lucide-react";
 
 const PageTransitionContext = createContext(null);
 
@@ -17,6 +18,10 @@ const routeLabels = {
 function getRouteLabel(href) {
   const pathname = href.split("?")[0].split("#")[0] || "/";
   return routeLabels[pathname] || pathname.split("/").filter(Boolean).at(-1)?.toUpperCase() || "AKSESKOTA";
+}
+
+function getRoutePath(href) {
+  return href.split("?")[0].split("#")[0] || "/";
 }
 
 export default function PageTransitionProvider({ children }) {
@@ -41,6 +46,7 @@ export default function PageTransitionProvider({ children }) {
       setTransition({
         href,
         label: getRouteLabel(href),
+        home: getRoutePath(href) === "/",
         phase: "cover",
       });
 
@@ -178,7 +184,41 @@ export default function PageTransitionProvider({ children }) {
   return (
     <PageTransitionContext.Provider value={navigate}>
       {children}
-      {transition ? (
+      {transition?.home ? (
+        <div
+          className={`global-page-transition global-page-transition-home is-${transition.phase}`}
+          role="status"
+          aria-live="polite"
+          aria-label="Membuka halaman Beranda AksesKota"
+        >
+          <span aria-hidden="true" className="site-intro-panel site-intro-panel-main" />
+          <span aria-hidden="true" className="site-intro-panel site-intro-panel-accent" />
+          <span aria-hidden="true" className="site-intro-grid" />
+          <header className="site-intro-header">
+            <span className="site-intro-logo">
+              <MapPinned aria-hidden="true" className="size-4" strokeWidth={1.8} />
+              <span>AksesKota</span>
+            </span>
+            <span>06°35′S / 106°48′E</span>
+          </header>
+          <div className="site-intro-center">
+            <div className="site-intro-kicker">
+              <span>Returning</span>
+              <span className="site-intro-kicker-line" />
+              <span>Bogor, Indonesia</span>
+            </div>
+            <div className="site-intro-wordmark" aria-hidden="true">
+              <span className="site-intro-word-mask"><span>AKSES</span></span>
+              <span className="site-intro-word-mask site-intro-word-outline"><span>KOTA</span></span>
+            </div>
+          </div>
+          <footer className="site-intro-footer">
+            <span>Inclusive urban mobility</span>
+            <span className="site-intro-progress"><span /></span>
+            <span>HOME / 00</span>
+          </footer>
+        </div>
+      ) : transition ? (
         <div
           className={`global-page-transition is-${transition.phase}`}
           role="status"

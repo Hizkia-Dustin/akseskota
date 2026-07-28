@@ -4,6 +4,7 @@ import { ArrowLeft, BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { usePageTransition } from "./PageTransitionProvider";
 
 function DirectoryTransitionOverlay({ returning = false }) {
   return createPortal(
@@ -140,20 +141,10 @@ export default function DirectoryTransitionLink({
 }
 
 export function DirectoryTransitionBackButton({ className = "" }) {
-  const router = useRouter();
-  const timerRef = useRef(null);
-  const [returning, setReturning] = useState(false);
-
-  useEffect(
-    () => () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-    },
-    [],
-  );
+  const navigate = usePageTransition();
 
   function finishBackNavigation() {
     const returnPath = window.sessionStorage.getItem("akseskota-directory-return");
-    const sameSiteReferrer = document.referrer.startsWith(window.location.origin);
     const hasSavedScroll =
       window.sessionStorage.getItem("akseskota-directory-return-scroll") !== null;
 
@@ -161,39 +152,21 @@ export function DirectoryTransitionBackButton({ className = "" }) {
       window.sessionStorage.setItem("akseskota-directory-restore", "true");
     }
 
-    if (sameSiteReferrer) {
-      router.back();
-    } else {
-      router.push(returnPath || "/");
-    }
+    navigate(returnPath || "/");
   }
 
   function goBack() {
-    if (returning) return;
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      finishBackNavigation();
-      return;
-    }
-
-    setReturning(true);
-    timerRef.current = window.setTimeout(finishBackNavigation, 820);
+    finishBackNavigation();
   }
 
-  return (
-    <>
-      <button
-        type="button"
-        onClick={goBack}
-        aria-label="Kembali ke halaman sebelumnya"
-        aria-busy={returning}
-        data-directory-transition-back
-        data-page-transition="manual"
-        className={`${className} transition duration-300 hover:-translate-x-0.5 hover:bg-[#dff5f1] active:translate-x-0`}
-      >
-        <ArrowLeft aria-hidden="true" className="size-5" />
-      </button>
-      {returning && <DirectoryTransitionOverlay returning />}
-    </>
-  );
+  return <button
+    type="button"
+    onClick={goBack}
+    aria-label="Kembali ke halaman sebelumnya"
+    data-directory-transition-back
+    data-page-transition="manual"
+    className={`${className} transition duration-300 hover:-translate-x-0.5 hover:bg-[#dff5f1] active:translate-x-0`}
+  >
+    <ArrowLeft aria-hidden="true" className="size-5" />
+  </button>;
 }
