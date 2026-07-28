@@ -207,7 +207,7 @@ export default function DirectoryPlaceDetail({ detail, onClose, onUseAsDestinati
   const todayHours = place.openingHours?.[todayNames().id];
 
   return (
-    <MotionSurface data-directory-place-detail as="aside" direction="left" distance={26} className="absolute inset-x-3 bottom-3 z-[55] h-[72dvh] overflow-y-auto rounded-[20px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.22)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:h-auto lg:w-[360px] lg:rounded-[16px] lg:shadow-[0_14px_36px_rgba(24,46,58,.22)]">
+    <MotionSurface data-directory-place-detail as="aside" direction="left" distance={26} className="absolute inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-[55] h-[76dvh] overflow-y-auto rounded-[24px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.22)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:h-auto lg:w-[360px] lg:rounded-[16px] lg:shadow-[0_14px_36px_rgba(24,46,58,.22)]">
       {view === "review" ? (
         <ReviewForm detail={place} onBack={() => switchView("detail")} onPublished={refreshAfterReview} session={session} onLogin={onLogin} />
       ) : (

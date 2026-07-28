@@ -177,7 +177,7 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
   }
 
   return (
-    <div className="absolute left-3 right-3 top-3 z-20 sm:left-[80px] sm:right-auto sm:w-[340px] sm:max-w-[calc(100vw-92px)]">
+    <div className="absolute left-4 right-4 top-[max(16px,env(safe-area-inset-top))] z-20 sm:left-[80px] sm:right-auto sm:top-3 sm:w-[340px] sm:max-w-[calc(100vw-92px)]">
       <div className="overflow-hidden rounded-[16px] border border-white/80 bg-white/95 shadow-[0_10px_28px_rgba(24,46,58,.15)] backdrop-blur-xl">
         <label className="relative z-10 flex h-[46px] items-center gap-3 border-b border-[#edf0f2] bg-white/95 px-4 sm:h-[52px]"><span className="size-2.5 shrink-0 rounded-full bg-[#0c6478]" /><input aria-label="Lokasi awal" autoComplete="off" placeholder="Cari titik awal" value={origin} onFocus={()=>setActiveField("origin")} onChange={(e) => updateOrigin(e.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')onSearch();}} className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-[#98a2b3] sm:text-[11px]" /><button type="button" onClick={()=>updateOrigin("")} aria-label="Hapus titik awal" className="grid size-7 shrink-0 place-items-center rounded-full transition hover:bg-[#f2f5f6]"><X className="size-3 text-[#b2bac5]" /></button></label>
         {activeField === "origin" && <PlaceSuggestions suggestions={originSuggestions} error={originSuggestionError} label="Saran titik awal" onChoose={chooseOrigin} />}
@@ -185,7 +185,7 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
         {activeField === "destination" && <PlaceSuggestions suggestions={destinationSuggestions} error={destinationSuggestionError} label="Saran tujuan" onChoose={chooseDestination} />}
         <button type="button" onClick={onSearch} disabled={loading} className="m-3.5 hidden h-[42px] w-[calc(100%-28px)] rounded-[12px] bg-[#0c6478] text-[11px] font-extrabold text-white shadow-[0_5px_14px_rgba(12,100,120,.18)] transition hover:-translate-y-0.5 hover:bg-[#09596a] active:translate-y-0 active:bg-[#084e5d] disabled:cursor-wait disabled:opacity-60 sm:block">{loading ? "Menghitung…" : "Cari rute"}</button>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-3">
         <button type="button" onClick={onMode} className="flex h-11 min-w-0 items-center gap-2 rounded-[12px] border border-white/80 bg-white/95 px-3 text-[10px] font-bold text-[#0c6478] shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#f5fafa]"><ModeIcon className="size-4 shrink-0" /><span className="truncate">{mode.label}</span><span className="ml-auto text-[#98a2b3]">›</span></button>
         <button
           type="button"
@@ -203,7 +203,7 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
         </button>
       </div>
       {showShadeGuide && (
-        <MotionSurface direction="down" distance={10} className="mt-3 overflow-hidden rounded-[16px] border border-white/80 bg-white/95 shadow-[0_12px_30px_rgba(24,46,58,.17)] backdrop-blur-xl">
+        <MotionSurface direction="down" distance={10} className="mt-4 overflow-hidden rounded-[18px] border border-white/80 bg-white/95 shadow-[0_12px_30px_rgba(24,46,58,.17)] backdrop-blur-xl">
           <div className="bg-gradient-to-r from-[#e8f7ef] to-[#effaf8] p-3.5">
             <div className="flex items-start gap-2.5">
               <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-white text-[#087443] shadow-sm"><TreePine className="size-4" /></span>
@@ -241,7 +241,7 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
 function MapLayerControls({ destinationCount, onDirectory, heatEnabled, setHeatEnabled, heatHour, setHeatHour, weather, shadeDataAvailable }) {
   const hourLabel = `${String(heatHour).padStart(2, "0")}:00`;
   return (
-    <div className="absolute left-3 right-3 top-[174px] z-30 flex max-w-[calc(100vw-24px)] flex-col items-end gap-3 sm:left-auto sm:right-[76px] sm:top-3">
+    <div className="absolute left-4 right-4 top-[188px] z-30 flex max-w-[calc(100vw-32px)] flex-col items-end gap-4 sm:left-auto sm:right-[76px] sm:top-3 sm:max-w-none sm:gap-3">
       <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:gap-2">
         <button type="button" onClick={onDirectory} className="flex h-11 min-w-0 items-center justify-center gap-2 rounded-[13px] border border-white/80 bg-white/95 px-3 text-[11px] font-extrabold text-[#0c6478] shadow-[0_9px_24px_rgba(23,60,97,.16)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#effaf8] sm:px-4"><BookOpen className="size-4 shrink-0" /><span>Direktori</span><span className="rounded-full bg-[#e5f6f2] px-2 py-1 text-[9px]">{destinationCount || 0}</span></button>
         <button type="button" onClick={() => setHeatEnabled((value) => !value)} aria-pressed={heatEnabled} className={`flex h-11 min-w-0 items-center justify-center gap-2 rounded-[13px] border px-3 text-[11px] font-extrabold shadow-[0_9px_24px_rgba(23,60,97,.16)] backdrop-blur transition hover:-translate-y-0.5 sm:px-4 ${heatEnabled ? "border-[#f59e0b] bg-[#fff7e8] text-[#a34b00]" : "border-white/80 bg-white/95 text-[#0c6478]"}`}><SunMedium className="size-4 shrink-0" />Paparan panas</button>
@@ -278,7 +278,7 @@ function PlaceCard({ place, onRoute, onClose }) {
   }
 
   return (
-    <MotionSurface as="aside" direction="left" distance={30} scale={0.98} className="absolute inset-x-0 bottom-0 z-40 overflow-hidden rounded-t-[28px] bg-white shadow-[0_-10px_30px_rgba(30,50,65,.2)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:w-[360px] sm:max-w-[calc(100vw-24px)] sm:rounded-[20px] sm:shadow-[0_14px_38px_rgba(30,50,65,.24)]">
+    <MotionSurface as="aside" direction="left" distance={30} scale={0.98} className="absolute inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-40 overflow-hidden rounded-[24px] bg-white shadow-[0_-10px_30px_rgba(30,50,65,.2)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:w-[360px] sm:max-w-[calc(100vw-24px)] sm:rounded-[20px] sm:shadow-[0_14px_38px_rgba(30,50,65,.24)]">
       <div className="relative h-32 overflow-hidden bg-gradient-to-br from-[#d7f8f2] via-[#eaf9f6] to-[#dbeafe] sm:h-40">
         <div className="absolute -bottom-10 -left-8 size-40 rounded-full border-[22px] border-white/55" />
         <div className="absolute -right-6 -top-12 size-44 rounded-full border-[26px] border-[#35cbb0]/25" />
@@ -466,7 +466,7 @@ function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHis
         duration={0.45}
         staggerSelector="[data-mobile-nav-item]"
         stagger={0.04}
-        className="absolute inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[18px] border border-white/80 bg-white/95 p-1.5 shadow-[0_12px_30px_rgba(24,46,58,.2)] backdrop-blur-xl sm:hidden"
+        className="absolute inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-[20px] border border-white/80 bg-white/95 p-2 shadow-[0_12px_30px_rgba(24,46,58,.2)] backdrop-blur-xl sm:hidden"
       >
         {items.map(({ id, label, mobileLabel, icon: Icon, action }) => {
           const active = activePanel === id;
@@ -495,7 +495,7 @@ function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHis
 
 function ModePanel({ current, onChange, onClose }) {
   return (
-    <aside className="absolute left-3 right-3 top-[162px] z-40 overflow-hidden rounded-[16px] border border-white/80 bg-white/95 shadow-[0_12px_30px_rgba(24,46,58,.17)] backdrop-blur-xl sm:left-[80px] sm:right-auto sm:top-[250px] sm:w-[340px]">
+    <aside className="absolute left-4 right-4 top-[184px] z-40 overflow-hidden rounded-[18px] border border-white/80 bg-white/95 shadow-[0_12px_30px_rgba(24,46,58,.17)] backdrop-blur-xl sm:left-[80px] sm:right-auto sm:top-[250px] sm:w-[340px]">
       <div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3"><strong className="text-[12px]">Mode Perjalanan</strong><button onClick={onClose} aria-label="Tutup mode"><X className="size-4 text-[#9aa3af]" /></button></div>
       <div className="py-2">{modes.map((mode) => { const Icon = mode.icon; return <button data-mode-item key={mode.id} type="button" onClick={() => onChange(mode.id)} className={`flex w-full items-center px-4 py-2.5 text-left transition-colors hover:bg-[#f4f8f8] ${current === mode.id ? "bg-[#e8f5f3]" : ""}`}><span className="mr-3 grid size-8 place-items-center rounded-lg bg-white text-[#0c6478]"><Icon className="size-[17px]" /></span><span><b className="block text-[11px]">{mode.label}</b><small className="text-[9px] text-[#7b8491]">{mode.detail}</small></span>{current === mode.id && <CheckCircle2 className="ml-auto size-4 text-[#0c6478]" />}</button>; })}</div>
     </aside>
@@ -504,7 +504,7 @@ function ModePanel({ current, onChange, onClose }) {
 
 function RoutesPanel({ routes, destination, status, error, selected, setSelected, onDetail, onClose }) {
   return (
-    <aside className="absolute inset-x-0 bottom-0 z-40 max-h-[70dvh] overflow-y-auto rounded-t-[22px] border border-[#e7ebed] bg-white p-5 shadow-[0_-8px_26px_rgba(24,46,58,.14)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:max-h-none sm:w-[372px] sm:max-w-[calc(100vw-24px)] sm:rounded-[14px] sm:shadow-[0_10px_28px_rgba(24,46,58,.16)]">
+    <aside className="absolute inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-40 max-h-[72dvh] overflow-y-auto rounded-[24px] border border-[#e7ebed] bg-white p-5 shadow-[0_-8px_26px_rgba(24,46,58,.14)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:max-h-none sm:w-[372px] sm:max-w-[calc(100vw-24px)] sm:rounded-[14px] sm:shadow-[0_10px_28px_rgba(24,46,58,.16)]">
       <div className="mx-auto mb-5 h-1 w-12 rounded-full bg-[#dfe3e7] sm:hidden" />
       <div className="flex items-start justify-between"><div><p className="text-[9px] font-extrabold uppercase tracking-[.12em] text-[#0c6478]">Pilihan perjalanan</p><h2 className="mt-1 text-[18px] font-extrabold sm:text-[20px]">{status === "loading" ? "Menghitung rute…" : `${routes.length} rute alternatif`}</h2><p className="mt-1 max-w-[260px] truncate text-[11px] text-[#7b8491]">Menuju <b className="text-[#344054]">{destination}</b></p></div><button onClick={onClose} aria-label="Tutup rute" className="grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6]"><X className="size-4" /></button></div>
       {error && <p role="alert" className="mt-4 flex items-center gap-2 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-3 py-2.5 text-[10px] font-bold text-[#e7000b]"><AlertTriangle className="size-4" />{error}</p>}
@@ -520,7 +520,7 @@ function DetailPanel({ route, destination, destinationCoordinates, onBack, onRep
     : [{ instruction: `Tiba di ${destination}`, distance: route.distance }];
 
   return (
-    <aside className="absolute inset-0 z-50 flex flex-col overflow-hidden border border-[#e4e8eb] bg-white shadow-[0_-8px_26px_rgba(24,46,58,.16)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:w-[440px] sm:max-w-[calc(100vw-72px)] sm:rounded-[14px] sm:shadow-[0_10px_28px_rgba(24,46,58,.17)]">
+    <aside className="absolute inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] top-[max(12px,env(safe-area-inset-top))] z-50 flex flex-col overflow-hidden rounded-[24px] border border-[#e4e8eb] bg-white shadow-[0_-8px_26px_rgba(24,46,58,.16)] sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:w-[440px] sm:max-w-[calc(100vw-72px)] sm:rounded-[14px] sm:shadow-[0_10px_28px_rgba(24,46,58,.17)]">
       <header className="flex shrink-0 items-center border-b border-[#edf0f2] px-4 py-3">
         <button
           type="button"
@@ -614,7 +614,7 @@ function DetailPanel({ route, destination, destinationCoordinates, onBack, onRep
 }
 
 function SideShell({ title, icon, onClose, children }) {
-  return <aside className="absolute inset-0 z-50 w-full overflow-y-auto bg-white p-5 sm:bottom-3 sm:left-[80px] sm:right-auto sm:top-3 sm:w-[350px] sm:max-w-[calc(100vw-92px)] sm:rounded-[16px] sm:border sm:border-white/80 sm:shadow-[0_12px_30px_rgba(24,46,58,.17)]"><div className="flex items-center border-b border-[#edf0f2] pb-4"><span className="grid size-9 place-items-center rounded-[10px] bg-[#e8f5f3] text-[#0c6478]">{icon}</span><div className="ml-3"><span className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-[#7b8491]">AksesKota</span><b className="text-[15px] text-[#172b34]">{title}</b></div><button onClick={onClose} aria-label={`Tutup ${title}`} className="ml-auto grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6] transition-colors hover:bg-[#e9edef]"><X className="size-4" /></button></div>{children}</aside>;
+  return <aside className="absolute inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] top-[max(12px,env(safe-area-inset-top))] z-50 w-auto overflow-y-auto rounded-[24px] bg-white p-5 shadow-[0_12px_34px_rgba(24,46,58,.2)] sm:bottom-3 sm:left-[80px] sm:right-auto sm:top-3 sm:w-[350px] sm:max-w-[calc(100vw-92px)] sm:rounded-[16px] sm:border sm:border-white/80 sm:shadow-[0_12px_30px_rgba(24,46,58,.17)]"><div className="flex items-center border-b border-[#edf0f2] pb-4"><span className="grid size-9 place-items-center rounded-[10px] bg-[#e8f5f3] text-[#0c6478]">{icon}</span><div className="ml-3"><span className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-[#7b8491]">AksesKota</span><b className="text-[15px] text-[#172b34]">{title}</b></div><button onClick={onClose} aria-label={`Tutup ${title}`} className="ml-auto grid size-9 place-items-center rounded-[9px] bg-[#f3f5f6] transition-colors hover:bg-[#e9edef]"><X className="size-4" /></button></div>{children}</aside>;
 }
 
 function AssistantPanel({ onChoose, onClose }) {
@@ -900,8 +900,8 @@ function ProfilePanel({ profile, session, onClose, onLogout, onModerate }) {
 
 function MobileMapActions({ onSearch }) {
   return <>
-    <button type="button" onClick={() => window.dispatchEvent(new Event("akseskota:locate"))} aria-label="Pusatkan lokasi saya" className="absolute bottom-[100px] right-[10px] z-30 grid size-12 place-items-center rounded-[18px] bg-white text-[#1f2937] shadow-[0_5px_18px_rgba(30,50,65,.2)] sm:hidden"><Navigation className="size-5 -rotate-12" /></button>
-    <MotionSurface direction="up" distance={20} className="absolute inset-x-0 bottom-[76px] z-30 bg-transparent px-3 sm:hidden">
+    <button type="button" onClick={() => window.dispatchEvent(new Event("akseskota:locate"))} aria-label="Pusatkan lokasi saya" className="absolute bottom-[116px] right-4 z-30 grid size-12 place-items-center rounded-[18px] bg-white text-[#1f2937] shadow-[0_5px_18px_rgba(30,50,65,.2)] sm:hidden"><Navigation className="size-5 -rotate-12" /></button>
+    <MotionSurface direction="up" distance={20} className="absolute inset-x-0 bottom-[88px] z-30 bg-transparent px-4 sm:hidden">
       <button type="button" onClick={onSearch} className="h-11 w-full rounded-[15px] bg-[#0c6478] text-[14px] font-extrabold text-white active:scale-[.98]">Cari Rute</button>
     </MotionSurface>
   </>;
@@ -1153,12 +1153,13 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
   }, []);
 
   const sidePanelOpen = ['report','profile','verify-report','community-place','assistant','history','directory'].includes(panel);
+  const showMapLayerControls = !sidePanelOpen && panel !== 'mode';
 
   return <main className={`relative h-dvh min-h-0 overflow-hidden bg-[#dfe5e8] sm:min-h-[620px] ${profile==='low-vision'?'contrast-[1.08]':''}`}>
     <MapCanvas routes={routeOptions} reports={mapReports} destinations={mapDestinations} shadeSegments={shadeSegments} heatEnabled={heatEnabled} heatHour={heatHour} weather={selectedWeather} onDestinationSelect={openMapDestination} activeRoute={selected||detail} origin={originCoordinates} destination={destinationCoordinates} reportDraft={reportDraft} onMapClick={panel==='report'?setReportDraft:null} highContrast={profile==='low-vision'} />
     <LeftRail activePanel={panel} destinationCount={mapDestinations.length} onHome={()=>{setDirectoryDetail(null);setPanel(null)}} onReport={()=>setPanel('report')} onAssistant={()=>setPanel('assistant')} onHistory={()=>setPanel('history')} onProfile={()=>setPanel('profile')} onDestinations={()=>{setDirectoryDetail(null);setPanel('directory')}} />
     {!sidePanelOpen&&<SearchBox origin={origin} destination={destination} setOrigin={(value)=>{setOrigin(value);setOriginSelection(null);}} setDestination={(value)=>{setDestination(value);setDestinationSelection(null);}} originCoordinates={originCoordinates} onSelectOrigin={(place)=>{setOrigin(place.name);setOriginSelection(place);setOriginCoordinates(place.coordinates);}} onSelectDestination={(place)=>{setDestination(place.name);setDestinationSelection(place);setPanel('community-place');}} onSearch={()=>searchRoutes(true)} mode={mode} onMode={()=>setPanel(panel==='mode'?null:'mode')} loading={routingStatus==='loading'} preferShade={preferShade} onToggleShade={()=>setPreferShade(value=>!value)} shadeDataAvailable={shadeSegments.length>0} onShowHeat={()=>setHeatEnabled(true)} onReportShade={()=>setPanel('report')} />}
-    {!sidePanelOpen&&<MapLayerControls destinationCount={mapDestinations.length} onDirectory={()=>{setDirectoryDetail(null);setPanel('directory')}} heatEnabled={heatEnabled} setHeatEnabled={setHeatEnabled} heatHour={heatHour} setHeatHour={setHeatHour} weather={selectedWeather} shadeDataAvailable={shadeSegments.length>0} />}
+    {showMapLayerControls&&<MapLayerControls destinationCount={mapDestinations.length} onDirectory={()=>{setDirectoryDetail(null);setPanel('directory')}} heatEnabled={heatEnabled} setHeatEnabled={setHeatEnabled} heatHour={heatHour} setHeatHour={setHeatHour} weather={selectedWeather} shadeDataAvailable={shadeSegments.length>0} />}
     {!panel&&!navigating&&<MobileMapActions onSearch={()=>searchRoutes(true)} />}
     {panel==='mode'&&<ModePanel current={profile} onChange={changeMode} onClose={()=>setPanel(null)} />}
     {panel==='directory'&&<DirectoryPanel selectedId={directoryDetail?.externalId} onClose={()=>{setDirectoryDetail(null);setPanel(null)}} onSelect={(place)=>{setDirectoryDetail(place);setDestinationCoordinates(place.coordinates)}} />}

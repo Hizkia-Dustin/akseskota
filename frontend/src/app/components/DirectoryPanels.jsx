@@ -64,7 +64,7 @@ function matchesCategory(place, activeCategory) {
 
 function DirectoryHeader({ onClose }) {
   return (
-    <div className="flex items-center border-b border-[#edf0f2] px-4 py-4">
+    <div className="flex items-center border-b border-[#edf0f2] px-5 py-4">
       <span className="grid size-9 place-items-center rounded-[10px] bg-[#e8f5f3] text-[#0c6478]">
         <BookOpen className="size-[18px]" />
       </span>
@@ -134,11 +134,11 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
       as="aside"
       direction="right"
       distance={24}
-      className="absolute inset-x-3 bottom-3 z-50 flex h-[58dvh] min-h-0 flex-col overflow-hidden rounded-[20px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.2)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-[80px] lg:right-auto lg:top-3 lg:h-auto lg:w-[330px] lg:rounded-[16px] lg:shadow-[0_12px_32px_rgba(24,46,58,.18)]"
+      className="absolute inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-50 flex h-[64dvh] min-h-0 flex-col overflow-hidden rounded-[24px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.2)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-[80px] lg:right-auto lg:top-3 lg:h-auto lg:w-[330px] lg:rounded-[16px] lg:shadow-[0_12px_32px_rgba(24,46,58,.18)]"
     >
       <span className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-[#d0d5dd] lg:hidden" />
       <DirectoryHeader onClose={onClose} />
-      <div className="border-b border-[#edf0f2] px-4 py-3">
+      <div className="border-b border-[#edf0f2] px-5 py-4">
         <label className="flex h-10 items-center gap-2 rounded-[11px] bg-[#f3f6f7] px-3">
           <Search className="size-4 text-[#0c6478]" />
           <input
@@ -181,7 +181,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
         </p>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {status === "loading" &&
           [1, 2, 3, 4].map((item) => (
             <div key={item} className="h-[112px] animate-pulse rounded-[14px] bg-[#eef2f3]" />
@@ -298,7 +298,7 @@ export function DirectoryDetailPanel({ detail, onClose, onUseAsDestination }) {
       as="aside"
       direction="left"
       distance={26}
-      className="absolute inset-x-3 bottom-3 z-[55] h-[72dvh] overflow-y-auto rounded-[20px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.22)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:h-auto lg:w-[360px] lg:rounded-[16px] lg:shadow-[0_14px_36px_rgba(24,46,58,.22)]"
+      className="absolute inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-[55] h-[76dvh] overflow-y-auto rounded-[24px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.22)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:h-auto lg:w-[360px] lg:rounded-[16px] lg:shadow-[0_14px_36px_rgba(24,46,58,.22)]"
     >
       <div className="relative h-44 overflow-hidden bg-[#dff4f0]">
         {imageUrl ? (
