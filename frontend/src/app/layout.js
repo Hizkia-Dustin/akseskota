@@ -4,6 +4,7 @@ import "lenis/dist/lenis.css";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import SmoothScroll from "./components/SmoothScroll";
+import PageTransitionProvider from "./components/PageTransitionProvider";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -20,8 +21,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" className={jakarta.variable}>
       <body className={jakarta.className}>
-        <SmoothScroll />
-        {children}
+        <PageTransitionProvider>
+          <SmoothScroll />
+          {children}
+        </PageTransitionProvider>
       </body>
     </html>
   );

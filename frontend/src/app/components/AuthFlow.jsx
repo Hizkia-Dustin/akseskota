@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { apiRequest, getStoredSession, storeSession } from "@/lib/api";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
+import { usePageTransition } from "./PageTransitionProvider";
 
 const profiles = [
   { id: "wheelchair", icon: "♿", label: "Kursi Roda", detail: "Bebas tangga, ramp tersedia" },
@@ -131,7 +131,7 @@ function NightLandscape({ scene }) {
 }
 
 export default function AuthFlow() {
-  const router = useRouter();
+  const navigate = usePageTransition();
   const [stage, setStage] = useState("auth");
   const [mode, setMode] = useState("login");
   const [name, setName] = useState("");
@@ -209,7 +209,7 @@ export default function AuthFlow() {
 
   function finishProfile() {
     localStorage.setItem("akseskota-profile", profile);
-    router.push(`/navigasi?profile=${profile}`);
+    navigate(`/navigasi?profile=${profile}`);
   }
 
   if (stage === "profile") {

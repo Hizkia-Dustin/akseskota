@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Clock3, RefreshCw, ShieldCheck, XCircle } from "lucide-react";
 import { apiRequest, getStoredSession } from "@/lib/api";
+import { usePageTransition } from "./PageTransitionProvider";
 
 const typeLabels = {
   STAIRS: "Tangga menghalangi",
@@ -16,7 +16,7 @@ const typeLabels = {
 };
 
 export default function ReportModerationDashboard() {
-  const router = useRouter();
+  const navigate = usePageTransition();
   const [session, setSession] = useState(null);
   const [reports, setReports] = useState([]);
   const [status, setStatus] = useState("loading");
@@ -58,12 +58,12 @@ export default function ReportModerationDashboard() {
     }
   }
 
-  if (status === "forbidden") return <main className="grid min-h-screen place-items-center bg-[#eef3f4] p-6"><div className="max-w-md rounded-[24px] bg-white p-8 text-center shadow-xl"><ShieldCheck className="mx-auto size-10 text-[#0c6478]"/><h1 className="mt-4 text-xl font-extrabold">Akses moderator diperlukan</h1><p className="mt-2 text-sm text-[#667085]">Masuk menggunakan akun moderator atau admin untuk memeriksa laporan warga.</p><button onClick={()=>router.push('/masuk')} className="mt-6 rounded-full bg-[#0c6478] px-6 py-3 text-sm font-bold text-white">Masuk</button></div></main>;
+  if (status === "forbidden") return <main className="grid min-h-screen place-items-center bg-[#eef3f4] p-6"><div className="max-w-md rounded-[24px] bg-white p-8 text-center shadow-xl"><ShieldCheck className="mx-auto size-10 text-[#0c6478]"/><h1 className="mt-4 text-xl font-extrabold">Akses moderator diperlukan</h1><p className="mt-2 text-sm text-[#667085]">Masuk menggunakan akun moderator atau admin untuk memeriksa laporan warga.</p><button onClick={()=>navigate('/masuk')} className="mt-6 rounded-full bg-[#0c6478] px-6 py-3 text-sm font-bold text-white">Masuk</button></div></main>;
 
   return <main className="min-h-screen bg-[#eef3f4] px-4 py-6 text-[#101828] sm:px-8 sm:py-8">
     <div className="mx-auto max-w-6xl">
       <header className="flex flex-wrap items-center gap-4 rounded-[24px] bg-gradient-to-r from-[#0c6478] to-[#173c61] p-6 text-white shadow-xl">
-        <button onClick={()=>router.push('/navigasi')} aria-label="Kembali ke peta" className="grid size-11 place-items-center rounded-full bg-white/15"><ArrowLeft className="size-5"/></button>
+        <button onClick={()=>navigate('/navigasi')} aria-label="Kembali ke peta" className="grid size-11 place-items-center rounded-full bg-white/15"><ArrowLeft className="size-5"/></button>
         <div><p className="text-xs font-bold text-[#7be3dc]">AKSESKOTA</p><h1 className="text-2xl font-extrabold">Moderasi Laporan</h1><p className="mt-1 text-xs text-white/70">{session?.user?.name} · {session?.user?.role}</p></div>
         <button onClick={loadQueue} className="ml-auto flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-[#0c6478]"><RefreshCw className="size-4"/>Muat ulang</button>
       </header>

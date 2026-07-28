@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import MotionSurface from "./react-bits/MotionSurface";
 import MapboxMap from "./MapboxMap";
 import { DirectoryPanel } from "./DirectoryPanels";
 import DirectoryPlaceDetail from "./DirectoryPlaceDetail";
+import { usePageTransition } from "./PageTransitionProvider";
 import { geocodeMapboxPlace, isInsideBogor, openGoogleStreetView, requestMapboxWalkingRoutes, searchMapboxPlaces } from "../../lib/mapboxRouting";
 import { apiRequest, clearSession, getStoredSession } from "../../lib/api";
 import {
@@ -919,7 +919,7 @@ function currentCoordinates() {
 }
 
 export default function NavigationDashboard({ initialProfile="walking", initialDestination=null }) {
-  const router=useRouter(); const [profile,setProfile]=useState(initialProfile); const [panel,setPanel]=useState(null); const [selected,setSelected]=useState("A"); const [detail,setDetail]=useState("A"); const [directoryDetail,setDirectoryDetail]=useState(null); const [origin,setOrigin]=useState("Lokasi saya"); const [originSelection,setOriginSelection]=useState(null); const [destination,setDestination]=useState(initialDestination?.name||""); const [destinationSelection,setDestinationSelection]=useState(initialDestination); const [session,setSession]=useState(null); const [mapReports,setMapReports]=useState([]); const [userReports,setUserReports]=useState([]); const [reportDraft,setReportDraft]=useState(null); const [selectedReportId,setSelectedReportId]=useState(null); const [navigating,setNavigating]=useState(false); const [routeOptions,setRouteOptions]=useState([]); const [routingStatus,setRoutingStatus]=useState("idle"); const [routeError,setRouteError]=useState(""); const [originCoordinates,setOriginCoordinates]=useState(null); const [destinationCoordinates,setDestinationCoordinates]=useState(initialDestination?.coordinates||null); const [resolvedDestination,setResolvedDestination]=useState(initialDestination?.name||"Tujuan"); const mode=modes.find(m=>m.id===profile)||modes[4]; const activeRoute=routeOptions.find(r=>r.id===detail)||routeOptions[0];
+  const navigate=usePageTransition(); const [profile,setProfile]=useState(initialProfile); const [panel,setPanel]=useState(null); const [selected,setSelected]=useState("A"); const [detail,setDetail]=useState("A"); const [directoryDetail,setDirectoryDetail]=useState(null); const [origin,setOrigin]=useState("Lokasi saya"); const [originSelection,setOriginSelection]=useState(null); const [destination,setDestination]=useState(initialDestination?.name||""); const [destinationSelection,setDestinationSelection]=useState(initialDestination); const [session,setSession]=useState(null); const [mapReports,setMapReports]=useState([]); const [userReports,setUserReports]=useState([]); const [reportDraft,setReportDraft]=useState(null); const [selectedReportId,setSelectedReportId]=useState(null); const [navigating,setNavigating]=useState(false); const [routeOptions,setRouteOptions]=useState([]); const [routingStatus,setRoutingStatus]=useState("idle"); const [routeError,setRouteError]=useState(""); const [originCoordinates,setOriginCoordinates]=useState(null); const [destinationCoordinates,setDestinationCoordinates]=useState(initialDestination?.coordinates||null); const [resolvedDestination,setResolvedDestination]=useState(initialDestination?.name||"Tujuan"); const mode=modes.find(m=>m.id===profile)||modes[4]; const activeRoute=routeOptions.find(r=>r.id===detail)||routeOptions[0];
   const [mapDestinations, setMapDestinations] = useState([]);
   const [shadeSegments, setShadeSegments] = useState([]);
   const [preferShade, setPreferShade] = useState(false);
@@ -1162,15 +1162,15 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
     {!panel&&!navigating&&<MobileMapActions onSearch={()=>searchRoutes(true)} />}
     {panel==='mode'&&<ModePanel current={profile} onChange={changeMode} onClose={()=>setPanel(null)} />}
     {panel==='directory'&&<DirectoryPanel selectedId={directoryDetail?.externalId} onClose={()=>{setDirectoryDetail(null);setPanel(null)}} onSelect={(place)=>{setDirectoryDetail(place);setDestinationCoordinates(place.coordinates)}} />}
-    {panel==='directory'&&directoryDetail&&<DirectoryPlaceDetail key={directoryDetail.externalId} detail={directoryDetail} session={session} onLogin={()=>router.push('/masuk')} onClose={()=>setDirectoryDetail(null)} onUseAsDestination={(place)=>{const selectedPlace={id:place.externalId,name:place.name,address:place.address,coordinates:place.coordinates};setDestination(place.name);setDestinationSelection(selectedPlace);setDestinationCoordinates(place.coordinates);setResolvedDestination(place.name);setDirectoryDetail(null);setPanel(null)}} />}
+    {panel==='directory'&&directoryDetail&&<DirectoryPlaceDetail key={directoryDetail.externalId} detail={directoryDetail} session={session} onLogin={()=>navigate('/masuk')} onClose={()=>setDirectoryDetail(null)} onUseAsDestination={(place)=>{const selectedPlace={id:place.externalId,name:place.name,address:place.address,coordinates:place.coordinates};setDestination(place.name);setDestinationSelection(selectedPlace);setDestinationCoordinates(place.coordinates);setResolvedDestination(place.name);setDirectoryDetail(null);setPanel(null)}} />}
     {panel==='assistant'&&<AssistantPanel onClose={()=>setPanel(null)} onChoose={(place)=>{const selectedPlace={id:place.externalId,name:place.name,address:place.address,coordinates:place.coordinates};setDestination(place.name);setDestinationSelection(selectedPlace);setDestinationCoordinates(place.coordinates);setPanel('community-place');}}/>}
-    {panel==='history'&&<RouteHistoryPanel session={session} onClose={()=>setPanel(null)} onLogin={()=>router.push('/masuk')}/>}
-    {panel==='community-place'&&destinationSelection&&<CommunityPlacePanel place={destinationSelection} session={session} onRoute={()=>searchRoutes(true)} onClose={()=>setPanel(null)} onLogin={()=>router.push('/masuk')}/>}
+    {panel==='history'&&<RouteHistoryPanel session={session} onClose={()=>setPanel(null)} onLogin={()=>navigate('/masuk')}/>}
+    {panel==='community-place'&&destinationSelection&&<CommunityPlacePanel place={destinationSelection} session={session} onRoute={()=>searchRoutes(true)} onClose={()=>setPanel(null)} onLogin={()=>navigate('/masuk')}/>}
     {panel==='routes'&&<RoutesPanel routes={routeOptions} destination={resolvedDestination} status={routingStatus} error={routeError} selected={selected} setSelected={setSelected} onDetail={id=>{setDetail(id);setSelected(id);setPanel('detail')}} onClose={()=>setPanel(null)} />}
     {panel==='detail'&&activeRoute&&<DetailPanel route={activeRoute} profile={profile} destination={resolvedDestination} destinationCoordinates={destinationCoordinates} onBack={()=>setPanel('routes')} onReport={()=>setPanel('report')} onNavigate={beginNavigation} />}
     {panel==='report'&&<ReportPanel reports={userReports} coordinates={reportDraft} setCoordinates={setReportDraft} session={session} onSubmitted={refreshReportsAndRoutes} onClose={()=>{setReportDraft(null);setPanel(null)}} />}
-    {panel==='verify-report'&&selectedReportId&&<CommunityVerificationPanel reportId={selectedReportId} session={session} onClose={()=>setPanel(null)} onUpdated={refreshReportsAndRoutes} onLogin={()=>router.push('/masuk')} />}
-    {panel==='profile'&&<ProfilePanel profile={profile} session={session} onClose={()=>setPanel(null)} onModerate={()=>router.push('/admin/laporan')} onLogout={()=>{clearSession();router.push('/masuk')}} />}
+    {panel==='verify-report'&&selectedReportId&&<CommunityVerificationPanel reportId={selectedReportId} session={session} onClose={()=>setPanel(null)} onUpdated={refreshReportsAndRoutes} onLogin={()=>navigate('/masuk')} />}
+    {panel==='profile'&&<ProfilePanel profile={profile} session={session} onClose={()=>setPanel(null)} onModerate={()=>navigate('/admin/laporan')} onLogout={()=>{clearSession();navigate('/masuk')}} />}
     {navigating&&activeRoute&&<SpeechNavigation route={activeRoute} destination={resolvedDestination} onStop={()=>setNavigating(false)}/>}
   </main>;
 }

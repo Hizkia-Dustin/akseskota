@@ -19,6 +19,7 @@ import CtaMotion from "./components/CtaMotion";
 import HeroEntrance from "./components/HeroEntrance";
 import DirectoryTransitionLink from "./components/DirectoryTransitionLink";
 import Link from "next/link";
+import { MapPinned } from "lucide-react";
 
 const issues = [
   { icon: <WheelchairIcon />, title: "Kursi Roda", text: "Menemukan tangga di tengah perjalanan tanpa peringatan", tone: "border-[#96f7e4] bg-[#f0fdfa]" },
@@ -46,7 +47,7 @@ const routes = [
 ];
 
 function Logo({ light = false }) {
-  return <a href="#top" className={`flex items-center gap-2.5 font-extrabold ${light ? "text-white" : "text-[#101828]"}`}><span className={`grid size-6 place-items-center rounded-full ${light ? "bg-white/15" : "bg-[#0c6478]"}`}><span className="text-[11px]">🗺️</span></span><span className="text-[17px] tracking-[-.04em]">AksesKota</span></a>;
+  return <a href="#top" className={`brand-link flex items-center gap-2.5 font-extrabold ${light ? "text-white" : "text-[#101828]"}`}><span className={`brand-mark grid size-7 place-items-center rounded-full ${light ? "bg-white/15 text-white" : "bg-[#0c6478] text-[#7ce8db]"}`}><MapPinned aria-hidden="true" className="brand-mark-icon size-3.5" strokeWidth={2.2}/><span className="brand-mark-pulse"/></span><span className="text-[17px] tracking-[-.04em]">AksesKota</span></a>;
 }
 
 function Wave({ dark = false, flip = false }) {
@@ -61,10 +62,10 @@ export default function Home() {
       <header className="hero-nav mx-auto flex h-[64px] w-[calc(100%-32px)] max-w-[1180px] items-center justify-between gap-4 rounded-full bg-[#e7f1f3] px-5 md:px-8 lg:px-10">
         <Logo />
         <nav className="hidden items-center gap-7 text-[12px] font-semibold text-[#667085] md:flex lg:gap-9">
-          <a className="transition hover:text-[#0c6478]" href="#cara-kerja">Cara Kerja</a>
-          <a className="transition hover:text-[#0c6478]" href="#fitur">Fitur</a>
-          <DirectoryTransitionLink source="navbar-desktop" showIcon={false} className="inline-flex rounded-full px-1 py-2 font-semibold text-[#667085] hover:text-[#0c6478]">Direktori</DirectoryTransitionLink>
-          <a className="transition hover:text-[#0c6478]" href="#dampak">Dampak</a>
+          <a className="landing-nav-link transition hover:text-[#0c6478]" href="#cara-kerja">Cara Kerja</a>
+          <a className="landing-nav-link transition hover:text-[#0c6478]" href="#fitur">Fitur</a>
+          <DirectoryTransitionLink source="navbar-desktop" showIcon={false} className="landing-nav-link inline-flex rounded-full px-1 py-2 font-semibold text-[#667085] hover:text-[#0c6478]">Direktori</DirectoryTransitionLink>
+          <a className="landing-nav-link transition hover:text-[#0c6478]" href="#dampak">Dampak</a>
         </nav>
         <div className="flex items-center gap-2">
           <DirectoryTransitionLink source="navbar-mobile" className="inline-flex rounded-full bg-white/80 px-4 py-3 text-[11px] font-extrabold text-[#0c6478] shadow-sm md:hidden">Direktori</DirectoryTransitionLink>

@@ -125,6 +125,7 @@ export default function DirectoryTransitionLink({
         onClick={openDirectory}
         aria-busy={opening}
         data-directory-transition={source}
+        data-page-transition="manual"
         className={`${className} group relative items-center justify-center gap-2 overflow-hidden transition duration-300 hover:-translate-y-0.5 active:translate-y-0 ${opening ? "pointer-events-none" : ""}`}
       >
         <span className="relative z-10">{children}</span>
@@ -187,6 +188,7 @@ export function DirectoryTransitionBackButton({ className = "" }) {
         aria-label="Kembali ke halaman sebelumnya"
         aria-busy={returning}
         data-directory-transition-back
+        data-page-transition="manual"
         className={`${className} transition duration-300 hover:-translate-x-0.5 hover:bg-[#dff5f1] active:translate-x-0`}
       >
         <ArrowLeft aria-hidden="true" className="size-5" />
