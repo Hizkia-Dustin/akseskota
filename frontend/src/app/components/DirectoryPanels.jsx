@@ -132,8 +132,9 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
       as="aside"
       direction="right"
       distance={24}
-      className="absolute inset-0 z-50 flex min-h-0 flex-col overflow-hidden bg-white sm:bottom-3 sm:left-[60px] sm:right-auto sm:top-3 sm:w-[330px] sm:rounded-[16px] sm:border sm:border-[#e7ebed] sm:shadow-[0_12px_32px_rgba(24,46,58,.18)]"
+      className="absolute inset-x-3 bottom-3 z-50 flex h-[58dvh] min-h-0 flex-col overflow-hidden rounded-[20px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.2)] sm:left-[72px] sm:right-3 lg:bottom-3 lg:left-[60px] lg:right-auto lg:top-3 lg:h-auto lg:w-[330px] lg:rounded-[16px] lg:shadow-[0_12px_32px_rgba(24,46,58,.18)]"
     >
+      <span className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-[#d0d5dd] lg:hidden" />
       <DirectoryHeader onClose={onClose} />
       <div className="border-b border-[#edf0f2] px-4 py-3">
         <label className="flex h-10 items-center gap-2 rounded-[11px] bg-[#f3f6f7] px-3">
@@ -150,7 +151,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
             </button>
           )}
         </label>
-        <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
+        <div className="directory-chip-scroll mt-3 flex gap-1.5 overflow-x-auto pb-1">
           {categories.map((category) => (
             <button
               key={category.id}
@@ -279,7 +280,7 @@ export function DirectoryDetailPanel({ detail, onClose, onUseAsDestination }) {
       as="aside"
       direction="left"
       distance={26}
-      className="absolute inset-0 z-[55] overflow-y-auto bg-white sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:w-[360px] sm:rounded-[16px] sm:border sm:border-[#e7ebed] sm:shadow-[0_14px_36px_rgba(24,46,58,.22)]"
+      className="absolute inset-x-3 bottom-3 z-[55] h-[72dvh] overflow-y-auto rounded-[20px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.22)] sm:left-[72px] sm:right-3 lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:h-auto lg:w-[360px] lg:rounded-[16px] lg:shadow-[0_14px_36px_rgba(24,46,58,.22)]"
     >
       <div className="relative h-44 overflow-hidden bg-[#dff4f0]">
         {imageUrl ? (
