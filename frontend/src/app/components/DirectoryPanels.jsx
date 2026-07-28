@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   Check,
+  ChevronDown,
+  ChevronUp,
   Clock3,
   MapPin,
   Route,
@@ -93,6 +95,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
   const [visibleLimit, setVisibleLimit] = useState(40);
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
+  const [expanded, setExpanded] = useState(false);
 
   const loadPlaces = useCallback(async () => {
     setStatus("loading");
@@ -134,9 +137,21 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
       as="aside"
       direction="right"
       distance={24}
-      className="absolute inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-50 flex h-[64dvh] min-h-0 flex-col overflow-hidden rounded-[24px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.2)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-[80px] lg:right-auto lg:top-3 lg:h-auto lg:w-[330px] lg:rounded-[16px] lg:shadow-[0_12px_32px_rgba(24,46,58,.18)]"
+      className={`absolute inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-50 flex min-h-0 flex-col overflow-hidden rounded-[24px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.2)] transition-[height] duration-500 ease-[cubic-bezier(.22,1,.36,1)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-[80px] lg:right-auto lg:top-3 lg:h-auto lg:w-[330px] lg:rounded-[16px] lg:shadow-[0_12px_32px_rgba(24,46,58,.18)] ${
+        expanded ? "h-[calc(100dvh-32px)]" : "h-[58dvh]"
+      }`}
     >
-      <span className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-[#d0d5dd] lg:hidden" />
+      <button
+        type="button"
+        onClick={() => setExpanded((value) => !value)}
+        aria-expanded={expanded}
+        aria-label={expanded ? "Kecilkan direktori" : "Perluas direktori"}
+        className="group flex h-9 shrink-0 items-center justify-center gap-2 text-[9px] font-extrabold text-[#667085] lg:hidden"
+      >
+        <span className="h-1 w-10 rounded-full bg-[#d0d5dd] transition-colors group-hover:bg-[#0c6478]" />
+        <span>{expanded ? "Kecilkan" : "Perluas"}</span>
+        {expanded ? <ChevronDown className="size-3.5" /> : <ChevronUp className="size-3.5" />}
+      </button>
       <DirectoryHeader onClose={onClose} />
       <div className="border-b border-[#edf0f2] px-5 py-4">
         <label className="flex h-10 items-center gap-2 rounded-[11px] bg-[#f3f6f7] px-3">
