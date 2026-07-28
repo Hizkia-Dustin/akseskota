@@ -52,138 +52,242 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(53, 203, 176, .4
   display: none;
 }
 
-@keyframes directory-overlay-open {
-  from {
-    clip-path: circle(0% at 50% 72%);
-    opacity: 0;
-  }
-  to {
-    clip-path: circle(150% at 50% 72%);
-    opacity: 1;
-  }
+@keyframes directory-panel-main-in {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
-@keyframes directory-card-rise {
-  from { opacity: 0; transform: translateY(22px) scale(.94); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes directory-panel-accent-in {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(0); }
 }
 
-@keyframes directory-book-open {
-  0% { transform: translateY(8px) rotate(-7deg) scale(.82); opacity: 0; }
-  65% { transform: translateY(-3px) rotate(3deg) scale(1.08); opacity: 1; }
-  100% { transform: translateY(0) rotate(0) scale(1); opacity: 1; }
+@keyframes directory-editorial-reveal {
+  from { transform: translateY(110%); }
+  to { transform: translateY(0); }
 }
 
-@keyframes directory-progress-fill {
+@keyframes directory-meta-reveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes directory-rule-run {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
 }
 
 @keyframes directory-page-enter {
-  from { opacity: 0; transform: translateY(12px) scale(.995); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .directory-transition-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  display: grid;
-  place-items: center;
   overflow: hidden;
-  padding: 24px;
-  background: #0c6478;
-  animation: directory-overlay-open .52s cubic-bezier(.22, 1, .36, 1) both;
+  color: #f1fffb;
+  background: #061f29;
+  isolation: isolate;
 }
 
-.directory-transition-overlay-back {
-  animation-name: directory-overlay-back;
-}
-
-@keyframes directory-overlay-back {
-  from {
-    clip-path: circle(0% at 8% 8%);
-    opacity: 0;
-  }
-  to {
-    clip-path: circle(150% at 8% 8%);
-    opacity: 1;
-  }
-}
-
-.directory-transition-orbit {
+.directory-transition-panel {
   position: absolute;
-  border: 1px solid rgba(154, 243, 228, .2);
-  border-radius: 999px;
+  inset: 0;
 }
 
-.directory-transition-orbit-one {
-  width: min(72vw, 720px);
-  aspect-ratio: 1;
+.directory-transition-panel-main {
+  z-index: -3;
+  background: #0b6675;
+  transform-origin: left;
+  animation: directory-panel-main-in .72s cubic-bezier(.76, 0, .24, 1) both;
 }
 
-.directory-transition-orbit-two {
-  width: min(46vw, 460px);
-  aspect-ratio: 1;
-  border-color: rgba(255, 255, 255, .1);
+.directory-transition-panel-accent {
+  z-index: -2;
+  right: auto;
+  width: 19vw;
+  min-width: 88px;
+  background: #45d5c4;
+  animation: directory-panel-accent-in .78s .06s cubic-bezier(.76, 0, .24, 1) both;
 }
 
-.directory-transition-card {
-  position: relative;
-  z-index: 1;
+.directory-transition-overlay-back .directory-transition-panel-main {
+  transform-origin: right;
+}
+
+.directory-transition-overlay-back .directory-transition-panel-accent {
+  right: 0;
+  left: auto;
+  animation-name: directory-panel-accent-back-in;
+}
+
+@keyframes directory-panel-accent-back-in {
+  from { transform: translateX(110%); }
+  to { transform: translateX(0); }
+}
+
+.directory-transition-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: .22;
+  background-image:
+    linear-gradient(to right, transparent calc(25% - .5px), rgba(255,255,255,.3) 25%, transparent calc(25% + .5px)),
+    linear-gradient(to right, transparent calc(50% - .5px), rgba(255,255,255,.3) 50%, transparent calc(50% + .5px)),
+    linear-gradient(to right, transparent calc(75% - .5px), rgba(255,255,255,.3) 75%, transparent calc(75% + .5px)),
+    linear-gradient(to bottom, transparent calc(50% - .5px), rgba(255,255,255,.22) 50%, transparent calc(50% + .5px));
+}
+
+.directory-transition-meta,
+.directory-transition-footer {
+  position: absolute;
+  right: clamp(24px, 4vw, 64px);
+  left: clamp(24px, 4vw, 64px);
+  z-index: 2;
   display: flex;
-  width: min(100%, 390px);
-  flex-direction: column;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, .14);
-  border-radius: 28px;
-  padding: 34px 30px 30px;
-  background: rgba(5, 73, 87, .72);
-  box-shadow: 0 28px 70px rgba(3, 41, 49, .34);
-  backdrop-filter: blur(14px);
-  animation: directory-card-rise .46s .1s cubic-bezier(.22, 1, .36, 1) both;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  animation: directory-meta-reveal .45s .4s ease both;
 }
 
-.directory-transition-book {
-  display: grid;
-  width: 68px;
-  height: 68px;
-  place-items: center;
-  border-radius: 22px;
-  color: #075766;
-  background: #9af3e4;
-  box-shadow: 0 12px 30px rgba(2, 35, 41, .25);
-  animation: directory-book-open .52s .18s cubic-bezier(.34, 1.56, .64, 1) both;
+.directory-transition-meta {
+  top: clamp(24px, 5vh, 54px);
 }
 
-.directory-transition-progress {
-  width: 100%;
-  height: 4px;
-  margin-top: 24px;
+.directory-transition-footer {
+  bottom: clamp(24px, 5vh, 54px);
+  gap: 22px;
+}
+
+.directory-transition-stage {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(86vw, 1120px);
+  transform: translate(-50%, -50%);
+}
+
+.directory-transition-index {
+  display: flex;
+  width: min(260px, 48vw);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: clamp(18px, 3vh, 34px);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .2em;
+  animation: directory-meta-reveal .42s .34s ease both;
+}
+
+.directory-transition-index-line {
+  height: 1px;
+  flex: 1;
+  background: rgba(255,255,255,.55);
+}
+
+.directory-transition-title {
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(54px, 11.2vw, 168px);
+  font-weight: 800;
+  line-height: .79;
+  letter-spacing: -.075em;
+}
+
+.directory-transition-title-mask {
+  display: block;
   overflow: hidden;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, .13);
+  padding-right: .08em;
+  padding-bottom: .09em;
 }
 
-.directory-transition-progress span {
+.directory-transition-title-mask > span {
+  display: block;
+  animation: directory-editorial-reveal .7s .19s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.directory-transition-title-mask:nth-child(2) > span {
+  animation-delay: .28s;
+}
+
+.directory-transition-title-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(241,255,251,.9);
+}
+
+.directory-transition-mark {
+  position: absolute;
+  right: 0;
+  bottom: 4%;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.65);
+  border-radius: 999px;
+  animation: directory-meta-reveal .45s .48s ease both;
+}
+
+.directory-transition-rule {
+  height: 1px;
+  flex: 1;
+  overflow: hidden;
+  background: rgba(255,255,255,.2);
+}
+
+.directory-transition-rule > span {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: inherit;
-  background: #61decf;
+  background: #9af3e4;
   transform-origin: left;
-  animation: directory-progress-fill .68s .08s cubic-bezier(.65, 0, .35, 1) both;
+  animation: directory-rule-run .82s .12s cubic-bezier(.65, 0, .35, 1) both;
 }
 
 .directory-page-enter {
-  animation: directory-page-enter .5s cubic-bezier(.22, 1, .36, 1) both;
+  animation: directory-page-enter .6s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@media (max-width: 640px) {
+  .directory-transition-panel-accent {
+    width: 22vw;
+  }
+
+  .directory-transition-stage {
+    width: calc(100vw - 48px);
+  }
+
+  .directory-transition-title {
+    font-size: clamp(48px, 16vw, 76px);
+    line-height: .84;
+  }
+
+  .directory-transition-mark {
+    right: 0;
+    bottom: -72px;
+    width: 48px;
+    height: 48px;
+  }
+
+  .directory-transition-footer {
+    gap: 12px;
+    font-size: 7px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .directory-transition-overlay,
-  .directory-transition-card,
-  .directory-transition-book,
-  .directory-transition-progress span,
+  .directory-transition-panel,
+  .directory-transition-meta,
+  .directory-transition-footer,
+  .directory-transition-index,
+  .directory-transition-title-mask > span,
+  .directory-transition-mark,
+  .directory-transition-rule > span,
   .directory-page-enter {
     animation: none !important;
   }

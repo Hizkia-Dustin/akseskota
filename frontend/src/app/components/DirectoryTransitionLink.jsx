@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, BookOpen, LoaderCircle } from "lucide-react";
+import { ArrowLeft, BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -13,30 +13,42 @@ function DirectoryTransitionOverlay({ returning = false }) {
       aria-live="polite"
       aria-label={returning ? "Kembali ke halaman sebelumnya" : "Membuka Direktori Bogor"}
     >
-      <div aria-hidden="true" className="directory-transition-orbit directory-transition-orbit-one" />
-      <div aria-hidden="true" className="directory-transition-orbit directory-transition-orbit-two" />
-      <div className="directory-transition-card">
-        <span className="directory-transition-book">
+      <div aria-hidden="true" className="directory-transition-panel directory-transition-panel-main" />
+      <div aria-hidden="true" className="directory-transition-panel directory-transition-panel-accent" />
+      <div aria-hidden="true" className="directory-transition-grid" />
+
+      <div className="directory-transition-meta">
+        <span>AK / 2026</span>
+        <span>06°35′S&nbsp;&nbsp;106°48′E</span>
+      </div>
+
+      <div className="directory-transition-stage">
+        <div className="directory-transition-index">
+          <span>{returning ? "00" : "01"}</span>
+          <span className="directory-transition-index-line" />
+          <span>{returning ? "RETURN" : "CITY INDEX"}</span>
+        </div>
+        <div className="directory-transition-title" aria-hidden="true">
+          <span className="directory-transition-title-mask">
+            <span>{returning ? "KEMBALI" : "DIREKTORI"}</span>
+          </span>
+          <span className="directory-transition-title-mask directory-transition-title-outline">
+            <span>{returning ? "SEBELUMNYA" : "BOGOR"}</span>
+          </span>
+        </div>
+        <span className="directory-transition-mark">
           {returning ? (
-            <ArrowLeft aria-hidden="true" className="size-8" strokeWidth={2.2} />
+            <ArrowLeft aria-hidden="true" className="size-6" strokeWidth={1.6} />
           ) : (
-            <BookOpen aria-hidden="true" className="size-8" strokeWidth={2.2} />
+            <BookOpen aria-hidden="true" className="size-6" strokeWidth={1.6} />
           )}
         </span>
-        <p className="mt-5 text-[11px] font-extrabold uppercase tracking-[.18em] text-[#9af3e4]">
-          AksesKota
-        </p>
-        <p className="mt-2 text-center text-[22px] font-extrabold tracking-[-.03em] text-white">
-          {returning ? "Kembali ke halaman sebelumnya" : "Membuka Direktori Bogor"}
-        </p>
-        <p className="mt-2 text-center text-[11px] leading-5 text-white/65">
-          {returning
-            ? "Mengembalikan posisi halamanmu…"
-            : "Menyiapkan tempat dan data aksesibilitas…"}
-        </p>
-        <span aria-hidden="true" className="directory-transition-progress">
-          <span />
-        </span>
+      </div>
+
+      <div className="directory-transition-footer">
+        <span>{returning ? "Back to previous" : "Explore / Access / Move"}</span>
+        <span className="directory-transition-rule"><span /></span>
+        <span>{returning ? "Restore position" : "485 places"}</span>
       </div>
     </div>,
     document.body,
@@ -103,7 +115,7 @@ export default function DirectoryTransitionLink({
       "akseskota-directory-return-scroll",
       String(window.scrollY),
     );
-    timerRef.current = window.setTimeout(() => router.push(href), 720);
+    timerRef.current = window.setTimeout(() => router.push(href), 920);
   }
 
   return (
@@ -115,10 +127,8 @@ export default function DirectoryTransitionLink({
         data-directory-transition={source}
         className={`${className} group relative items-center justify-center gap-2 overflow-hidden transition duration-300 hover:-translate-y-0.5 active:translate-y-0 ${opening ? "pointer-events-none" : ""}`}
       >
-        <span className="relative z-10">{opening ? "Membuka..." : children}</span>
-        {opening ? (
-          <LoaderCircle aria-hidden="true" className="relative z-10 size-4 animate-spin" />
-        ) : showIcon ? (
+        <span className="relative z-10">{children}</span>
+        {showIcon ? (
           <BookOpen aria-hidden="true" className="relative z-10 size-4 transition-transform duration-300 group-hover:rotate-[-4deg] group-hover:scale-110" />
         ) : null}
       </a>
@@ -166,7 +176,7 @@ export function DirectoryTransitionBackButton({ className = "" }) {
     }
 
     setReturning(true);
-    timerRef.current = window.setTimeout(finishBackNavigation, 650);
+    timerRef.current = window.setTimeout(finishBackNavigation, 820);
   }
 
   return (
@@ -179,11 +189,7 @@ export function DirectoryTransitionBackButton({ className = "" }) {
         data-directory-transition-back
         className={`${className} transition duration-300 hover:-translate-x-0.5 hover:bg-[#dff5f1] active:translate-x-0`}
       >
-        {returning ? (
-          <LoaderCircle aria-hidden="true" className="size-5 animate-spin" />
-        ) : (
-          <ArrowLeft aria-hidden="true" className="size-5" />
-        )}
+        <ArrowLeft aria-hidden="true" className="size-5" />
       </button>
       {returning && <DirectoryTransitionOverlay returning />}
     </>
