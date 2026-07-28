@@ -96,6 +96,21 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(53, 203, 176, .4
   animation: directory-overlay-open .52s cubic-bezier(.22, 1, .36, 1) both;
 }
 
+.directory-transition-overlay-back {
+  animation-name: directory-overlay-back;
+}
+
+@keyframes directory-overlay-back {
+  from {
+    clip-path: circle(0% at 8% 8%);
+    opacity: 0;
+  }
+  to {
+    clip-path: circle(150% at 8% 8%);
+    opacity: 1;
+  }
+}
+
 .directory-transition-orbit {
   position: absolute;
   border: 1px solid rgba(154, 243, 228, .2);

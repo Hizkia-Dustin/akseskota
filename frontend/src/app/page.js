@@ -63,7 +63,7 @@ export default function Home() {
         <nav className="hidden items-center gap-7 text-[12px] font-semibold text-[#667085] md:flex lg:gap-9">
           <a className="transition hover:text-[#0c6478]" href="#cara-kerja">Cara Kerja</a>
           <a className="transition hover:text-[#0c6478]" href="#fitur">Fitur</a>
-          <DirectoryTransitionLink source="navbar-desktop" className="inline-flex rounded-full bg-white/75 px-4 py-2 font-extrabold text-[#0c6478] shadow-sm hover:bg-white">Direktori</DirectoryTransitionLink>
+          <DirectoryTransitionLink source="navbar-desktop" showIcon={false} className="inline-flex rounded-full px-1 py-2 font-semibold text-[#667085] hover:text-[#0c6478]">Direktori</DirectoryTransitionLink>
           <a className="transition hover:text-[#0c6478]" href="#dampak">Dampak</a>
         </nav>
         <div className="flex items-center gap-2">
