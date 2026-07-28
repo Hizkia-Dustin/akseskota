@@ -16,6 +16,16 @@ export const metadata = {
   title: "AksesKota — Navigasi Inklusif",
   description:
     "Temukan rute pejalan kaki yang aman, nyaman, dan sesuai kebutuhan aksesibilitasmu.",
+  applicationName: "AksesKota",
+  icons: {
+    icon: [
+      {
+        url: "/brand/akseskota-icon.svg?v=1",
+        type: "image/svg+xml",
+      },
+    ],
+    shortcut: "/brand/akseskota-icon.svg?v=1",
+  },
 };
 
 export default function RootLayout({ children }) {
