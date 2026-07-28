@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Camera, Check, CircleHelp, MapPin, MousePointer2, Route, X } from "lucide-react";
 import { helpGuideSteps } from "./guideSteps";
 
-const STORAGE_KEY = "akseskota-help-guide-completed-v3";
+const STORAGE_KEY = "akseskota-help-guide-completed-v4";
 const TARGET_PADDING = 9;
 
 function findVisibleTarget(name) {
@@ -66,6 +66,30 @@ function StepDemo({ type }) {
         <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-white shadow-sm"><Camera className="size-4" /></span>
         <div><b className="block text-[9px]">Kamera belakang</b><span className="text-[8px] text-[#667985]">Ambil bukti tanpa keluar dari laporan</span></div>
       </div>
+    );
+  }
+  if (type === "directory-add") {
+    return (
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {[["1", "Lokasi"], ["2", "Foto"], ["3", "Validasi"]].map(([number, label]) => <div key={number} className="rounded-[11px] bg-[#eff8f6] p-2 text-center"><span className="mx-auto grid size-6 place-items-center rounded-full bg-[#0c6478] text-[8px] font-extrabold text-white">{number}</span><b className="mt-1.5 block text-[7px] text-[#52616b]">{label}</b></div>)}
+      </div>
+    );
+  }
+  if (type === "directory-status") {
+    return (
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {[["bg-[#eaf8f3] text-[#0c796d]", "✓ Terverifikasi ada"], ["bg-[#fff1f2] text-[#b42318]", "× Terverifikasi tidak"], ["bg-[#fff7ed] text-[#9a3412]", "! Indikasi sumber"], ["bg-[#f2f4f7] text-[#667085]", "? Belum ada bukti"]].map(([classes, label]) => <span key={label} className={`rounded-[10px] px-2 py-2 text-center text-[7px] font-extrabold ${classes}`}>{label}</span>)}
+      </div>
+    );
+  }
+  if (type === "directory-correction") {
+    return (
+      <div className="mt-4 rounded-[14px] border border-[#d8e8e6] p-3"><b className="text-[9px] text-[#173c61]">Parkir aksesibel</b><div className="mt-2 grid grid-cols-2 gap-2"><span className="rounded-lg bg-[#eaf8f3] p-2 text-center text-[8px] font-bold text-[#0c796d]">Ada</span><span className="rounded-lg bg-[#fff1f2] p-2 text-center text-[8px] font-bold text-[#b42318]">Tidak ada</span></div></div>
+    );
+  }
+  if (type === "directory-impact") {
+    return (
+      <div className="mt-4 flex items-center gap-2 rounded-[14px] bg-[#eff8f6] p-3"><span className="grid size-9 place-items-center rounded-full bg-[#18aa96] text-[13px] font-extrabold text-white">3</span><div><b className="block text-[9px] text-[#0c6478]">Konsensus tercapai</b><span className="text-[8px] text-[#667985]">Status fasilitas diperbarui</span></div></div>
     );
   }
   if (type === "community-fields") {
@@ -154,7 +178,7 @@ export default function HelpGuide({ onPanelChange }) {
     if (nextStep.action) {
       window.setTimeout(() => {
         window.dispatchEvent(new CustomEvent("akseskota:guide-action", { detail: { action: nextStep.action } }));
-      }, 0);
+      }, 260);
     }
     setStepIndex(nextIndex);
   }, [onPanelChange]);
@@ -177,12 +201,12 @@ export default function HelpGuide({ onPanelChange }) {
       target?.scrollIntoView({ block: "center", behavior: "smooth" });
       updateSpotlight();
     });
-    const settleTimer = window.setTimeout(updateSpotlight, 520);
+    const settleTimers = [520, 1100, 1700].map((delay) => window.setTimeout(updateSpotlight, delay));
     window.addEventListener("resize", updateSpotlight);
     window.addEventListener("scroll", updateSpotlight, true);
     return () => {
       window.cancelAnimationFrame(frame);
-      window.clearTimeout(settleTimer);
+      settleTimers.forEach((timer) => window.clearTimeout(timer));
       window.removeEventListener("resize", updateSpotlight);
       window.removeEventListener("scroll", updateSpotlight, true);
     };

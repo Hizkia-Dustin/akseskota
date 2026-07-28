@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   AlertCircle,
@@ -218,7 +218,7 @@ function FacilityEvidenceForm({ detail, onBack, onPublished, session, onLogin })
   }
 
   return (
-    <form onSubmit={submit} className="min-h-full bg-white">
+    <form data-guide="directory-evidence-form" onSubmit={submit} className="min-h-full bg-white">
       <div className="sticky top-0 z-10 flex items-center border-b border-[#edf0f2] bg-white px-4 py-3">
         <button type="button" onClick={onBack} aria-label="Kembali" className="grid size-8 place-items-center rounded-full bg-[#f3f5f6]"><ArrowLeft className="size-4" /></button>
         <div className="ml-3"><span className="block text-[8px] font-bold text-[#98a2b3]">Bukti komunitas</span><b className="text-[13px]">Perbarui fasilitas</b></div>
@@ -270,6 +270,15 @@ export default function DirectoryPlaceDetail({ detail, onClose, onUseAsDestinati
   const [place, setPlace] = useState(detail);
   const [view, setView] = useState("detail");
   const [pending, setPending] = useState([]);
+
+  useEffect(() => {
+    function handleGuideAction(event) {
+      if (event.detail?.action === "directory-evidence") switchView("evidence");
+      if (event.detail?.action === "directory-detail") switchView("detail");
+    }
+    window.addEventListener("akseskota:guide-action", handleGuideAction);
+    return () => window.removeEventListener("akseskota:guide-action", handleGuideAction);
+  });
 
   function switchView(nextView) {
     setView(nextView);
@@ -336,12 +345,12 @@ export default function DirectoryPlaceDetail({ detail, onClose, onUseAsDestinati
 
             <button type="button" onClick={() => onUseAsDestination(place)} className="flex h-10 w-full items-center justify-center gap-2 rounded-[11px] bg-[#0c6478] text-[9px] font-extrabold text-white"><Route className="size-4" />Gunakan sebagai tujuan</button>
 
-            <section>
-              <div className="flex items-center justify-between"><div><h3 className="text-[8px] font-extrabold uppercase tracking-[.1em] text-[#667085]">Status fasilitas</h3><p className="mt-1 text-[7px] text-[#98a2b3]">Centang hijau hanya dari konsensus warga</p></div><button type="button" onClick={() => switchView("evidence")} className="rounded-full bg-[#12a594] px-3 py-1.5 text-[7px] font-extrabold text-white">+ Perbarui</button></div>
+            <section data-guide="directory-facility-status">
+              <div className="flex items-center justify-between"><div><h3 className="text-[8px] font-extrabold uppercase tracking-[.1em] text-[#667085]">Status fasilitas</h3><p className="mt-1 text-[7px] text-[#98a2b3]">Centang hijau hanya dari konsensus warga</p></div><button data-guide="directory-update-feature" type="button" onClick={() => switchView("evidence")} className="rounded-full bg-[#12a594] px-3 py-1.5 text-[7px] font-extrabold text-white">+ Perbarui</button></div>
               <div className="mt-2 grid grid-cols-2 gap-2">{featureStates.map((item) => <div key={item.featureCode} className={`rounded-[10px] p-2.5 ${item.state === "present" ? "bg-[#effaf8] text-[#0c796d]" : item.state === "absent" ? "bg-[#fff1f2] text-[#b42318]" : item.state === "indicated" ? "bg-[#fff7ed] text-[#9a3412]" : "bg-[#f3f5f6] text-[#667085]"}`}><div className="flex items-center gap-2">{item.state === "present" ? <Check className="size-3" /> : item.state === "absent" ? <X className="size-3" /> : <AlertCircle className="size-3" />}<b className="text-[7px]">{item.label}</b></div><small className="mt-1 block text-[6px] font-bold">{item.state === "present" ? "Terverifikasi ada" : item.state === "absent" ? "Terverifikasi tidak ada" : item.state === "indicated" ? "Indikasi sumber, belum terbukti" : "Belum ada bukti"}</small></div>)}</div>
             </section>
 
-            <section>
+            <section data-guide="directory-pending-validation">
               <div className="flex items-center justify-between"><div><h3 className="text-[8px] font-extrabold uppercase tracking-[.1em] text-[#667085]">Perlu divalidasi</h3><p className="mt-1 text-[7px] text-[#98a2b3]">Periksa foto sebelum memberi suara</p></div><button type="button" onClick={loadPending} className="text-[7px] font-extrabold text-[#0c796d]">Muat usulan</button></div>
               {pending.length > 0 ? <div className="mt-2 space-y-2">{pending.map((item) => <PendingContribution key={item.id} contribution={item} session={session} onLogin={onLogin} onVoted={loadPending} />)}</div> : <p className="mt-2 rounded-xl bg-[#f8fafc] p-3 text-[8px] leading-4 text-[#667085]">Tekan “Muat usulan” untuk melihat bukti warga yang menunggu validasi.</p>}
             </section>

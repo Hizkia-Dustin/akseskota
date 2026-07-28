@@ -1051,6 +1051,13 @@ function currentCoordinates() {
 
 export default function NavigationDashboard({ initialProfile="walking", initialDestination=null }) {
   const navigate=usePageTransition(); const [profile,setProfile]=useState(initialProfile); const [panel,setPanel]=useState(null); const [selected,setSelected]=useState("A"); const [detail,setDetail]=useState("A"); const [directoryDetail,setDirectoryDetail]=useState(null); const [origin,setOrigin]=useState("Lokasi saya"); const [originSelection,setOriginSelection]=useState(null); const [destination,setDestination]=useState(initialDestination?.name||""); const [destinationSelection,setDestinationSelection]=useState(initialDestination); const [session,setSession]=useState(null); const [mapReports,setMapReports]=useState([]); const [userReports,setUserReports]=useState([]); const [reportDraft,setReportDraft]=useState(null); const [selectedReportId,setSelectedReportId]=useState(null); const [navigating,setNavigating]=useState(false); const [routeOptions,setRouteOptions]=useState([]); const [routingStatus,setRoutingStatus]=useState("idle"); const [routeError,setRouteError]=useState(""); const [originCoordinates,setOriginCoordinates]=useState(null); const [destinationCoordinates,setDestinationCoordinates]=useState(initialDestination?.coordinates||null); const [resolvedDestination,setResolvedDestination]=useState(initialDestination?.name||"Tujuan"); const mode=modes.find(m=>m.id===profile)||modes[4]; const activeRoute=routeOptions.find(r=>r.id===detail)||routeOptions[0];
+  useEffect(() => {
+    function handleDirectoryGuideAction(event) {
+      if (event.detail?.action === "directory-list" || event.detail?.action === "directory-add") setDirectoryDetail(null);
+    }
+    window.addEventListener("akseskota:guide-action", handleDirectoryGuideAction);
+    return () => window.removeEventListener("akseskota:guide-action", handleDirectoryGuideAction);
+  }, []);
   const [mapDestinations, setMapDestinations] = useState([]);
   const [shadeSegments, setShadeSegments] = useState([]);
   const [preferShade, setPreferShade] = useState(false);

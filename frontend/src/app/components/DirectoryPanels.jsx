@@ -196,6 +196,34 @@ export function DirectoryPanel({ selectedId, onClose, onSelect, session, onLogin
     }
   }
 
+  useEffect(() => {
+    function handleGuideAction(event) {
+      const action = event.detail?.action;
+      if (action === "directory-list") {
+        setAddingPlace(false);
+        setReviewingProposals(false);
+      }
+      if (action === "directory-add") {
+        setReviewingProposals(false);
+        setAddingPlace(true);
+      }
+      if ((action === "directory-open-place" || action === "directory-open-evidence") && places[0]) {
+        setAddingPlace(false);
+        setReviewingProposals(false);
+        apiRequest(`/destinations/${encodeURIComponent(places[0].externalId)}`).then((place) => {
+          onSelect(place);
+          if (action === "directory-open-evidence") {
+            window.setTimeout(() => window.dispatchEvent(new CustomEvent("akseskota:guide-action", { detail: { action: "directory-evidence" } })), 360);
+          } else {
+            window.setTimeout(() => window.dispatchEvent(new CustomEvent("akseskota:guide-action", { detail: { action: "directory-detail" } })), 360);
+          }
+        }).catch(() => undefined);
+      }
+    }
+    window.addEventListener("akseskota:guide-action", handleGuideAction);
+    return () => window.removeEventListener("akseskota:guide-action", handleGuideAction);
+  }, [onSelect, places]);
+
   return (
     <MotionSurface
       as="aside"
@@ -218,7 +246,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect, session, onLogin
       </button>
       <DirectoryHeader onClose={onClose} />
       {addingPlace ? (
-        <form data-lenis-prevent="true" onSubmit={submitNewPlace} className="app-scroll-region min-h-0 flex-1 space-y-3 overflow-y-auto p-5">
+        <form data-guide="directory-new-place-form" data-lenis-prevent="true" onSubmit={submitNewPlace} className="app-scroll-region min-h-0 flex-1 space-y-3 overflow-y-auto p-5">
           <div className="flex items-start justify-between"><div><h3 className="text-[13px] font-extrabold text-[#172b34]">Usulkan tempat baru</h3><p className="mt-1 text-[8px] leading-4 text-[#667085]">Tempat belum langsung dipublikasikan. Foto dan lokasinya harus divalidasi komunitas.</p></div><button type="button" onClick={() => setAddingPlace(false)} className="grid size-8 place-items-center rounded-full bg-[#f3f5f6]"><X className="size-4" /></button></div>
           {!session && <button type="button" onClick={onLogin} className="w-full rounded-xl bg-[#fff7ed] p-3 text-left text-[8px] font-bold text-[#9a3412]">Masuk untuk mengusulkan tempat.</button>}
           {[["name", "Nama tempat"], ["category", "Kategori"], ["address", "Alamat lengkap"]].map(([key, label]) => <label key={key} className="block"><span className="text-[8px] font-extrabold uppercase tracking-[.08em] text-[#667085]">{label}</span><input required value={newPlace[key]} onChange={(event) => setNewPlace((value) => ({ ...value, [key]: event.target.value }))} className="mt-1.5 h-10 w-full rounded-[10px] border border-[#dce3e7] px-3 text-[9px] outline-none focus:border-[#35cbb0]" /></label>)}
@@ -230,7 +258,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect, session, onLogin
           <button disabled={submittingPlace || !session} className="h-11 w-full rounded-[11px] bg-[#12a594] text-[9px] font-extrabold text-white disabled:opacity-50">{submittingPlace ? "Mengirim..." : "Kirim usulan tempat"}</button>
         </form>
       ) : reviewingProposals ? (
-        <div data-lenis-prevent="true" className="app-scroll-region min-h-0 flex-1 overflow-y-auto p-5">
+        <div data-guide="directory-place-validation" data-lenis-prevent="true" className="app-scroll-region min-h-0 flex-1 overflow-y-auto p-5">
           <div className="flex items-start justify-between"><div><h3 className="text-[13px] font-extrabold text-[#172b34]">Validasi tempat baru</h3><p className="mt-1 text-[8px] leading-4 text-[#667085]">Cocokkan foto, nama, alamat, dan titik peta. Tiga persetujuan membuat tempat tampil di direktori.</p></div><button type="button" onClick={() => setReviewingProposals(false)} className="grid size-8 place-items-center rounded-full bg-[#f3f5f6]"><X className="size-4" /></button></div>
           {!session && <button type="button" onClick={onLogin} className="mt-3 w-full rounded-xl bg-[#fff7ed] p-3 text-left text-[8px] font-bold text-[#9a3412]">Masuk untuk memberi validasi.</button>}
           {message && <p className="mt-3 rounded-xl bg-[#fff7ed] p-3 text-[8px] font-bold text-[#9a3412]">{message}</p>}
@@ -287,7 +315,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect, session, onLogin
               ? `${places.length} tempat dari database`
               : `${visiblePlaces.length} dari ${places.length} tempat`}
         </p>
-        <div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => session ? setAddingPlace(true) : onLogin()} className="flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#b9dcd7] bg-[#f2faf8] px-2 text-[7px] font-extrabold text-[#0c6478]"><Plus className="size-3.5" />Tambah tempat</button><button type="button" onClick={loadPlaceProposals} className="flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#e4e7ec] px-2 text-[7px] font-extrabold text-[#667085]"><ShieldCheck className="size-3.5" />Validasi warga</button></div>
+        <div className="mt-3 grid grid-cols-2 gap-2"><button data-guide="directory-add-button" type="button" onClick={() => session ? setAddingPlace(true) : onLogin()} className="flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#b9dcd7] bg-[#f2faf8] px-2 text-[7px] font-extrabold text-[#0c6478]"><Plus className="size-3.5" />Tambah tempat</button><button data-guide="directory-validate-button" type="button" onClick={loadPlaceProposals} className="flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#e4e7ec] px-2 text-[7px] font-extrabold text-[#667085]"><ShieldCheck className="size-3.5" />Validasi warga</button></div>
       </div>
 
       <div data-lenis-prevent="true" className="app-scroll-region min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
