@@ -84,9 +84,21 @@ function sourceId(...parts: Array<string | number | null | undefined>): string {
   return crypto.createHash('sha256').update(parts.map((part) => String(part ?? '')).join('|')).digest('hex');
 }
 
-async function inChunks<T>(rows: T[], size: number, operation: (row: T) => Prisma.PrismaPromise<unknown>) {
+async function inChunks<T>(
+  label: string,
+  rows: T[],
+  size: number,
+  operation: (row: T) => Prisma.PrismaPromise<unknown>,
+) {
+  if (rows.length === 0) {
+    console.log(`${label}: tidak ada data.`);
+    return;
+  }
+
   for (let index = 0; index < rows.length; index += size) {
     await prisma.$transaction(rows.slice(index, index + size).map(operation));
+    const completed = Math.min(index + size, rows.length);
+    console.log(`${label}: ${completed}/${rows.length}`);
   }
 }
 
@@ -95,13 +107,14 @@ async function main() {
   if (!fs.existsSync(jsonPath)) throw new Error(`JSON destinasi tidak ditemukan: ${jsonPath}`);
   const payload = JSON.parse(fs.readFileSync(jsonPath, 'utf8')) as Payload;
   if (!Array.isArray(payload.destinations)) throw new Error('JSON belum memiliki array destinations. Jalankan ulang run.bat menu 8 pada scraper.');
+  console.log(`Mulai impor dari ${jsonPath}`);
 
   const firstImages = new Map<string, string>();
   for (const image of payload.placeImages || []) {
     if (image.imageUrl && !firstImages.has(image.externalPlaceId)) firstImages.set(image.externalPlaceId, image.imageUrl);
   }
 
-  await inChunks(payload.destinations, 20, (destination) => {
+  await inChunks('Destinasi', payload.destinations, 20, (destination) => {
     const data = {
       name: destination.name,
       category: destination.category || undefined,
@@ -141,7 +154,7 @@ async function main() {
   const places = await prisma.communityPlace.findMany({ select: { id: true, externalId: true } });
   const placeIds = new Map(places.map((place) => [place.externalId, place.id]));
   const evidence = (payload.accessibilityEvidence || []).filter((row) => placeIds.has(row.externalPlaceId));
-  await inChunks(evidence, 25, (row) => {
+  await inChunks('Bukti aksesibilitas', evidence, 25, (row) => {
     const placeId = placeIds.get(row.externalPlaceId)!;
     const evidenceSource = row.evidenceSource || 'GOOGLE_ABOUT';
     const data = {
@@ -159,7 +172,7 @@ async function main() {
   });
 
   const images = (payload.placeImages || []).filter((row) => placeIds.has(row.externalPlaceId) && row.imageUrl);
-  await inChunks(images, 25, (row) => {
+  await inChunks('Gambar', images, 25, (row) => {
     const placeId = placeIds.get(row.externalPlaceId)!;
     const id = sourceId(row.externalPlaceId, row.imageUrl);
     const data = { placeId, order: row.order || 0, imageUrl: row.imageUrl, sourceUrl: row.sourceUrl || undefined };
@@ -167,7 +180,7 @@ async function main() {
   });
 
   const reviews = (payload.accessibilityReviews || []).filter((row) => placeIds.has(row.externalPlaceId));
-  await inChunks(reviews, 25, (row) => {
+  await inChunks('Ulasan aksesibilitas', reviews, 25, (row) => {
     const placeId = placeIds.get(row.externalPlaceId)!;
     const id = sourceId(row.externalPlaceId, row.text, row.publishedAt);
     const data = {
@@ -191,8 +204,12 @@ async function main() {
 }
 
 main()
-  .catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
+  .then(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
   })
-  .finally(async () => prisma.$disconnect());
+  .catch(async (error) => {
+    console.error(error instanceof Error ? error.message : error);
+    await prisma.$disconnect();
+    process.exit(1);
+  });
