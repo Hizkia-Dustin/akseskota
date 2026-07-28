@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, CircleHelp, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, Check, CircleHelp, MapPin, MousePointer2, Route, X } from "lucide-react";
 import { helpGuideSteps } from "./guideSteps";
 
-const STORAGE_KEY = "akseskota-help-guide-completed-v1";
+const STORAGE_KEY = "akseskota-help-guide-completed-v2";
 const TARGET_PADDING = 9;
 
 function findVisibleTarget(name) {
@@ -31,7 +31,57 @@ function getSpotlightRect(targetName) {
   };
 }
 
-export default function HelpGuide() {
+function StepDemo({ type }) {
+  if (type === "search") {
+    return (
+      <div className="mt-4 overflow-hidden rounded-[14px] border border-[#e1e9ea] bg-[#f8fbfb]">
+        <div className="flex items-center gap-2 border-b border-[#e7eeee] px-3 py-2.5 text-[9px] font-bold text-[#52616b]">
+          <span className="size-2 rounded-full bg-[#0c6478]" />Lokasi saya
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2.5 text-[9px] font-bold text-[#52616b]">
+          <span className="size-2 rounded-full bg-[#f59e0b]" />
+          <span className="relative overflow-hidden whitespace-nowrap">
+            Kebun Raya Bogor
+            <span className="ml-0.5 inline-block h-3 w-px animate-pulse bg-[#0c6478]" />
+          </span>
+        </div>
+      </div>
+    );
+  }
+  if (type === "report-steps" || type === "report") {
+    return (
+      <div className="mt-4 grid grid-cols-4 gap-1.5">
+        {["Lokasi", "Kondisi", "Foto", "Kirim"].map((label, index) => (
+          <div key={label} className="rounded-[10px] bg-[#eff8f6] px-1 py-2 text-center">
+            <span className="mx-auto grid size-5 place-items-center rounded-full bg-[#0c6478] text-[8px] font-extrabold text-white">{index + 1}</span>
+            <span className="mt-1 block text-[7px] font-bold text-[#52616b]">{label}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (type === "camera") {
+    return (
+      <div className="mt-4 flex items-center gap-3 rounded-[14px] bg-[#eff8f6] p-3 text-[#0c6478]">
+        <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-white shadow-sm"><Camera className="size-4" /></span>
+        <div><b className="block text-[9px]">Kamera belakang</b><span className="text-[8px] text-[#667985]">Ambil bukti tanpa keluar dari laporan</span></div>
+      </div>
+    );
+  }
+  if (type === "overview") {
+    return (
+      <div className="mt-4 flex items-center gap-2 text-[#0c6478]">
+        {[MapPin, Route, Camera].map((Icon, index) => (
+          <span key={index} className="grid size-9 place-items-center rounded-[11px] bg-[#eff8f6]"><Icon className="size-4" /></span>
+        ))}
+        <span className="ml-1 text-[9px] font-bold text-[#667985]">Cari · bandingkan · laporkan</span>
+      </div>
+    );
+  }
+  return null;
+}
+
+export default function HelpGuide({ onPanelChange }) {
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [spotlight, setSpotlight] = useState(null);
@@ -56,10 +106,17 @@ export default function HelpGuide() {
     setSpotlight(null);
   }, []);
 
+  const goToStep = useCallback((nextIndex) => {
+    const nextStep = helpGuideSteps[nextIndex];
+    if (!nextStep) return;
+    if (Object.prototype.hasOwnProperty.call(nextStep, "panel")) onPanelChange?.(nextStep.panel);
+    setStepIndex(nextIndex);
+  }, [onPanelChange]);
+
   const startGuide = useCallback(() => {
-    setStepIndex(0);
+    goToStep(0);
     setOpen(true);
-  }, []);
+  }, [goToStep]);
 
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY) === "true") return undefined;
@@ -69,11 +126,17 @@ export default function HelpGuide() {
 
   useEffect(() => {
     if (!open) return undefined;
-    const frame = window.requestAnimationFrame(updateSpotlight);
+    const frame = window.requestAnimationFrame(() => {
+      const target = findVisibleTarget(helpGuideSteps[stepIndex].target);
+      target?.scrollIntoView({ block: "center", behavior: "smooth" });
+      updateSpotlight();
+    });
+    const settleTimer = window.setTimeout(updateSpotlight, 520);
     window.addEventListener("resize", updateSpotlight);
     window.addEventListener("scroll", updateSpotlight, true);
     return () => {
       window.cancelAnimationFrame(frame);
+      window.clearTimeout(settleTimer);
       window.removeEventListener("resize", updateSpotlight);
       window.removeEventListener("scroll", updateSpotlight, true);
     };
@@ -84,12 +147,12 @@ export default function HelpGuide() {
     dialogRef.current?.focus();
     function handleKeyDown(event) {
       if (event.key === "Escape") closeGuide(false);
-      if (event.key === "ArrowLeft" && stepIndex > 0) setStepIndex((current) => current - 1);
-      if (event.key === "ArrowRight" && !finalStep) setStepIndex((current) => current + 1);
+      if (event.key === "ArrowLeft" && stepIndex > 0) goToStep(stepIndex - 1);
+      if (event.key === "ArrowRight" && !finalStep) goToStep(stepIndex + 1);
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [closeGuide, finalStep, open, stepIndex]);
+  }, [closeGuide, finalStep, goToStep, open, stepIndex]);
 
   const placeBesideTarget =
     wideViewport && spotlight && spotlight.left + spotlight.width < window.innerWidth * 0.58;
@@ -119,7 +182,11 @@ export default function HelpGuide() {
                 aria-hidden="true"
                 className="pointer-events-none absolute rounded-[18px] border-2 border-[#8ef0dc] shadow-[0_0_0_5px_rgba(142,240,220,.17),0_18px_60px_rgba(0,0,0,.24)] transition-all duration-300 ease-[cubic-bezier(.22,1,.36,1)]"
                 style={spotlight}
-              />
+              >
+                <span className="absolute -bottom-3 -right-3 grid size-9 animate-bounce place-items-center rounded-full bg-[#8ef0dc] text-[#073c47] shadow-lg motion-reduce:animate-none">
+                  <MousePointer2 className="size-4 fill-current" />
+                </span>
+              </div>
             </>
           ) : (
             <div className="absolute inset-0 bg-[#061f29]/78 backdrop-blur-[2px]" />
@@ -162,12 +229,19 @@ export default function HelpGuide() {
                 {step.title}
               </h2>
               <p className="mt-3 text-[12px] font-medium leading-6 text-[#667985]">{step.description}</p>
+              <StepDemo type={step.demo} />
+              {step.hint && (
+                <p className="mt-4 rounded-[12px] bg-[#f5f8f8] px-3 py-2.5 text-[9px] font-semibold leading-4 text-[#5f727c]">
+                  <CircleHelp className="mr-1.5 inline size-3 text-[#18aa96]" />
+                  {step.hint}
+                </p>
+              )}
 
               <div className="mt-6 flex items-center gap-2">
                 {stepIndex > 0 ? (
                   <button
                     type="button"
-                    onClick={() => setStepIndex((current) => current - 1)}
+                    onClick={() => goToStep(stepIndex - 1)}
                     className="grid size-11 shrink-0 place-items-center rounded-[14px] border border-[#dce6e7] text-[#0c6478] transition hover:bg-[#f2faf8]"
                     aria-label="Langkah sebelumnya"
                   >
@@ -184,7 +258,7 @@ export default function HelpGuide() {
                 )}
                 <button
                   type="button"
-                  onClick={() => (finalStep ? closeGuide(true) : setStepIndex((current) => current + 1))}
+                  onClick={() => (finalStep ? closeGuide(true) : goToStep(stepIndex + 1))}
                   className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[14px] bg-[#0c6478] px-5 text-[11px] font-extrabold text-white shadow-[0_8px_22px_rgba(12,100,120,.22)] transition hover:-translate-y-0.5 hover:bg-[#09596a] active:translate-y-0"
                 >
                   {finalStep ? (
