@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Camera, Check, CircleHelp, MapPin, MousePointer2, Route, X } from "lucide-react";
 import { helpGuideSteps } from "./guideSteps";
 
-const STORAGE_KEY = "akseskota-help-guide-completed-v2";
+const STORAGE_KEY = "akseskota-help-guide-completed-v3";
 const TARGET_PADDING = 9;
 
 function findVisibleTarget(name) {
@@ -68,6 +68,47 @@ function StepDemo({ type }) {
       </div>
     );
   }
+  if (type === "community-fields") {
+    return (
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {[
+          ["Ramp", "Ada"],
+          ["Tangga", "Tidak"],
+          ["Guiding block", "Ada"],
+          ["Teduh", "65%"],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-[11px] bg-[#f2f8f7] p-2.5">
+            <span className="block text-[7px] font-bold text-[#7b8b94]">{label}</span>
+            <b className="mt-1 block text-[9px] text-[#0c6478]">{value}</b>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (type === "quorum") {
+    return (
+      <div className="mt-4 rounded-[14px] bg-[#eff8f6] p-3">
+        <div className="flex items-center justify-between">
+          <b className="text-[9px] text-[#0c6478]">Konsensus komunitas</b>
+          <span className="rounded-full bg-white px-2 py-1 text-[8px] font-extrabold text-[#0c6478]">3/3</span>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {[1, 2, 3].map((item) => <span key={item} className="grid h-7 place-items-center rounded-lg bg-[#18aa96] text-[9px] font-extrabold text-white">✓ {item}</span>)}
+        </div>
+      </div>
+    );
+  }
+  if (type === "score-impact") {
+    return (
+      <div className="mt-4 flex items-center gap-2 rounded-[14px] border border-[#d8e8e6] p-3">
+        <div className="grid size-11 place-items-center rounded-full bg-[#0c6478] text-[12px] font-extrabold text-white">82</div>
+        <div className="min-w-0 flex-1">
+          <b className="block text-[9px] text-[#173c61]">Skor ruas dihitung ulang</b>
+          <span className="mt-1 block text-[8px] leading-4 text-[#667985]">Rute, keteduhan, dan alasan rekomendasi ikut diperbarui.</span>
+        </div>
+      </div>
+    );
+  }
   if (type === "overview") {
     return (
       <div className="mt-4 flex items-center gap-2 text-[#0c6478]">
@@ -110,6 +151,11 @@ export default function HelpGuide({ onPanelChange }) {
     const nextStep = helpGuideSteps[nextIndex];
     if (!nextStep) return;
     if (Object.prototype.hasOwnProperty.call(nextStep, "panel")) onPanelChange?.(nextStep.panel);
+    if (nextStep.action) {
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("akseskota:guide-action", { detail: { action: nextStep.action } }));
+      }, 0);
+    }
     setStepIndex(nextIndex);
   }, [onPanelChange]);
 

@@ -830,7 +830,7 @@ const roadObservationQuestions = [
 ];
 
 function RoadObservationFields({ answers, setAnswers, shadeLevel, setShadeLevel, surfaceCondition, setSurfaceCondition, widthMeters, setWidthMeters }) {
-  return <div className="mt-5">
+  return <div data-guide="road-observation" className="mt-5">
     <p className="text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">KONDISI YANG TERLIHAT</p>
     <div className="mt-3 space-y-2.5">
       {roadObservationQuestions.map(([key,label])=><div key={key} className="flex items-center justify-between gap-3 rounded-[14px] border border-[#e5e9eb] bg-white p-3"><b className="text-[10px] text-[#344054]">{label}</b><div className="flex rounded-lg bg-[#f2f4f7] p-0.5">{[["Tidak tahu",null],["Tidak",false],["Ada",true]].map(([text,value])=><button type="button" key={text} onClick={()=>setAnswers(current=>({...current,[key]:value}))} className={`rounded-md px-2 py-1.5 text-[8px] font-extrabold ${answers[key]===value?"bg-[#0c6478] text-white shadow-sm":"text-[#667085]"}`}>{text}</button>)}</div></div>)}
@@ -865,6 +865,16 @@ function ReportPanel({ reports, coordinates, setCoordinates, session, onSubmitte
   const [shadeLevel, setShadeLevel] = useState(50);
   const [surfaceCondition, setSurfaceCondition] = useState("good");
   const [widthMeters, setWidthMeters] = useState("1.5");
+
+  useEffect(() => {
+    function handleGuideAction(event) {
+      if (event.detail?.action !== "road-survey") return;
+      setTab("create");
+      setReportKind("road");
+    }
+    window.addEventListener("akseskota:guide-action", handleGuideAction);
+    return () => window.removeEventListener("akseskota:guide-action", handleGuideAction);
+  }, []);
 
   async function useCurrentLocation() {
     setMessage("");
@@ -930,11 +940,11 @@ function ReportPanel({ reports, coordinates, setCoordinates, session, onSubmitte
     <div className="mt-5 grid grid-cols-2 rounded-[20px] bg-[#f0f3f4] p-1 sm:mt-4 sm:rounded-[15px]"><button onClick={()=>setTab("create")} className={`rounded-[17px] py-3 text-[14px] font-bold sm:rounded-xl sm:py-2.5 sm:text-[11px] ${tab==='create'?'bg-white text-[#0c6478] shadow-sm':'text-[#99a1af]'}`}>Buat Laporan</button><button onClick={()=>setTab("history")} className={`rounded-[17px] py-3 text-[14px] font-bold sm:rounded-xl sm:py-2.5 sm:text-[11px] ${tab==='history'?'bg-white text-[#0c6478] shadow-sm':'text-[#99a1af]'}`}>Riwayat</button></div>
     {tab === "create" ? <form onSubmit={submit} className="mt-6 sm:mt-5">
       {!session && <div className="mb-4 rounded-[15px] bg-[#effaf8] p-4 text-[11px] font-semibold leading-5 text-[#0c6478]">Kamu sedang melapor sebagai guest. Laporan tetap masuk database dan dapat dimoderasi. Riwayat guest tersimpan di perangkat ini.</div>}
-      <div className="mb-5 grid grid-cols-2 rounded-[15px] bg-[#f0f3f4] p-1">
+      <div data-guide="community-report-kind" className="mb-5 grid grid-cols-2 rounded-[15px] bg-[#f0f3f4] p-1">
         <button type="button" onClick={()=>setReportKind("obstacle")} className={`rounded-xl px-2 py-2.5 text-[10px] font-extrabold ${reportKind==="obstacle"?"bg-white text-[#0c6478] shadow-sm":"text-[#7b8491]"}`}>Laporkan hambatan</button>
         <button type="button" onClick={()=>setReportKind("road")} className={`rounded-xl px-2 py-2.5 text-[10px] font-extrabold ${reportKind==="road"?"bg-white text-[#0c6478] shadow-sm":"text-[#7b8491]"}`}>Survei ruas jalan</button>
       </div>
-      {reportKind === "road" && <div className="mb-4 rounded-[15px] border border-[#bce9df] bg-[#effaf8] p-4 text-[10px] leading-5 text-[#0c6478]"><b className="block text-[11px]">Nilai rute tidak berubah dari satu suara</b>Observasi ini perlu disetujui 3 akun berbeda. Setelah itu backend menggabungkannya dengan observasi terverifikasi lain pada ruas yang sama.</div>}
+      {reportKind === "road" && <div data-guide="community-consensus" className="mb-4 rounded-[15px] border border-[#bce9df] bg-[#effaf8] p-4 text-[10px] leading-5 text-[#0c6478]"><b className="block text-[11px]">Nilai rute tidak berubah dari satu suara</b>Observasi ini perlu disetujui 3 akun berbeda. Setelah itu backend menggabungkannya dengan observasi terverifikasi lain pada ruas yang sama.</div>}
       <p className="text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">TITIK LAPORAN</p>
       <div data-guide="report-location" className="mt-2 rounded-[15px] border-2 border-[#f0f1f3] bg-[#fafbfc] p-3"><p className="text-[10px] font-semibold text-[#667085]">{coordinates ? `${coordinates[1].toFixed(6)}, ${coordinates[0].toFixed(6)}` : "Klik lokasi pada peta atau gunakan GPS."}</p><button type="button" onClick={useCurrentLocation} className="mt-2 rounded-full bg-[#effaf8] px-3 py-2 text-[10px] font-bold text-[#0c6478]"><Navigation className="mr-1 inline size-3" />Gunakan lokasi saya</button></div>
       {reportKind === "obstacle" ? <>
@@ -966,7 +976,7 @@ function ReportPanel({ reports, coordinates, setCoordinates, session, onSubmitte
         )}
       </div>
       {message && <p role="alert" className="mt-3 rounded-xl bg-[#fff1f2] px-3 py-2.5 text-[10px] font-semibold text-[#b42318]">{message}</p>}
-      <button disabled={busy} className="mt-4 h-13 w-full rounded-[15px] bg-[#0c6478] text-[12px] font-extrabold text-white shadow-lg disabled:cursor-wait disabled:opacity-50">{busy ? "Mengunggah ke Cloudinary..." : reportKind === "road" ? "Kirim untuk diverifikasi" : "Kirim Laporan"}</button>
+      <button data-guide="community-submit" disabled={busy} className="mt-4 h-13 w-full rounded-[15px] bg-[#0c6478] text-[12px] font-extrabold text-white shadow-lg disabled:cursor-wait disabled:opacity-50">{busy ? "Mengunggah ke Cloudinary..." : reportKind === "road" ? "Kirim untuk diverifikasi" : "Kirim Laporan"}</button>
     </form> : <div className="mt-5"><p className="text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">LAPORAN YANG KAMU KIRIM</p><div className="mt-3 space-y-3">{reports.length === 0 && <p className="rounded-[15px] bg-[#f8fafc] p-4 text-[11px] text-[#667085]">Belum ada laporan dari {session ? "akun ini" : "guest pada perangkat ini"}.</p>}{reports.map(report=>{const status=reportStatus[report.verificationStatus]||reportStatus.UNVERIFIED;const open=selectedHistoryId===report.id;return <article key={report.id} className="rounded-[16px] border-2 border-[#f0f1f3] p-3"><Image unoptimized width={280} height={140} src={report.photoUrl} alt="Bukti laporan" className={`${open?'h-44':'h-28'} w-full rounded-xl object-cover transition-all`}/><div className="mt-3 flex items-start gap-2"><div className="min-w-0 flex-1"><b className="block truncate text-[11px]">{report.title || "Laporan hambatan"}</b><p className={`mt-1 text-[9px] leading-4 text-[#667085] ${open?'':'line-clamp-2'}`}>{report.description}</p><p className="mt-1 text-[9px] text-[#99a1af]">{new Date(report.createdAt).toLocaleString("id-ID")}</p></div><span className={`shrink-0 rounded-full px-2 py-1.5 text-[8px] font-bold ${status.tone}`}>{status.label}</span></div>{open&&<div className="mt-3 grid grid-cols-2 gap-2 border-t border-[#edf0f2] pt-3 text-[9px]"><div className="rounded-xl bg-[#f8fafc] p-2"><small className="text-[#98a2b3]">Jenis data</small><b className="mt-1 block">{report.targetType||report.obstacle?.type||'Hambatan'}</b></div><div className="rounded-xl bg-[#effaf8] p-2"><small className="text-[#667085]">Status</small><b className="mt-1 block text-[#0c6478]">{status.label}</b></div></div>}<button type="button" onClick={()=>setSelectedHistoryId(open?null:report.id)} className="mt-3 w-full rounded-xl bg-[#f2f4f7] py-2 text-[9px] font-bold text-[#475467]">{open?'Tutup detail':'Lihat detail riwayat'}</button></article>})}</div></div>}
   </SideShell>;
 }
