@@ -17,6 +17,7 @@ import AnimatedContent from './components/react-bits/AnimatedContent';
 import ScrollFloat from "./components/react-bits/ScrollFloat";
 import CtaMotion from "./components/CtaMotion";
 import HeroEntrance from "./components/HeroEntrance";
+import DirectoryTransitionLink from "./components/DirectoryTransitionLink";
 import Link from "next/link";
 
 const issues = [
@@ -62,11 +63,11 @@ export default function Home() {
         <nav className="hidden items-center gap-7 text-[12px] font-semibold text-[#667085] md:flex lg:gap-9">
           <a className="transition hover:text-[#0c6478]" href="#cara-kerja">Cara Kerja</a>
           <a className="transition hover:text-[#0c6478]" href="#fitur">Fitur</a>
-          <Link className="rounded-full bg-white/75 px-4 py-2 font-extrabold text-[#0c6478] shadow-sm transition hover:bg-white" href="/destinasi">Direktori</Link>
+          <DirectoryTransitionLink source="navbar-desktop" className="inline-flex rounded-full bg-white/75 px-4 py-2 font-extrabold text-[#0c6478] shadow-sm hover:bg-white">Direktori</DirectoryTransitionLink>
           <a className="transition hover:text-[#0c6478]" href="#dampak">Dampak</a>
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/destinasi" className="rounded-full bg-white/80 px-4 py-3 text-[11px] font-extrabold text-[#0c6478] shadow-sm md:hidden">Direktori</Link>
+          <DirectoryTransitionLink source="navbar-mobile" className="inline-flex rounded-full bg-white/80 px-4 py-3 text-[11px] font-extrabold text-[#0c6478] shadow-sm md:hidden">Direktori</DirectoryTransitionLink>
           <Link href="/masuk" className="rounded-full bg-[#0c6478] px-5 py-3 text-[12px] font-bold text-white shadow-[0_3px_8px_rgba(12,100,120,.25)]">Coba Sekarang</Link>
         </div>
       </header>
@@ -199,7 +200,7 @@ export default function Home() {
           <div><Logo light /><p className="mt-5 max-w-[385px] text-[12px] leading-[1.55] text-white/70">AksesKota membantu pejalan kaki menemukan rute yang lebih aman, nyaman, dan ramah bagi semua melalui informasi aksesibilitas dan kondisi jalur secara aktual.</p></div>
           <div><h3 className="font-bold">Akses</h3><div className="mt-6 space-y-2 text-[12px] text-white/70"><a className="block" href="#cara-kerja">› Cara Kerja</a><a className="block" href="#fitur">› Fitur</a><a className="block" href="#dampak">› Dampak</a></div></div>
           <div><h3 className="font-bold">Kontribusi</h3><div className="mt-6 space-y-2 text-[12px] text-white/70"><Link className="block" href="/navigasi">Buat laporan jalan</Link><Link className="block" href="/destinasi">Nilai fasilitas tempat</Link></div></div>
-          <div><h3 className="text-[20px] font-bold">Jelajahi Kota Bogor</h3><p className="mt-4 text-[12px] leading-relaxed text-white/70">Lihat tempat, bukti aksesibilitas komunitas, dan rute yang dapat dibandingkan secara transparan.</p><Link href="/destinasi" className="mt-5 inline-flex rounded-full bg-[#41c5bd] px-6 py-3 text-[12px] font-bold text-[#083f4a]">Buka direktori</Link></div>
+          <div><h3 className="text-[20px] font-bold">Jelajahi Kota Bogor</h3><p className="mt-4 text-[12px] leading-relaxed text-white/70">Lihat tempat, bukti aksesibilitas komunitas, dan rute yang dapat dibandingkan secara transparan.</p><DirectoryTransitionLink source="footer-mobile" className="mt-5 inline-flex rounded-full bg-[#41c5bd] px-6 py-3 text-[12px] font-bold text-[#083f4a] shadow-[0_8px_20px_rgba(4,43,51,.18)] hover:bg-[#57d3ca]">Buka direktori</DirectoryTransitionLink></div>
         </div>
         <div className="mx-auto mt-16 flex max-w-[1230px] flex-col gap-5 border-t border-white/10 pt-7 text-[10px] tracking-[.2em] text-white/60 sm:flex-row sm:items-center sm:justify-between"><span>🧡 © 2026 AKSESKOTA | PRIVACY POLICY | TERMS OF SERVICE</span><span className="text-sm tracking-[.5em] text-white">f  ♥  ◎  in  ▶</span></div>
       </footer>

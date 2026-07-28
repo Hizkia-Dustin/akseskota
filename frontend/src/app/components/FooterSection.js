@@ -1,5 +1,7 @@
 ﻿/* eslint-disable @next/next/no-img-element */
 
+import DirectoryTransitionLink from "./DirectoryTransitionLink";
+
 const imgVector = "/images/figma/footer-section/asset-1.svg";
 const imgSocialMediaIconSquareFacebook = "/images/figma/footer-section/asset-2.svg";
 const imgSocialMediaIconSquareTwitter = "/images/figma/footer-section/asset-3.svg";
@@ -47,9 +49,9 @@ export default function FooterSection() {
               <p className="[word-break:break-word] font-sans font-medium leading-[27.12px] relative shrink-0 text-[14.61px] text-white w-[345.411px]" data-node-id="26:6529">
                 Lihat tempat, bukti aksesibilitas komunitas, dan rute yang dapat dibandingkan secara transparan.
               </p>
-              <a href="/destinasi" className="rounded-full bg-[#3bb8b0] px-[23.199px] py-[17.399px] text-[14.61px] font-medium text-[#073d47] hover:bg-[#52cbc3]">
+              <DirectoryTransitionLink source="footer-desktop" className="inline-flex rounded-full bg-[#3bb8b0] px-[23.199px] py-[17.399px] text-[14.61px] font-medium text-[#073d47] shadow-[0_10px_28px_rgba(4,43,51,.2)] hover:bg-[#52cbc3]">
                 Buka direktori
-              </a>
+              </DirectoryTransitionLink>
             </div>
           </div>
         </div>

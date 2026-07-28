@@ -52,6 +52,128 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(53, 203, 176, .4
   display: none;
 }
 
+@keyframes directory-overlay-open {
+  from {
+    clip-path: circle(0% at 50% 72%);
+    opacity: 0;
+  }
+  to {
+    clip-path: circle(150% at 50% 72%);
+    opacity: 1;
+  }
+}
+
+@keyframes directory-card-rise {
+  from { opacity: 0; transform: translateY(22px) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes directory-book-open {
+  0% { transform: translateY(8px) rotate(-7deg) scale(.82); opacity: 0; }
+  65% { transform: translateY(-3px) rotate(3deg) scale(1.08); opacity: 1; }
+  100% { transform: translateY(0) rotate(0) scale(1); opacity: 1; }
+}
+
+@keyframes directory-progress-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes directory-page-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.directory-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 24px;
+  background: #0c6478;
+  animation: directory-overlay-open .52s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.directory-transition-orbit {
+  position: absolute;
+  border: 1px solid rgba(154, 243, 228, .2);
+  border-radius: 999px;
+}
+
+.directory-transition-orbit-one {
+  width: min(72vw, 720px);
+  aspect-ratio: 1;
+}
+
+.directory-transition-orbit-two {
+  width: min(46vw, 460px);
+  aspect-ratio: 1;
+  border-color: rgba(255, 255, 255, .1);
+}
+
+.directory-transition-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(100%, 390px);
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 28px;
+  padding: 34px 30px 30px;
+  background: rgba(5, 73, 87, .72);
+  box-shadow: 0 28px 70px rgba(3, 41, 49, .34);
+  backdrop-filter: blur(14px);
+  animation: directory-card-rise .46s .1s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.directory-transition-book {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  border-radius: 22px;
+  color: #075766;
+  background: #9af3e4;
+  box-shadow: 0 12px 30px rgba(2, 35, 41, .25);
+  animation: directory-book-open .52s .18s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+.directory-transition-progress {
+  width: 100%;
+  height: 4px;
+  margin-top: 24px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .13);
+}
+
+.directory-transition-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: #61decf;
+  transform-origin: left;
+  animation: directory-progress-fill .68s .08s cubic-bezier(.65, 0, .35, 1) both;
+}
+
+.directory-page-enter {
+  animation: directory-page-enter .5s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .directory-transition-overlay,
+  .directory-transition-card,
+  .directory-transition-book,
+  .directory-transition-progress span,
+  .directory-page-enter {
+    animation: none !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50; }
