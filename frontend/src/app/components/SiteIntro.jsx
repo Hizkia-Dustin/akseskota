@@ -1,7 +1,7 @@
 "use client";
 
-import { MapPinned } from "lucide-react";
 import { useEffect, useState } from "react";
+import AksesKotaMark from "./AksesKotaMark";
 
 export default function SiteIntro() {
   const [visible, setVisible] = useState(true);
@@ -93,7 +93,7 @@ export default function SiteIntro() {
 
       <header className="site-intro-header">
         <span className="site-intro-logo">
-          <MapPinned aria-hidden="true" className="size-4" strokeWidth={1.8} />
+          <AksesKotaMark priority className="size-[18px]" />
           <span>AksesKota</span>
         </span>
         <span>06°35′S / 106°48′E</span>

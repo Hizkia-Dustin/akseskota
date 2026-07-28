@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { MapPinned } from "lucide-react";
+import AksesKotaMark from "./AksesKotaMark";
 
 const PageTransitionContext = createContext(null);
 
@@ -196,7 +196,7 @@ export default function PageTransitionProvider({ children }) {
           <span aria-hidden="true" className="site-intro-grid" />
           <header className="site-intro-header">
             <span className="site-intro-logo">
-              <MapPinned aria-hidden="true" className="size-4" strokeWidth={1.8} />
+              <AksesKotaMark className="size-[18px]" />
               <span>AksesKota</span>
             </span>
             <span>06°35′S / 106°48′E</span>
