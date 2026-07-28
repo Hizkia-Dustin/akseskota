@@ -20,6 +20,7 @@ import {
   Check,
   CheckCircle2,
   ChevronLeft,
+  CircleHelp,
   Clock3,
   Flag,
   Footprints,
@@ -104,9 +105,10 @@ function PlaceSuggestions({ suggestions, error, label, onChoose }) {
   return <div role="listbox" aria-label={label} className="border-b border-[#edf0f2] bg-white py-1.5">{suggestions.map((place)=><button key={place.id} type="button" role="option" aria-selected="false" onClick={()=>onChoose(place)} className="flex w-full items-start gap-3 px-4 py-2.5 text-left transition hover:bg-[#effaf8]"><MapPin className="mt-0.5 size-4 shrink-0 text-[#0c6478]"/><span className="min-w-0"><b className="block truncate text-[11px] text-[#1f2937]">{place.name}</b><small className="mt-0.5 block truncate text-[9px] text-[#8b96a5]">{place.address}</small></span></button>)}{error&&<p className="px-4 py-3 text-[10px] font-semibold text-[#b42318]">{error}</p>}</div>;
 }
 
-function SearchBox({ origin, destination, setOrigin, setDestination, originCoordinates, onSelectOrigin, onSelectDestination, onSearch, mode, onMode, loading, preferShade, onToggleShade, shadeDataAvailable }) {
+function SearchBox({ origin, destination, setOrigin, setDestination, originCoordinates, onSelectOrigin, onSelectDestination, onSearch, mode, onMode, loading, preferShade, onToggleShade, shadeDataAvailable, onShowHeat, onReportShade }) {
   const ModeIcon = mode.icon;
   const [activeField, setActiveField] = useState(null);
+  const [showShadeGuide, setShowShadeGuide] = useState(false);
   const [originSuggestions, setOriginSuggestions] = useState([]);
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
   const [originSuggestionError, setOriginSuggestionError] = useState("");
@@ -185,8 +187,53 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
       </div>
       <div className="mt-2 flex gap-2">
         <button type="button" onClick={onMode} className="flex min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-[#e8ecee] bg-white px-3 py-2 text-[10px] font-bold text-[#0c6478] shadow-[0_4px_12px_rgba(24,46,58,.1)] transition-colors hover:bg-[#f5fafa]"><ModeIcon className="size-4 shrink-0" /><span className="truncate">{mode.label}</span><span className="ml-auto text-[#98a2b3]">›</span></button>
-        <button type="button" onClick={onToggleShade} aria-pressed={preferShade} title={shadeDataAvailable ? "Prioritaskan rute yang lebih teduh" : "Observasi ruas teduh belum tersedia"} className={`flex items-center gap-1.5 rounded-[10px] border px-3 py-2 text-[10px] font-extrabold shadow-[0_4px_12px_rgba(24,46,58,.1)] transition ${preferShade ? "border-[#22a06b] bg-[#e9f8ef] text-[#087443]" : "border-[#e8ecee] bg-white text-[#52616b] hover:bg-[#f5fafa]"}`}><TreePine className="size-4" />Teduh{!shadeDataAvailable && <span className="size-1.5 rounded-full bg-[#f59e0b]" />}</button>
+        <button
+          type="button"
+          onClick={() => {
+            if (shadeDataAvailable) onToggleShade();
+            setShowShadeGuide((value) => !value);
+          }}
+          aria-expanded={showShadeGuide}
+          aria-pressed={shadeDataAvailable ? preferShade : undefined}
+          className={`flex items-center gap-1.5 rounded-[10px] border px-3 py-2 text-[10px] font-extrabold shadow-[0_4px_12px_rgba(24,46,58,.1)] transition ${preferShade ? "border-[#22a06b] bg-[#e9f8ef] text-[#087443]" : "border-[#e8ecee] bg-white text-[#52616b] hover:bg-[#f5fafa]"}`}
+        >
+          <TreePine className="size-4" />
+          Rute teduh
+          <CircleHelp className="size-3 text-[#98a2b3]" />
+        </button>
       </div>
+      {showShadeGuide && (
+        <MotionSurface direction="down" distance={10} className="mt-2 overflow-hidden rounded-[14px] border border-[#dfe7e8] bg-white shadow-[0_10px_26px_rgba(24,46,58,.16)]">
+          <div className="bg-gradient-to-r from-[#e8f7ef] to-[#effaf8] p-3.5">
+            <div className="flex items-start gap-2.5">
+              <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-white text-[#087443] shadow-sm"><TreePine className="size-4" /></span>
+              <div>
+                <p className="text-[11px] font-extrabold text-[#173c32]">Jalur lebih teduh</p>
+                <p className="mt-1 text-[8px] leading-4 text-[#557068]">Membandingkan naungan pohon pada setiap ruas agar perjalanan tidak terlalu terpapar matahari.</p>
+              </div>
+            </div>
+          </div>
+          {shadeDataAvailable ? (
+            <div className="p-3.5">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#e9f8ef] px-2 py-1 text-[8px] font-extrabold text-[#087443]"><Check className="size-3" />Data tersedia</span>
+              <ol className="mt-3 space-y-2 text-[8px] font-semibold leading-4 text-[#52616b]">
+                <li><b className="mr-2 text-[#0c6478]">1.</b>Aktifkan Rute teduh.</li>
+                <li><b className="mr-2 text-[#0c6478]">2.</b>Isi tujuan lalu tekan Cari rute.</li>
+                <li><b className="mr-2 text-[#0c6478]">3.</b>Pilih rute dengan nilai teduh tertinggi.</li>
+              </ol>
+            </div>
+          ) : (
+            <div className="p-3.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff4df] px-2 py-1 text-[8px] font-extrabold text-[#9a5707]"><span className="size-1.5 rounded-full bg-[#f59e0b]" />Sedang mengumpulkan data</span>
+              <p className="mt-2 text-[8px] leading-4 text-[#667085]">Belum cukup observasi ruas untuk menentukan rute yang benar-benar teduh. Rute tidak akan diberi nilai teduh palsu.</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => { onShowHeat(); setShowShadeGuide(false); }} className="rounded-[10px] bg-[#fff7e8] px-2 py-2.5 text-[8px] font-extrabold text-[#a34b00]"><SunMedium className="mr-1 inline size-3" />Lihat estimasi panas</button>
+                <button type="button" onClick={() => { onReportShade(); setShowShadeGuide(false); }} className="rounded-[10px] bg-[#0c6478] px-2 py-2.5 text-[8px] font-extrabold text-white"><Flag className="mr-1 inline size-3" />Laporkan ruas</button>
+              </div>
+            </div>
+          )}
+        </MotionSurface>
+      )}
     </div>
   );
 }
@@ -207,7 +254,7 @@ function MapLayerControls({ destinationCount, onDirectory, heatEnabled, setHeatE
           <div className="mt-3 h-2.5 rounded-full bg-gradient-to-r from-[#22c55e] via-[#facc15] to-[#dc2626]" />
           <div className="mt-1 flex justify-between text-[8px] text-[#667085]"><span>Lebih sejuk</span><span>Lebih terpapar</span></div>
           <p className="mt-3 rounded-xl bg-[#f8fafc] p-2.5 text-[8px] leading-4 text-[#667085]">Estimasi berbasis jam, cuaca, kategori ruang hijau, dan observasi ruas. Bukan sensor suhu permukaan realtime.</p>
-          {!shadeDataAvailable && <p className="mt-2 flex items-start gap-2 rounded-xl bg-[#fff7e8] p-2.5 text-[8px] font-semibold leading-4 text-[#8a4b08]"><TreePine className="mt-0.5 size-3 shrink-0" />Data ruas teduh belum tersedia. Tambahkan observasi jalan untuk membedakan jalur secara akurat.</p>}
+          {!shadeDataAvailable && <div className="mt-2 flex items-start gap-2 rounded-xl bg-[#fff7e8] p-2.5 text-[#8a4b08]"><TreePine className="mt-0.5 size-3 shrink-0" /><div><p className="text-[8px] font-extrabold">Rute teduh belum aktif di area ini</p><p className="mt-0.5 text-[8px] leading-4">Buka tombol Rute teduh untuk melihat cara kerja dan membantu melengkapi data.</p></div></div>}
         </MotionSurface>
       )}
     </div>
@@ -1110,7 +1157,7 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
   return <main className={`relative h-dvh min-h-0 overflow-hidden bg-[#dfe5e8] sm:min-h-[620px] ${profile==='low-vision'?'contrast-[1.08]':''}`}>
     <MapCanvas routes={routeOptions} reports={mapReports} destinations={mapDestinations} shadeSegments={shadeSegments} heatEnabled={heatEnabled} heatHour={heatHour} weather={selectedWeather} onDestinationSelect={openMapDestination} activeRoute={selected||detail} origin={originCoordinates} destination={destinationCoordinates} reportDraft={reportDraft} onMapClick={panel==='report'?setReportDraft:null} highContrast={profile==='low-vision'} />
     <LeftRail activePanel={panel} destinationCount={mapDestinations.length} onHome={()=>{setDirectoryDetail(null);setPanel(null)}} onReport={()=>setPanel('report')} onAssistant={()=>setPanel('assistant')} onHistory={()=>setPanel('history')} onProfile={()=>setPanel('profile')} onDestinations={()=>{setDirectoryDetail(null);setPanel('directory')}} />
-    {!sidePanelOpen&&<SearchBox origin={origin} destination={destination} setOrigin={(value)=>{setOrigin(value);setOriginSelection(null);}} setDestination={(value)=>{setDestination(value);setDestinationSelection(null);}} originCoordinates={originCoordinates} onSelectOrigin={(place)=>{setOrigin(place.name);setOriginSelection(place);setOriginCoordinates(place.coordinates);}} onSelectDestination={(place)=>{setDestination(place.name);setDestinationSelection(place);setPanel('community-place');}} onSearch={()=>searchRoutes(true)} mode={mode} onMode={()=>setPanel(panel==='mode'?null:'mode')} loading={routingStatus==='loading'} preferShade={preferShade} onToggleShade={()=>setPreferShade(value=>!value)} shadeDataAvailable={shadeSegments.length>0} />}
+    {!sidePanelOpen&&<SearchBox origin={origin} destination={destination} setOrigin={(value)=>{setOrigin(value);setOriginSelection(null);}} setDestination={(value)=>{setDestination(value);setDestinationSelection(null);}} originCoordinates={originCoordinates} onSelectOrigin={(place)=>{setOrigin(place.name);setOriginSelection(place);setOriginCoordinates(place.coordinates);}} onSelectDestination={(place)=>{setDestination(place.name);setDestinationSelection(place);setPanel('community-place');}} onSearch={()=>searchRoutes(true)} mode={mode} onMode={()=>setPanel(panel==='mode'?null:'mode')} loading={routingStatus==='loading'} preferShade={preferShade} onToggleShade={()=>setPreferShade(value=>!value)} shadeDataAvailable={shadeSegments.length>0} onShowHeat={()=>setHeatEnabled(true)} onReportShade={()=>setPanel('report')} />}
     {!sidePanelOpen&&<MapLayerControls destinationCount={mapDestinations.length} onDirectory={()=>{setDirectoryDetail(null);setPanel('directory')}} heatEnabled={heatEnabled} setHeatEnabled={setHeatEnabled} heatHour={heatHour} setHeatHour={setHeatHour} weather={selectedWeather} shadeDataAvailable={shadeSegments.length>0} />}
     {!panel&&!navigating&&<MobileMapActions onSearch={()=>searchRoutes(true)} />}
     {panel==='mode'&&<ModePanel current={profile} onChange={changeMode} onClose={()=>setPanel(null)} />}
