@@ -209,8 +209,8 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
         {activeField === "destination" && <PlaceSuggestions suggestions={destinationSuggestions} error={destinationSuggestionError} label="Saran tujuan" onChoose={chooseDestination} />}
         <button type="button" onClick={onSearch} disabled={loading} className="m-3.5 hidden h-[42px] w-[calc(100%-28px)] rounded-[12px] bg-[#0c6478] text-[11px] font-extrabold text-white shadow-[0_5px_14px_rgba(12,100,120,.18)] transition hover:-translate-y-0.5 hover:bg-[#09596a] active:translate-y-0 active:bg-[#084e5d] disabled:cursor-wait disabled:opacity-60 sm:block">{loading ? "Menghitung…" : "Cari rute"}</button>
       </div>
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mt-4 sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:pb-0">
-        <button data-guide="mode" type="button" onClick={onMode} className="flex h-11 min-w-0 items-center gap-2 rounded-[12px] border border-white/80 bg-white/95 px-3 text-[10px] font-bold text-[#0c6478] shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#f5fafa]"><ModeIcon className="size-4 shrink-0" /><span className="truncate">{mode.label}</span><span className="ml-auto text-[#98a2b3]">›</span></button>
+      <div className="mt-3 grid grid-cols-4 gap-2 sm:mt-4 sm:grid-cols-2 sm:gap-3">
+        <button data-guide="mode" type="button" onClick={onMode} className="flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-[12px] border border-white/80 bg-white/95 px-2 text-[10px] font-bold text-[#0c6478] shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#f5fafa] sm:h-11 sm:justify-start sm:gap-2 sm:px-3"><ModeIcon className="size-4 shrink-0" /><span className="sm:hidden">Mode</span><span className="hidden truncate sm:inline">{mode.label}</span><span className="ml-auto hidden text-[#98a2b3] sm:inline">›</span></button>
         <button
           data-guide="shade"
           type="button"
@@ -220,14 +220,14 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
           }}
           aria-expanded={showShadeGuide}
           aria-pressed={shadeDataAvailable ? preferShade : undefined}
-          className={`flex h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[12px] border px-2.5 text-[10px] font-extrabold shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:-translate-y-0.5 ${preferShade ? "border-[#22a06b] bg-[#e9f8ef] text-[#087443]" : "border-white/80 bg-white/95 text-[#52616b] hover:bg-[#f5fafa]"}`}
+          className={`flex h-10 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[12px] border px-2 text-[10px] font-extrabold shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:-translate-y-0.5 sm:h-11 sm:px-2.5 ${preferShade ? "border-[#22a06b] bg-[#e9f8ef] text-[#087443]" : "border-white/80 bg-white/95 text-[#52616b] hover:bg-[#f5fafa]"}`}
         >
           <TreePine className="size-4" />
-          Rute teduh
-          <CircleHelp className="size-3 text-[#98a2b3]" />
+          <span className="sm:hidden">Teduh</span><span className="hidden sm:inline">Rute teduh</span>
+          <CircleHelp className="hidden size-3 text-[#98a2b3] sm:block" />
         </button>
-        <button type="button" onClick={onDirectory} className="flex h-10 shrink-0 items-center gap-2 rounded-[12px] border border-white/80 bg-white/95 px-3 text-[10px] font-extrabold text-[#0c6478] shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:bg-[#f5fafa] sm:hidden"><BookOpen className="size-4" />Direktori <span className="rounded-full bg-[#e5f6f2] px-1.5 py-0.5 text-[9px]">{destinationCount || 0}</span></button>
-        <button data-guide="heat" type="button" onClick={onToggleHeat} aria-pressed={heatEnabled} className={`flex h-10 shrink-0 items-center gap-2 rounded-[12px] border px-3 text-[10px] font-extrabold shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition sm:hidden ${heatEnabled ? "border-[#f59e0b] bg-[#fff7e8] text-[#a34b00]" : "border-white/80 bg-white/95 text-[#0c6478]"}`}><SunMedium className="size-4" />Panas</button>
+        <button type="button" onClick={onDirectory} className="flex h-10 min-w-0 items-center justify-center gap-1 rounded-[12px] border border-white/80 bg-white/95 px-1.5 text-[10px] font-extrabold text-[#0c6478] shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:bg-[#f5fafa] sm:hidden"><BookOpen className="size-4 shrink-0" /><span>Dir</span><span className="rounded-full bg-[#e5f6f2] px-1.5 py-0.5 text-[9px]">{destinationCount || 0}</span></button>
+        <button data-guide="heat" type="button" onClick={onToggleHeat} aria-pressed={heatEnabled} className={`flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-[12px] border px-1.5 text-[10px] font-extrabold shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition sm:hidden ${heatEnabled ? "border-[#f59e0b] bg-[#fff7e8] text-[#a34b00]" : "border-white/80 bg-white/95 text-[#0c6478]"}`}><SunMedium className="size-4 shrink-0" />Panas</button>
       </div>
       {showShadeGuide && (
         <MotionSurface direction="down" distance={10} className="mt-4 overflow-hidden rounded-[18px] border border-white/80 bg-white/95 shadow-[0_12px_30px_rgba(24,46,58,.17)] backdrop-blur-xl">
