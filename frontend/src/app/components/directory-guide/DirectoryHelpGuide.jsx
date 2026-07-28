@@ -128,30 +128,30 @@ export default function DirectoryHelpGuide({
         <CircleHelp className="size-4" />
       </button>
       {open && typeof document !== "undefined" && createPortal((
-        <div className="fixed inset-0 z-[220]">
+        <div className="pointer-events-none fixed inset-0 z-[220]">
           {spotlight ? (
             <div
               className="pointer-events-none absolute rounded-[18px] border-2 border-[#8ef0dc] transition-all duration-300"
               style={{
                 ...spotlight,
                 boxShadow:
-                  "0 0 0 9999px rgba(6,31,41,.72), 0 0 0 5px rgba(142,240,220,.17), 0 18px 60px rgba(0,0,0,.24)",
+                  `0 0 0 9999px rgba(6,31,41,${desktop ? ".72" : ".48"}), 0 0 0 5px rgba(142,240,220,.17), 0 18px 60px rgba(0,0,0,.24)`,
               }}
             >
               <span className="absolute -bottom-3 -right-3 grid size-9 animate-bounce place-items-center rounded-full bg-[#8ef0dc] text-[#073c47] shadow-lg motion-reduce:animate-none"><MousePointer2 className="size-4 fill-current" /></span>
             </div>
-          ) : <div className="absolute inset-0 bg-[#061f29]/78 backdrop-blur-[2px]" />}
+          ) : <div className="absolute inset-0 bg-[#061f29]/50 backdrop-blur-[1px] md:bg-[#061f29]/78 md:backdrop-blur-[2px]" />}
 
-          <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="directory-guide-title" tabIndex={-1} className={`absolute inset-x-3 overflow-hidden rounded-[24px] border border-white/80 bg-white shadow-[0_24px_80px_rgba(1,26,35,.3)] outline-none md:inset-x-auto md:bottom-auto md:top-1/2 md:w-[360px] md:-translate-y-1/2 ${targetLowOnMobile ? "top-3" : "bottom-[max(12px,env(safe-area-inset-bottom))]"} ${targetOnLeft ? "md:right-7" : "md:left-1/2 md:-translate-x-1/2"}`}>
+          <section ref={dialogRef} data-lenis-prevent="true" role="dialog" aria-modal="false" aria-labelledby="directory-guide-title" tabIndex={-1} className={`pointer-events-auto absolute inset-x-3 max-h-[46dvh] overflow-y-auto rounded-[22px] border border-white/80 bg-white shadow-[0_24px_80px_rgba(1,26,35,.3)] outline-none md:inset-x-auto md:bottom-auto md:top-1/2 md:max-h-none md:w-[360px] md:overflow-hidden md:rounded-[24px] md:-translate-y-1/2 ${targetLowOnMobile ? "top-3" : "bottom-[max(12px,env(safe-area-inset-bottom))]"} ${targetOnLeft ? "md:right-7" : "md:left-1/2 md:-translate-x-1/2"}`}>
             <div className="h-1 bg-[#e4f4f1]"><div className="h-full rounded-r-full bg-[#18aa96] transition-[width] duration-500" style={{ width: `${progress}%` }} /></div>
-            <div className="p-5">
+            <div className="p-4 md:p-5">
               <div className="flex items-start justify-between gap-4">
                 <div><p className="text-[9px] font-extrabold tracking-[.16em] text-[#18aa96]">{step.eyebrow}</p><p className="mt-1.5 text-[9px] font-bold text-[#94a0aa]">{index + 1} dari {directoryGuideSteps.length}</p></div>
                 <button type="button" onClick={() => close(false)} aria-label="Tutup panduan" className="grid size-9 place-items-center rounded-full bg-[#f2f6f6] text-[#52616b]"><X className="size-4" /></button>
               </div>
-              <h2 id="directory-guide-title" className="mt-4 text-[21px] font-extrabold leading-[1.2] tracking-[-.03em] text-[#122d38]">{step.title}</h2>
-              <p className="mt-3 text-[11px] font-medium leading-5 text-[#667985]">{step.description}</p>
-              <p className="mt-4 rounded-[12px] bg-[#f4f8f7] px-3 py-2.5 text-[9px] font-semibold leading-4 text-[#5f727c]"><CircleHelp className="mr-1.5 inline size-3 text-[#18aa96]" />{step.hint}</p>
+              <h2 id="directory-guide-title" className="mt-3 text-[18px] font-extrabold leading-[1.2] tracking-[-.03em] text-[#122d38] md:mt-4 md:text-[21px]">{step.title}</h2>
+              <p className="mt-2 text-[10px] font-medium leading-[1.15rem] text-[#667985] md:mt-3 md:text-[11px] md:leading-5">{step.description}</p>
+              <p className="mt-3 rounded-[12px] bg-[#f4f8f7] px-3 py-2 text-[8px] font-semibold leading-4 text-[#5f727c] md:mt-4 md:py-2.5 md:text-[9px]"><CircleHelp className="mr-1.5 inline size-3 text-[#18aa96]" />{step.hint}</p>
               {step.setup === "open-place" && !hasDestinations && <p className="mt-2 text-[8px] font-bold text-[#a34b00]">Data tempat masih dimuat. Tunggu sebentar lalu ulangi langkah ini.</p>}
               <div className="mt-5 flex gap-2">
                 {index > 0 ? <button type="button" disabled={preparing} onClick={() => void goTo(index - 1)} aria-label="Langkah sebelumnya" className="grid size-11 place-items-center rounded-[13px] border border-[#dbe5e6] text-[#0c6478] disabled:opacity-50"><ArrowLeft className="size-4" /></button> : <button type="button" disabled={preparing} onClick={() => close(true)} className="h-11 px-3 text-[10px] font-extrabold text-[#71818c] disabled:opacity-50">Lewati</button>}

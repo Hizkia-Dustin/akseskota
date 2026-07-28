@@ -241,7 +241,7 @@ export default function HelpGuide({ onPanelChange }) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[200]">
+        <div className="pointer-events-none fixed inset-0 z-[200]">
           {spotlight ? (
             <div
               aria-hidden="true"
@@ -249,7 +249,7 @@ export default function HelpGuide({ onPanelChange }) {
               style={{
                 ...spotlight,
                 boxShadow:
-                  "0 0 0 9999px rgba(6,31,41,.72), 0 0 0 5px rgba(142,240,220,.17), 0 18px 60px rgba(0,0,0,.24)",
+                  `0 0 0 9999px rgba(6,31,41,${wideViewport ? ".72" : ".48"}), 0 0 0 5px rgba(142,240,220,.17), 0 18px 60px rgba(0,0,0,.24)`,
               }}
             >
               <span className="absolute -bottom-3 -right-3 grid size-9 animate-bounce place-items-center rounded-full bg-[#8ef0dc] text-[#073c47] shadow-lg motion-reduce:animate-none">
@@ -257,16 +257,17 @@ export default function HelpGuide({ onPanelChange }) {
               </span>
             </div>
           ) : (
-            <div className="absolute inset-0 bg-[#061f29]/78 backdrop-blur-[2px]" />
+            <div className="absolute inset-0 bg-[#061f29]/50 backdrop-blur-[1px] sm:bg-[#061f29]/78 sm:backdrop-blur-[2px]" />
           )}
 
           <section
             ref={dialogRef}
             role="dialog"
-            aria-modal="true"
+            aria-modal="false"
             aria-labelledby="help-guide-title"
             tabIndex={-1}
-            className={`absolute inset-x-3 overflow-hidden rounded-[26px] border border-white/80 bg-white shadow-[0_24px_80px_rgba(1,26,35,.3)] outline-none sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:w-[360px] sm:-translate-y-1/2 ${
+            data-lenis-prevent="true"
+            className={`pointer-events-auto absolute inset-x-3 max-h-[46dvh] overflow-y-auto rounded-[22px] border border-white/80 bg-white shadow-[0_24px_80px_rgba(1,26,35,.3)] outline-none sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:max-h-none sm:w-[360px] sm:overflow-hidden sm:rounded-[26px] sm:-translate-y-1/2 ${
               targetNearMobileBottom
                 ? "top-[max(12px,env(safe-area-inset-top))]"
                 : "bottom-[max(12px,env(safe-area-inset-bottom))]"
@@ -277,7 +278,7 @@ export default function HelpGuide({ onPanelChange }) {
             <div className="h-1 bg-[#e4f4f1]">
               <div className="h-full rounded-r-full bg-[#18aa96] transition-[width] duration-500" style={{ width: `${progress}%` }} />
             </div>
-            <div className="p-5 sm:p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[9px] font-extrabold tracking-[.18em] text-[#18aa96]">{step.eyebrow}</p>
@@ -293,19 +294,19 @@ export default function HelpGuide({ onPanelChange }) {
                 </button>
               </div>
 
-              <h2 id="help-guide-title" className="mt-5 text-[22px] font-extrabold leading-[1.18] tracking-[-.035em] text-[#122d38] sm:text-[24px]">
+              <h2 id="help-guide-title" className="mt-3 text-[18px] font-extrabold leading-[1.18] tracking-[-.035em] text-[#122d38] sm:mt-5 sm:text-[24px]">
                 {step.title}
               </h2>
-              <p className="mt-3 text-[12px] font-medium leading-6 text-[#667985]">{step.description}</p>
-              <StepDemo type={step.demo} />
+              <p className="mt-2 text-[10px] font-medium leading-[1.15rem] text-[#667985] sm:mt-3 sm:text-[12px] sm:leading-6">{step.description}</p>
+              <div className="hidden sm:block"><StepDemo type={step.demo} /></div>
               {step.hint && (
-                <p className="mt-4 rounded-[12px] bg-[#f5f8f8] px-3 py-2.5 text-[9px] font-semibold leading-4 text-[#5f727c]">
+                <p className="mt-3 rounded-[12px] bg-[#f5f8f8] px-3 py-2 text-[8px] font-semibold leading-4 text-[#5f727c] sm:mt-4 sm:py-2.5 sm:text-[9px]">
                   <CircleHelp className="mr-1.5 inline size-3 text-[#18aa96]" />
                   {step.hint}
                 </p>
               )}
 
-              <div className="mt-6 flex items-center gap-2">
+              <div className="mt-4 flex items-center gap-2 sm:mt-6">
                 {stepIndex > 0 ? (
                   <button
                     type="button"
