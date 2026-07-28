@@ -75,13 +75,36 @@ const routeTone = {
   blue: { card: "bg-[#315fc4]", badge: "bg-white/12", ring: "border-white", accent: "text-[#315fc4]" },
 };
 
+function buildRouteEstimates(routes, profile) {
+  const shortestDistance = Math.min(...routes.map((route) => route.distanceMeters));
+  const profileBase = { wheelchair: 58, elderly: 64, stroller: 61, "low-vision": 62, walking: 70 };
+  return routes.map((route, index) => {
+    const distancePenalty = Math.min(14, Math.round(Math.max(0, route.distanceMeters - shortestDistance) / 180));
+    const score = Math.max(35, Math.min(82, (profileBase[profile] || 70) - distancePenalty));
+    return {
+      ...route,
+      score,
+      scoreBasis: "ROUTE_ESTIMATE",
+      confidenceLabel: "Estimasi awal",
+      badge: index === 0 ? "Estimasi awal · rute berjalan" : "Estimasi alternatif · belum diverifikasi",
+      dataCoverage: 0,
+      algorithmRank: index + 1,
+      evaluationReasons: [
+        "Skor awal dihitung dari rute berjalan Mapbox dan jarak relatif",
+        "Kondisi ramp, lebar trotoar, permukaan, dan keteduhan belum seluruhnya diverifikasi",
+        "Cakupan observasi komunitas saat ini 0%",
+      ],
+    };
+  });
+}
+
 function MapCanvas({ routes, reports, destinations, shadeSegments, heatEnabled, heatHour, weather, onDestinationSelect, activeRoute = "A", origin, destination, reportDraft, onMapClick, highContrast = false }) {
   return <MapboxMap routes={routes} reports={reports} destinations={destinations} shadeSegments={shadeSegments} heatEnabled={heatEnabled} heatHour={heatHour} weather={weather} onDestinationSelect={onDestinationSelect} activeRoute={activeRoute} origin={origin} destination={destination} reportDraft={reportDraft} onMapClick={onMapClick} highContrast={highContrast} />;
 }
 
-function ScoreRing({ score, color = "border-white" }) {
+function ScoreRing({ score, color = "border-white", estimated = false }) {
   if (!Number.isFinite(score)) return <span className={`grid size-12 place-items-center rounded-full border-2 px-1 text-center text-[7px] font-extrabold leading-3 ${color}`}>DATA<br/>BELUM<br/>CUKUP</span>;
-  return <span className={`grid size-12 place-items-center rounded-full border-[3px] text-[14px] font-extrabold ${color}`}>{score}</span>;
+  return <span className={`grid size-12 place-items-center content-center rounded-full border-[3px] text-[14px] font-extrabold leading-none ${color}`}><span>{score}</span>{estimated&&<small className="mt-1 text-[6px] font-extrabold tracking-[.08em] opacity-75">EST.</small>}</span>;
 }
 
 function RouteCard({ route, active = false, onDetail, onSelect }) {
@@ -89,13 +112,13 @@ function RouteCard({ route, active = false, onDetail, onSelect }) {
   if (!active) {
     return (
       <button data-route-card type="button" onClick={onSelect} className="flex w-full items-center rounded-[14px] border border-[#e6eaed] bg-white p-4 text-left transition-colors hover:border-[#9abdc4] hover:bg-[#f7fbfb] active:bg-[#eef7f6]">
-        <span className="min-w-0 flex-1"><span className="block text-[12px] font-semibold text-[#99a1af]">{route.street}</span><span className={`mt-2 inline-block rounded-full px-2 py-1 text-[9px] font-extrabold ${route.blocked ? "bg-[#fee2e2] text-[#b42318]" : route.tone === "orange" ? "bg-[#fef3c6] text-[#a34b00]" : "bg-[#dbeafe] text-[#155dfc]"}`}>{route.badge}</span><span className="mt-3 flex flex-wrap gap-2 text-[10px] text-[#475467]"><b className="rounded-lg bg-white px-2 py-1.5">◷ {route.time}</b><b className="rounded-lg bg-white px-2 py-1.5">➤ {route.distance}</b>{Number.isFinite(route.shade)&&<b className="rounded-lg bg-white px-2 py-1.5">☂ Teduh {route.shade}</b>}</span></span><ScoreRing score={route.score} color={route.tone === "orange" ? "border-[#f59e0b] text-[#1f2937]" : "border-[#3b82f6] text-[#1f2937]"} />
+        <span className="min-w-0 flex-1"><span className="block text-[12px] font-semibold text-[#99a1af]">{route.street}</span><span className={`mt-2 inline-block rounded-full px-2 py-1 text-[9px] font-extrabold ${route.blocked ? "bg-[#fee2e2] text-[#b42318]" : route.tone === "orange" ? "bg-[#fef3c6] text-[#a34b00]" : "bg-[#dbeafe] text-[#155dfc]"}`}>{route.badge}</span><span className="mt-3 flex flex-wrap gap-2 text-[10px] text-[#475467]"><b className="rounded-lg bg-white px-2 py-1.5">◷ {route.time}</b><b className="rounded-lg bg-white px-2 py-1.5">➤ {route.distance}</b>{Number.isFinite(route.shade)&&<b className="rounded-lg bg-white px-2 py-1.5">☂ Teduh {route.shade}</b>}<b className="rounded-lg bg-[#f4f7f7] px-2 py-1.5">Observasi {route.dataCoverage ?? 0}%</b></span></span><ScoreRing score={route.score} estimated={route.scoreBasis==="ROUTE_ESTIMATE"} color={route.tone === "orange" ? "border-[#f59e0b] text-[#1f2937]" : "border-[#3b82f6] text-[#1f2937]"} />
       </button>
     );
   }
   return (
     <article data-route-card className={`rounded-[14px] p-5 text-white shadow-[0_8px_20px_rgba(20,50,75,.14)] ${tone.card}`}>
-      <div className="flex"><div className="flex-1"><p className="text-[12px] text-white/65">{route.street}</p><span className={`mt-2 inline-block rounded-full px-2 py-1 text-[9px] font-extrabold ${tone.badge}`}>{route.badge}</span><div className="mt-3 flex flex-wrap gap-2 text-[10px]"><b className="rounded-lg bg-white/15 px-2 py-1.5"><Clock3 className="mr-1 inline size-3" />{route.time}</b><b className="rounded-lg bg-white/15 px-2 py-1.5"><Navigation className="mr-1 inline size-3" />{route.distance}</b>{Number.isFinite(route.shade)&&<b className="rounded-lg bg-white/15 px-2 py-1.5">☂ Teduh {route.shade}/100</b>}<b className="rounded-lg bg-white/15 px-2 py-1.5">Data {route.dataCoverage ?? 0}%</b>{route.algorithmRank&&<b className="rounded-lg bg-white/15 px-2 py-1.5">Dijkstra #{route.algorithmRank}</b>}</div></div><ScoreRing score={route.score} /></div>
+      <div className="flex"><div className="flex-1"><p className="text-[12px] text-white/65">{route.street}</p><span className={`mt-2 inline-block rounded-full px-2 py-1 text-[9px] font-extrabold ${tone.badge}`}>{route.badge}</span><div className="mt-3 flex flex-wrap gap-2 text-[10px]"><b className="rounded-lg bg-white/15 px-2 py-1.5"><Clock3 className="mr-1 inline size-3" />{route.time}</b><b className="rounded-lg bg-white/15 px-2 py-1.5"><Navigation className="mr-1 inline size-3" />{route.distance}</b>{Number.isFinite(route.shade)&&<b className="rounded-lg bg-white/15 px-2 py-1.5">☂ Teduh {route.shade}/100</b>}<b className="rounded-lg bg-white/15 px-2 py-1.5">Observasi {route.dataCoverage ?? 0}%</b>{route.algorithmRank&&<b className="rounded-lg bg-white/15 px-2 py-1.5">Dijkstra #{route.algorithmRank}</b>}</div></div><ScoreRing score={route.score} estimated={route.scoreBasis==="ROUTE_ESTIMATE"} /></div>
       <div className="mt-4 grid grid-cols-[1fr_auto] gap-2"><button type="button" onClick={onDetail} className="rounded-lg bg-white py-2.5 text-[11px] font-extrabold text-[#0c6478] transition-colors hover:bg-[#f3f8f8]">Lihat detail</button><button type="button" onClick={onSelect} className="rounded-lg border border-white/25 px-4 text-[11px] font-bold transition-colors hover:bg-white/10">Tutup</button></div>
     </article>
   );
@@ -564,6 +587,18 @@ function DetailPanel({ route, destination, destinationCoordinates, onBack, onRep
       </div>
 
       <div data-lenis-prevent="true" className="app-scroll-region min-h-0 flex-1 overflow-y-auto px-3 py-5">
+        {route.scoreBasis === "ROUTE_ESTIMATE" && (
+          <div className="mb-5 rounded-[14px] border border-[#b9ddd6] bg-[#effaf8] p-3.5">
+            <div className="flex items-start gap-2.5">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white font-extrabold text-[#0c6478] shadow-sm">{route.score}</span>
+              <div>
+                <b className="block text-[10px] text-[#0c6478]">Estimasi awal · belum diverifikasi penuh</b>
+                <p className="mt-1 text-[8px] leading-4 text-[#58717a]">Rute tetap dapat dibandingkan menggunakan data Mapbox dan bukti terverifikasi yang tersedia. Cakupan observasi komunitas: {route.dataCoverage ?? 0}%.</p>
+              </div>
+            </div>
+            {!!route.evaluationReasons?.length && <ul className="mt-3 space-y-1.5 border-t border-[#d5eae6] pt-3">{route.evaluationReasons.slice(0,3).map((reason)=><li key={reason} className="flex gap-2 text-[8px] leading-4 text-[#526a73]"><CheckCircle2 className="mt-0.5 size-3 shrink-0 text-[#18aa96]"/>{reason}</li>)}</ul>}
+          </div>
+        )}
         {steps.map((step, index) => (
           <div
             key={`${step.instruction}-${index}`}
@@ -986,7 +1021,8 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
       if (!isInsideBogor(start)) throw new Error("Titik awal berada di luar Kota Bogor. Ketik lokasi awal di Kota Bogor.");
       if (!isInsideBogor(destinationResult.coordinates)) throw new Error("Tujuan berada di luar Kota Bogor.");
       const calculatedRoutes = await requestMapboxWalkingRoutes(start, destinationResult.coordinates, token);
-      let evaluatedRoutes = calculatedRoutes;
+      const estimatedRoutes = buildRouteEstimates(calculatedRoutes, profile);
+      let evaluatedRoutes = estimatedRoutes;
       try {
         const profileMode = profileModeMap[profile] || "GENERAL";
         const evaluations = await apiRequest("/routes/evaluate", {
@@ -998,29 +1034,40 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
         });
         evaluatedRoutes = calculatedRoutes.map((route) => {
           const evaluation = evaluations.find((item) => item.id === route.id);
-          if (!evaluation) return route;
+          const estimate = estimatedRoutes.find((item) => item.id === route.id);
+          if (!evaluation) return estimate || route;
+          const estimated = !evaluation.blocked && (evaluation.scoreBasis === "ROUTE_ESTIMATE" || !Number.isFinite(evaluation.accessibility));
+          const score = Number.isFinite(evaluation.accessibility) ? evaluation.accessibility : estimate?.score;
           return {
             ...route,
-            score: evaluation.accessibility,
+            score,
+            scoreBasis: evaluation.blocked
+              ? "VERIFIED_OBSTACLE"
+              : evaluation.scoreBasis || (evaluation.dataStatus === "CUKUP" ? "COMMUNITY_VERIFIED" : "ROUTE_ESTIMATE"),
+            confidenceLabel: evaluation.confidenceLabel || (estimated ? "Estimasi awal" : "Terverifikasi komunitas"),
             shade: evaluation.shade,
             comfort: evaluation.comfort,
             dataCoverage: evaluation.dataCoverage,
             blocked: evaluation.blocked,
             algorithmCost: evaluation.algorithmCost,
-            algorithmRank: evaluation.algorithmRank,
+            algorithmRank: evaluation.algorithmRank ?? estimate?.algorithmRank,
             criteriaPenalties: evaluation.criteriaPenalties,
-            evaluationReasons: evaluation.reasons,
+            evaluationReasons: estimated
+              ? [...new Set([...(estimate?.evaluationReasons || []), ...(evaluation.reasons || [])])]
+              : evaluation.reasons,
             safety: evaluation.safety,
             routeFacilities: evaluation.routeFacilities,
             matchedSegmentCount: evaluation.matchedSegmentCount,
-            badge: evaluation.blocked ? "Tidak sesuai profil" : evaluation.labels[0] || (evaluation.dataStatus === "CUKUP" ? route.badge : "Data komunitas belum cukup"),
+            badge: evaluation.blocked
+              ? "Tidak sesuai profil"
+              : evaluation.labels[0] || (estimated ? "Estimasi awal · belum diverifikasi" : route.badge),
           };
         }).sort((first, second) => {
           if (preferShade && Number.isFinite(first.shade) && Number.isFinite(second.shade) && first.shade !== second.shade) return second.shade - first.shade;
           return (first.algorithmRank ?? 999) - (second.algorithmRank ?? 999);
         });
       } catch {
-        evaluatedRoutes = calculatedRoutes.map((route) => ({ ...route, badge: "Data komunitas belum tersedia", dataCoverage: 0 }));
+        evaluatedRoutes = estimatedRoutes;
       }
       setOriginCoordinates(start);
       setDestinationCoordinates(destinationResult.coordinates);
@@ -1127,6 +1174,8 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
             distance: activeRoute.distance,
             time: activeRoute.time,
             score: activeRoute.score,
+            scoreBasis: activeRoute.scoreBasis,
+            confidenceLabel: activeRoute.confidenceLabel,
             shade: activeRoute.shade,
             comfort: activeRoute.comfort,
             safety: activeRoute.safety,

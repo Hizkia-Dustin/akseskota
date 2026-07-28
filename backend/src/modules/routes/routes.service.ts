@@ -121,6 +121,14 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
   const roads = roadRows.map((row) => ({ ...row, parsed: parseLineString(row.geometry) })).filter((row) => row.parsed);
   const obstacles = obstacleRows.map((row) => ({ ...row, parsed: parsePoint(row.geometry) })).filter((row) => row.parsed);
   const facilities = facilityRows.map((row) => ({ ...row, parsed: parsePoint(row.geometry) })).filter((row) => row.parsed);
+  const shortestDistance = Math.min(...input.routes.map((route) => route.distanceMeters));
+  const profileEstimateBase: Record<EvaluateRoutesInput['mode'], number> = {
+    WHEELCHAIR: 58,
+    ELDERLY: 64,
+    STROLLER: 61,
+    LOW_VISION: 62,
+    GENERAL: 70,
+  };
 
   const evaluated = input.routes.map((route) => {
     const routeLine = route.geometry.coordinates as [number, number][];
@@ -163,9 +171,23 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
       : ['CONSTRUCTION', 'FALLEN_TREE'];
     const blocking = routeObstacles.filter((obstacle) => blockingTypes.includes(obstacle.type));
     const enoughData = coverage >= 40;
-    const accessibility = blocking.length > 0 ? 0 : enoughData && rawAccessibility !== null
-      ? Math.max(0, rawAccessibility - routeObstacles.length * 8)
-      : null;
+    const verifiedScoreAvailable = enoughData && rawAccessibility !== null;
+    const relativeDistancePenalty = Math.min(14, Math.round(Math.max(0, route.distanceMeters - shortestDistance) / 180));
+    const facilityBonus = Math.min(8, routeFacilities.length * 2);
+    const estimatedAccessibility = Math.max(
+      35,
+      Math.min(82, profileEstimateBase[input.mode] - relativeDistancePenalty + facilityBonus - routeObstacles.length * 6),
+    );
+    const accessibility = blocking.length > 0
+      ? 0
+      : verifiedScoreAvailable
+        ? Math.max(0, rawAccessibility - routeObstacles.length * 8)
+        : estimatedAccessibility;
+    const scoreBasis = blocking.length > 0
+      ? 'VERIFIED_OBSTACLE'
+      : verifiedScoreAvailable
+        ? 'COMMUNITY_VERIFIED'
+        : 'ROUTE_ESTIMATE';
 
     const criteriaPenalties = buildCriteriaPenalties({
       accessibility,
@@ -213,6 +235,8 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
       safety,
       dataCoverage: coverage,
       dataStatus: enoughData ? 'CUKUP' : sampledRoadValues.length ? 'TERBATAS' : 'BELUM_ADA',
+      scoreBasis,
+      confidenceLabel: verifiedScoreAvailable ? 'Terverifikasi komunitas' : 'Estimasi awal',
       verifiedObstacleCount: routeObstacles.length,
       blocked: blocking.length > 0,
       algorithmCost,
@@ -222,7 +246,11 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
         ...(blocking.length ? [`Ditolak: ${blocking.length} hambatan terverifikasi menghalangi profil ini`] : []),
         ...(routeObstacles.length && !blocking.length ? [`${routeObstacles.length} hambatan terverifikasi di sekitar rute`] : []),
         ...reasons,
-        ...(!enoughData ? [`Cakupan data komunitas baru ${coverage}%`] : []),
+        ...(!verifiedScoreAvailable ? [
+          'Skor awal dihitung dari rute berjalan Mapbox, jarak relatif, fasilitas sekitar, dan hambatan terverifikasi',
+          'Kondisi ramp, lebar trotoar, permukaan, dan keteduhan belum seluruhnya diverifikasi',
+          `Cakupan observasi komunitas saat ini ${coverage}%`,
+        ] : []),
       ],
       routeFacilities: Object.entries(facilityCounts).map(([type, count]) => ({ type, count })),
       matchedSegmentCount: uniqueRoads.length,
@@ -239,10 +267,12 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
     if (route) route.algorithmRank = index + 1;
   });
 
-  const eligibleAccess = evaluated.filter((route) => route.accessibility !== null && !route.blocked);
+  const eligibleAccess = evaluated.filter((route) => route.scoreBasis === 'COMMUNITY_VERIFIED' && !route.blocked);
+  const estimatedAccess = evaluated.filter((route) => route.scoreBasis === 'ROUTE_ESTIMATE' && !route.blocked);
   const eligibleShade = evaluated.filter((route) => route.shade !== null && !route.blocked);
   const eligibleComfort = evaluated.filter((route) => route.comfort !== null && !route.blocked);
   addUniqueBestLabel(eligibleAccess, 'accessibility', 'Paling Aksesibel');
+  addUniqueBestLabel(estimatedAccess, 'accessibility', 'Estimasi paling sesuai');
   addUniqueBestLabel(eligibleShade, 'shade', 'Paling Teduh');
   addUniqueBestLabel(eligibleComfort, 'comfort', 'Paling Nyaman');
 
