@@ -48,18 +48,27 @@ export async function insertPointGeometry(table: 'facilities' | 'obstacles', id:
  * MariaDB's ST_Distance returns planar coordinate units (degrees), hence the
  * local approximation of 111,320 meters per degree.
  */
-export async function findRoadSegmentsNear(lat: number, lng: number, radiusMeters: number) {
+export async function findRoadSegmentsNear(
+  lat: number,
+  lng: number,
+  radiusMeters: number,
+  includePendingCommunity = false,
+) {
+  const visibilityFilter = includePendingCommunity
+    ? ''
+    : `AND (rs.source IS NULL OR rs.source NOT IN ('community', 'community_pending') OR EXISTS (
+         SELECT 1 FROM reports r
+         WHERE r.roadSegmentId = rs.id AND r.verificationStatus = 'VERIFIED'
+       ))`;
   const rows = (await prisma.$queryRawUnsafe(
     `SELECT rs.id, rs.surfaceCondition as surface_condition, rs.widthMeters as width_meters, rs.hasRamp as has_ramp, rs.hasStairs as has_stairs,
-            rs.hasGuidingBlock as has_guiding_block, rs.shadeLevel as shade_level, rs.lightingAvailable as lighting_available,
+            rs.hasGuidingBlock as has_guiding_block, rs.hasSeating as has_seating, rs.shadeLevel as shade_level, rs.lightingAvailable as lighting_available,
             rs.accessibilityScore as accessibility_score, rs.comfortScore as comfort_score,
+            rs.communityObservationCount as community_observation_count, rs.dataConfidence as data_confidence,
             ST_AsGeoJSON(rs.geometry) as geojson
      FROM road_segments rs
      WHERE rs.geometry IS NOT NULL
-       AND (rs.source IS NULL OR rs.source <> 'community' OR EXISTS (
-         SELECT 1 FROM reports r
-         WHERE r.roadSegmentId = rs.id AND r.verificationStatus = 'VERIFIED'
-       ))
+       ${visibilityFilter}
      LIMIT 500`,
   )) as Array<Record<string, unknown> & { geojson: string | null }>;
 

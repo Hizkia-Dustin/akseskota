@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import { ApiError } from '../../middlewares/errorHandler';
 import { CreateReportInput } from './reports.schema';
 import { clearRouteSearchCache } from '../routes/routeSearchCache';
+import { recomputeRoadSegmentFromVerifiedReports } from '../roadSegments/roadSegments.service';
 
 export async function createReport(
   input: CreateReportInput & {
@@ -188,17 +189,30 @@ export async function submitCommunityVerification(
     status = 'VERIFIED';
     await prisma.report.update({ where: { id: reportId }, data: { verificationStatus: 'VERIFIED' } });
     if (report.obstacleId) await prisma.obstacle.update({ where: { id: report.obstacleId }, data: { isActive: true } });
+    if (report.roadSegmentId) await recomputeRoadSegmentFromVerifiedReports(report.roadSegmentId);
     clearRouteSearchCache();
   } else if (((votes.NEEDS_RECHECK || 0) >= threshold || (votes.REJECTED || 0) >= threshold) && report.verificationStatus === 'UNVERIFIED') {
     status = 'NEEDS_RECHECK';
     await prisma.report.update({ where: { id: reportId }, data: { verificationStatus: 'NEEDS_RECHECK' } });
   }
 
-  return { verification, consensus: { threshold, votes, status } };
+  const roadImpact = status === 'VERIFIED' && report.roadSegmentId
+    ? await prisma.roadSegment.findUnique({
+        where: { id: report.roadSegmentId },
+        select: {
+          accessibilityScore: true,
+          comfortScore: true,
+          shadeLevel: true,
+          communityObservationCount: true,
+          dataConfidence: true,
+        },
+      })
+    : null;
+  return { verification, consensus: { threshold, votes, status }, roadImpact };
 }
 
 export async function listMapReports() {
-  const rows = (await prisma.$queryRawUnsafe(
+  const obstacleRows = (await prisma.$queryRawUnsafe(
     `SELECT r.id, r.title, r.description, r.photoUrl AS photo_url,
             r.verificationStatus AS verification_status, r.createdAt AS created_at,
             o.type AS obstacle_type, o.status AS obstacle_status,
@@ -224,7 +238,31 @@ export async function listMapReports() {
     geometry: string;
   }>;
 
-  return rows.map((row) => ({
+  const roadRows = (await prisma.$queryRawUnsafe(
+    `SELECT r.id, r.title, r.description, r.photoUrl AS photo_url,
+            r.verificationStatus AS verification_status, r.createdAt AS created_at,
+            r.observationData AS observation_data,
+            ST_AsGeoJSON(ST_Centroid(rs.geometry)) AS geometry
+     FROM reports r
+     JOIN road_segments rs ON rs.id = r.roadSegmentId
+     WHERE r.targetType = 'ROAD_SEGMENT'
+       AND r.verificationStatus IN ('UNVERIFIED', 'VERIFIED', 'NEEDS_RECHECK')
+       AND rs.geometry IS NOT NULL
+     ORDER BY r.createdAt DESC
+     LIMIT 500`,
+  )) as Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    photo_url: string;
+    verification_status: string;
+    created_at: Date;
+    observation_data: string | Record<string, unknown> | null;
+    geometry: string;
+  }>;
+
+  return [
+    ...obstacleRows.map((row) => ({
     id: row.id,
     title: row.title,
     description: row.description,
@@ -233,8 +271,21 @@ export async function listMapReports() {
     createdAt: row.created_at,
     obstacleType: row.obstacle_type,
     obstacleStatus: row.obstacle_status,
+    targetType: 'OBSTACLE',
     geometry: JSON.parse(row.geometry),
-  }));
+    })),
+    ...roadRows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      photoUrl: row.photo_url,
+      verificationStatus: row.verification_status,
+      createdAt: row.created_at,
+      targetType: 'ROAD_SEGMENT',
+      observationData: typeof row.observation_data === 'string' ? JSON.parse(row.observation_data) : row.observation_data,
+      geometry: JSON.parse(row.geometry),
+    })),
+  ].sort((first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()).slice(0, 500);
 }
 
 export async function getGuestReport(accessKey: string) {

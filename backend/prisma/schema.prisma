@@ -111,10 +111,15 @@ model RoadSegment {
   hasRamp            Boolean                    @default(false)
   hasStairs          Boolean                    @default(false)
   hasGuidingBlock    Boolean                    @default(false)
+  hasSeating         Boolean                    @default(false)
   shadeLevel         Float? // 0-100, latest aggregated observation
   lightingAvailable  Boolean                    @default(false)
   accessibilityScore Float? // 0-100, computed
   comfortScore       Float? // 0-100, computed
+  communityObservationCount Int                 @default(0)
+  dataConfidence     Float? // 0-100, based on verified independent observations
+  lastCommunityUpdateAt DateTime?
+  baselineData       Json? // original imported/survey values restored if community evidence is withdrawn
   source             String? // "OSM" | "field_survey" | "community"
   createdAt          DateTime                   @default(now())
   updatedAt          DateTime                   @updatedAt
@@ -188,6 +193,7 @@ model Report {
   facility           Facility?          @relation(fields: [facilityId], references: [id])
   photoUrl           String             @db.Text // wajib, sesuai F011/F012 acceptance criteria
   description        String?            @db.Text
+  observationData    Json? // structured road survey values; only applied after community consensus
   verificationStatus VerificationStatus @default(UNVERIFIED)
   createdAt          DateTime           @default(now())
   expiresAt          DateTime?

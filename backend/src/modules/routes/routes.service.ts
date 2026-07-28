@@ -71,11 +71,13 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
     `SELECT rs.id, rs.accessibilityScore AS accessibility_score, rs.comfortScore AS comfort_score,
             rs.shadeLevel AS shade_level, rs.surfaceCondition AS surface_condition,
             rs.widthMeters AS width_meters, rs.hasRamp AS has_ramp, rs.hasStairs AS has_stairs,
-            rs.hasGuidingBlock AS has_guiding_block, rs.lightingAvailable AS lighting_available,
+            rs.hasGuidingBlock AS has_guiding_block, rs.hasSeating AS has_seating,
+            rs.lightingAvailable AS lighting_available, rs.dataConfidence AS data_confidence,
+            rs.communityObservationCount AS community_observation_count,
             ST_AsGeoJSON(rs.geometry) AS geometry
      FROM road_segments rs
      WHERE rs.geometry IS NOT NULL
-       AND (rs.source IS NULL OR rs.source <> 'community' OR EXISTS (
+       AND (rs.source IS NULL OR rs.source NOT IN ('community', 'community_pending') OR EXISTS (
          SELECT 1 FROM reports r
          WHERE r.roadSegmentId = rs.id AND r.verificationStatus = 'VERIFIED'
        ))
@@ -90,7 +92,10 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
     has_ramp: boolean | number;
     has_stairs: boolean | number;
     has_guiding_block: boolean | number;
+    has_seating: boolean | number;
     lighting_available: boolean | number;
+    data_confidence: number | null;
+    community_observation_count: number;
     geometry: string;
   }>;
 
@@ -204,6 +209,9 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
     const rampSegments = uniqueRoads.filter((road) => Boolean(road.has_ramp)).length;
     const guidingBlockSegments = uniqueRoads.filter((road) => Boolean(road.has_guiding_block)).length;
     const litSegments = uniqueRoads.filter((road) => Boolean(road.lighting_available)).length;
+    const seatingSegments = uniqueRoads.filter((road) => Boolean(road.has_seating)).length;
+    const confidenceValues = uniqueRoads.map((road) => road.data_confidence).filter((value): value is number => value !== null);
+    const communityConfidence = confidenceValues.length ? Math.round(confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length) : null;
     const knownWidths = uniqueRoads.map((road) => road.width_meters).filter((value): value is number => value !== null);
     const minimumWidth = knownWidths.length ? Math.round(Math.min(...knownWidths) * 10) / 10 : null;
     const knownSurfaces = uniqueRoads.map((road) => road.surface_condition?.toLowerCase()).filter(Boolean);
@@ -216,6 +224,8 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
       ...(minimumWidth !== null ? [`Lebar trotoar minimum ${minimumWidth} m pada ruas yang terdata`] : []),
       ...(knownSurfaces.length && knownSurfaces.every((surface) => surface === 'good') ? ['Permukaan jalan tercatat dalam kondisi baik'] : []),
       ...(litSegments ? [`Penerangan tercatat pada ${litSegments} ruas`] : []),
+      ...(seatingSegments ? [`Tempat duduk tercatat pada ${seatingSegments} ruas`] : []),
+      ...(communityConfidence !== null ? [`Keyakinan data komunitas ${communityConfidence}%`] : []),
     ] : [];
     const facilityCounts = routeFacilities.reduce<Record<string, number>>((counts, facility) => {
       counts[facility.type] = (counts[facility.type] || 0) + 1;
@@ -254,6 +264,8 @@ export async function evaluateMapboxRoutes(input: EvaluateRoutesInput) {
       ],
       routeFacilities: Object.entries(facilityCounts).map(([type, count]) => ({ type, count })),
       matchedSegmentCount: uniqueRoads.length,
+      communityConfidence,
+      communityObservationCount: uniqueRoads.reduce((sum, road) => sum + Number(road.community_observation_count || 0), 0),
       labels: [] as string[],
     };
   });

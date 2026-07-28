@@ -1,6 +1,7 @@
 import { prisma } from '../../config/prisma';
 import { ApiError } from '../../middlewares/errorHandler';
 import { clearRouteSearchCache } from '../routes/routeSearchCache';
+import { recomputeRoadSegmentFromVerifiedReports } from '../roadSegments/roadSegments.service';
 
 // F018 - Moderator Verification: Approve / Reject / Merge duplicate.
 // Every action is audit-logged (System Architecture section 13).
@@ -23,6 +24,9 @@ export async function approveReport(reportId: string, moderatorId: string, note?
   if (report.targetType === 'OBSTACLE' && report.obstacleId) {
     await prisma.obstacle.update({ where: { id: report.obstacleId }, data: { isActive: true } });
   }
+  if (report.targetType === 'ROAD_SEGMENT' && report.roadSegmentId) {
+    await recomputeRoadSegmentFromVerifiedReports(report.roadSegmentId);
+  }
 
   clearRouteSearchCache();
 
@@ -36,6 +40,9 @@ export async function rejectReport(reportId: string, moderatorId: string, note?:
   if (report.targetType === 'OBSTACLE' && report.obstacleId) {
     await prisma.obstacle.update({ where: { id: report.obstacleId }, data: { isActive: false } });
   }
+  if (report.targetType === 'ROAD_SEGMENT' && report.roadSegmentId) {
+    await recomputeRoadSegmentFromVerifiedReports(report.roadSegmentId);
+  }
 
   clearRouteSearchCache();
 
@@ -47,6 +54,9 @@ export async function markReportNeedsRecheck(reportId: string, moderatorId: stri
   await logModeratorAction(moderatorId, 'needs_recheck_report', reportId, { note });
   if (report.targetType === 'OBSTACLE' && report.obstacleId) {
     await prisma.obstacle.update({ where: { id: report.obstacleId }, data: { isActive: false } });
+  }
+  if (report.targetType === 'ROAD_SEGMENT' && report.roadSegmentId) {
+    await recomputeRoadSegmentFromVerifiedReports(report.roadSegmentId);
   }
   clearRouteSearchCache();
   return report;

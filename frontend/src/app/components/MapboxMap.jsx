@@ -35,6 +35,7 @@ function reportCollection(reports) {
         description: report.description || "Laporan hambatan",
         photoUrl: report.photoUrl || "",
         obstacleType: report.obstacleType,
+        targetType: report.targetType,
         verificationStatus: report.verificationStatus,
       },
       geometry: report.geometry,

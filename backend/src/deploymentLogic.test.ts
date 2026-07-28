@@ -4,6 +4,7 @@ import { registerSchema } from './modules/auth/auth.schema';
 import { createPlacePostSchema } from './modules/communityPlaces/communityPlaces.schema';
 import { reportObstacleSchema } from './modules/obstacles/obstacles.schema';
 import { addRoadSegmentSchema } from './modules/roadSegments/roadSegments.schema';
+import { aggregateRoadObservations } from './modules/roadSegments/roadSegments.service';
 import { sampleLineStringMeters } from './utils/spatial';
 
 test('public submissions are restricted to Kota Bogor', () => {
@@ -27,6 +28,26 @@ test('public submissions are restricted to Kota Bogor', () => {
 
 test('road survey JSON errors become validation errors instead of server errors', () => {
   assert.equal(addRoadSegmentSchema.safeParse({ geometry: '{invalid-json' }).success, false);
+});
+
+test('verified road observations use median values and conservative tie breaking', () => {
+  const aggregate = aggregateRoadObservations([
+    { shadeLevel: 20, widthMeters: 1, hasRamp: true, hasStairs: false, hasGuidingBlock: true },
+    { shadeLevel: 90, widthMeters: 1.8, hasRamp: false, hasStairs: true, hasGuidingBlock: false },
+    { shadeLevel: 50, widthMeters: 1.4, hasRamp: true, hasStairs: false, hasGuidingBlock: true },
+  ]);
+  assert.equal(aggregate.shadeLevel, 50);
+  assert.equal(aggregate.widthMeters, 1.4);
+  assert.equal(aggregate.hasRamp, true);
+  assert.equal(aggregate.hasStairs, false);
+  assert.equal(aggregate.hasGuidingBlock, true);
+
+  const tied = aggregateRoadObservations([
+    { hasRamp: true, hasStairs: false },
+    { hasRamp: false, hasStairs: true },
+  ]);
+  assert.equal(tied.hasRamp, false);
+  assert.equal(tied.hasStairs, true);
 });
 
 test('registration requires a production-suitable minimum password length', () => {

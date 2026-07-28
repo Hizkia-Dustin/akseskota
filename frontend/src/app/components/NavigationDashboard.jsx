@@ -821,8 +821,32 @@ const reportStatus = {
   NEEDS_RECHECK: { label: "Perlu diperiksa", tone: "bg-[#ede9fe] text-[#6d28d9]" },
 };
 
+const roadObservationQuestions = [
+  ["hasRamp", "Ramp/kerb landai"],
+  ["hasStairs", "Ada tangga"],
+  ["hasGuidingBlock", "Guiding block"],
+  ["lightingAvailable", "Penerangan"],
+  ["hasSeating", "Tempat duduk"],
+];
+
+function RoadObservationFields({ answers, setAnswers, shadeLevel, setShadeLevel, surfaceCondition, setSurfaceCondition, widthMeters, setWidthMeters }) {
+  return <div className="mt-5">
+    <p className="text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">KONDISI YANG TERLIHAT</p>
+    <div className="mt-3 space-y-2.5">
+      {roadObservationQuestions.map(([key,label])=><div key={key} className="flex items-center justify-between gap-3 rounded-[14px] border border-[#e5e9eb] bg-white p-3"><b className="text-[10px] text-[#344054]">{label}</b><div className="flex rounded-lg bg-[#f2f4f7] p-0.5">{[["Tidak tahu",null],["Tidak",false],["Ada",true]].map(([text,value])=><button type="button" key={text} onClick={()=>setAnswers(current=>({...current,[key]:value}))} className={`rounded-md px-2 py-1.5 text-[8px] font-extrabold ${answers[key]===value?"bg-[#0c6478] text-white shadow-sm":"text-[#667085]"}`}>{text}</button>)}</div></div>)}
+    </div>
+    <label className="mt-4 block text-[10px] font-extrabold tracking-[.08em] text-[#667085]">KETEDUHAN SAAT DIFOTO <span className="float-right text-[#0c6478]">{shadeLevel}%</span><input type="range" min="0" max="100" step="5" value={shadeLevel} onChange={event=>setShadeLevel(Number(event.target.value))} className="mt-3 w-full accent-[#0c6478]"/><small className="mt-1 flex justify-between normal-case tracking-normal text-[#98a2b3]"><span>Terpapar matahari</span><span>Teduh penuh</span></small></label>
+    <div className="mt-4 grid grid-cols-2 gap-2">
+      <label className="text-[9px] font-extrabold text-[#667085]">PERMUKAAN<select value={surfaceCondition} onChange={event=>setSurfaceCondition(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-[#e2e8ea] bg-white px-3 text-[10px] font-semibold"><option value="good">Baik/rata</option><option value="cracked">Retak/rusak</option><option value="unpaved">Tidak diperkeras</option></select></label>
+      <label className="text-[9px] font-extrabold text-[#667085]">LEBAR JALUR (M)<input inputMode="decimal" type="number" min="0.3" max="20" step="0.1" required value={widthMeters} onChange={event=>setWidthMeters(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-[#e2e8ea] bg-white px-3 text-[10px] font-semibold"/></label>
+    </div>
+    <p className="mt-3 rounded-xl bg-[#fff7ed] p-3 text-[9px] leading-4 text-[#9a5b18]">Nilai keteduhan merekam kondisi pada waktu foto. Backend menggabungkan median dari beberapa observasi, sehingga satu laporan ekstrem tidak langsung mendominasi.</p>
+  </div>;
+}
+
 function ReportPanel({ reports, coordinates, setCoordinates, session, onSubmitted, onClose }) {
   const [tab, setTab] = useState("create");
+  const [reportKind, setReportKind] = useState("obstacle");
   const [type, setType] = useState("POTHOLE");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -831,6 +855,16 @@ function ReportPanel({ reports, coordinates, setCoordinates, session, onSubmitte
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedHistoryId, setSelectedHistoryId] = useState(null);
+  const [roadAnswers, setRoadAnswers] = useState({
+    hasRamp: null,
+    hasStairs: null,
+    hasGuidingBlock: null,
+    lightingAvailable: null,
+    hasSeating: null,
+  });
+  const [shadeLevel, setShadeLevel] = useState(50);
+  const [surfaceCondition, setSurfaceCondition] = useState("good");
+  const [widthMeters, setWidthMeters] = useState("1.5");
 
   async function useCurrentLocation() {
     setMessage("");
@@ -842,17 +876,27 @@ function ReportPanel({ reports, coordinates, setCoordinates, session, onSubmitte
     event.preventDefault();
     if (!coordinates) return setMessage("Pilih titik laporan di peta atau gunakan lokasi perangkat.");
     if (!photo) return setMessage("Foto kondisi wajib ditambahkan.");
+    if (reportKind === "road" && !session) return setMessage("Masuk dengan akun diperlukan untuk survei ruas agar setiap observasi dapat dipertanggungjawabkan.");
     setBusy(true);
     setMessage("");
     try {
       const form = new FormData();
-      form.append("title", title);
-      form.append("type", type);
-      form.append("status", "TEMPORARY");
       form.append("geometry", JSON.stringify({ type: "Point", coordinates }));
       form.append("description", description);
       form.append("photo", photo);
-      const created = await apiRequest("/obstacles", { method: "POST", body: form });
+      if (reportKind === "road") {
+        form.append("surfaceCondition", surfaceCondition);
+        form.append("widthMeters", widthMeters);
+        form.append("shadeLevel", String(shadeLevel));
+        Object.entries(roadAnswers).forEach(([key, value]) => {
+          if (value !== null) form.append(key, String(value));
+        });
+      } else {
+        form.append("title", title);
+        form.append("type", type);
+        form.append("status", "TEMPORARY");
+      }
+      const created = await apiRequest(reportKind === "road" ? "/road-segments" : "/obstacles", { method: "POST", body: form });
       if (!session && created.report?.guestAccessKey) {
         const stored = JSON.parse(localStorage.getItem("akseskota-guest-report-keys") || "[]");
         localStorage.setItem("akseskota-guest-report-keys", JSON.stringify([created.report.guestAccessKey, ...stored.filter((key)=>key!==created.report.guestAccessKey)].slice(0, 50)));
@@ -862,6 +906,7 @@ function ReportPanel({ reports, coordinates, setCoordinates, session, onSubmitte
       setPhoto(null);
       setPhotoPreview("");
       setCoordinates(null);
+      setRoadAnswers({ hasRamp: null, hasStairs: null, hasGuidingBlock: null, lightingAvailable: null, hasSeating: null });
       await onSubmitted(created.report);
       setTab("history");
     } catch (error) {
@@ -885,11 +930,18 @@ function ReportPanel({ reports, coordinates, setCoordinates, session, onSubmitte
     <div className="mt-5 grid grid-cols-2 rounded-[20px] bg-[#f0f3f4] p-1 sm:mt-4 sm:rounded-[15px]"><button onClick={()=>setTab("create")} className={`rounded-[17px] py-3 text-[14px] font-bold sm:rounded-xl sm:py-2.5 sm:text-[11px] ${tab==='create'?'bg-white text-[#0c6478] shadow-sm':'text-[#99a1af]'}`}>Buat Laporan</button><button onClick={()=>setTab("history")} className={`rounded-[17px] py-3 text-[14px] font-bold sm:rounded-xl sm:py-2.5 sm:text-[11px] ${tab==='history'?'bg-white text-[#0c6478] shadow-sm':'text-[#99a1af]'}`}>Riwayat</button></div>
     {tab === "create" ? <form onSubmit={submit} className="mt-6 sm:mt-5">
       {!session && <div className="mb-4 rounded-[15px] bg-[#effaf8] p-4 text-[11px] font-semibold leading-5 text-[#0c6478]">Kamu sedang melapor sebagai guest. Laporan tetap masuk database dan dapat dimoderasi. Riwayat guest tersimpan di perangkat ini.</div>}
+      <div className="mb-5 grid grid-cols-2 rounded-[15px] bg-[#f0f3f4] p-1">
+        <button type="button" onClick={()=>setReportKind("obstacle")} className={`rounded-xl px-2 py-2.5 text-[10px] font-extrabold ${reportKind==="obstacle"?"bg-white text-[#0c6478] shadow-sm":"text-[#7b8491]"}`}>Laporkan hambatan</button>
+        <button type="button" onClick={()=>setReportKind("road")} className={`rounded-xl px-2 py-2.5 text-[10px] font-extrabold ${reportKind==="road"?"bg-white text-[#0c6478] shadow-sm":"text-[#7b8491]"}`}>Survei ruas jalan</button>
+      </div>
+      {reportKind === "road" && <div className="mb-4 rounded-[15px] border border-[#bce9df] bg-[#effaf8] p-4 text-[10px] leading-5 text-[#0c6478]"><b className="block text-[11px]">Nilai rute tidak berubah dari satu suara</b>Observasi ini perlu disetujui 3 akun berbeda. Setelah itu backend menggabungkannya dengan observasi terverifikasi lain pada ruas yang sama.</div>}
       <p className="text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">TITIK LAPORAN</p>
       <div data-guide="report-location" className="mt-2 rounded-[15px] border-2 border-[#f0f1f3] bg-[#fafbfc] p-3"><p className="text-[10px] font-semibold text-[#667085]">{coordinates ? `${coordinates[1].toFixed(6)}, ${coordinates[0].toFixed(6)}` : "Klik lokasi pada peta atau gunakan GPS."}</p><button type="button" onClick={useCurrentLocation} className="mt-2 rounded-full bg-[#effaf8] px-3 py-2 text-[10px] font-bold text-[#0c6478]"><Navigation className="mr-1 inline size-3" />Gunakan lokasi saya</button></div>
-      <p className="mt-5 text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">JENIS HAMBATAN</p>
-      <div className="mt-2 flex flex-wrap gap-2">{reportTypes.map(item=><button type="button" onClick={()=>setType(item.value)} key={item.value} className={`rounded-full px-3 py-2 text-[10px] font-bold ${type===item.value?'bg-[#0c6478] text-white':'bg-[#f3f4f6] text-[#6b7280]'}`}>{item.label}</button>)}</div>
-      <label className="mt-5 block text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">JUDUL LAPORAN<input required minLength={4} maxLength={100} value={title} onChange={event=>setTitle(event.target.value)} placeholder="Contoh: Trotoar berlubang dekat halte" className="mt-2 h-12 w-full rounded-[15px] border-2 border-[#f0f1f3] bg-[#fafbfc] px-4 text-[11px] font-semibold outline-none"/><small className="mt-1.5 block normal-case tracking-normal text-[#98a2b3]">Tulis masalah utama dan patokan lokasinya.</small></label>
+      {reportKind === "obstacle" ? <>
+        <p className="mt-5 text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">JENIS HAMBATAN</p>
+        <div className="mt-2 flex flex-wrap gap-2">{reportTypes.map(item=><button type="button" onClick={()=>setType(item.value)} key={item.value} className={`rounded-full px-3 py-2 text-[10px] font-bold ${type===item.value?'bg-[#0c6478] text-white':'bg-[#f3f4f6] text-[#6b7280]'}`}>{item.label}</button>)}</div>
+        <label className="mt-5 block text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">JUDUL LAPORAN<input required minLength={4} maxLength={100} value={title} onChange={event=>setTitle(event.target.value)} placeholder="Contoh: Trotoar berlubang dekat halte" className="mt-2 h-12 w-full rounded-[15px] border-2 border-[#f0f1f3] bg-[#fafbfc] px-4 text-[11px] font-semibold outline-none"/><small className="mt-1.5 block normal-case tracking-normal text-[#98a2b3]">Tulis masalah utama dan patokan lokasinya.</small></label>
+      </> : <RoadObservationFields answers={roadAnswers} setAnswers={setRoadAnswers} shadeLevel={shadeLevel} setShadeLevel={setShadeLevel} surfaceCondition={surfaceCondition} setSurfaceCondition={setSurfaceCondition} widthMeters={widthMeters} setWidthMeters={setWidthMeters} />}
       <label className="mt-5 block text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">DESKRIPSI<textarea required maxLength={1000} value={description} onChange={event=>setDescription(event.target.value)} placeholder="Contoh: Lubang berada di sisi kiri trotoar, cukup dalam, dan kursi roda harus turun ke jalan untuk melewatinya." className="mt-2 h-24 w-full resize-none rounded-[15px] border-2 border-[#f0f1f3] bg-[#fafbfc] p-4 text-[11px] outline-none" /><small className="mt-1.5 block normal-case leading-4 tracking-normal text-[#98a2b3]">Jelaskan posisi tepat, ukuran/kondisi, dan dampaknya bagi pengguna.</small></label>
       <div data-guide="report-photo" className="mt-5 overflow-hidden rounded-[15px] border-2 border-dashed border-[#cfdcde] bg-[#fbfdfd] p-3 text-center text-[10px] text-[#71818c]">
         {photoPreview ? (
@@ -914,9 +966,14 @@ function ReportPanel({ reports, coordinates, setCoordinates, session, onSubmitte
         )}
       </div>
       {message && <p role="alert" className="mt-3 rounded-xl bg-[#fff1f2] px-3 py-2.5 text-[10px] font-semibold text-[#b42318]">{message}</p>}
-      <button disabled={busy} className="mt-4 h-13 w-full rounded-[15px] bg-[#0c6478] text-[12px] font-extrabold text-white shadow-lg disabled:cursor-wait disabled:opacity-50">{busy ? "Mengunggah ke Cloudinary..." : "Kirim Laporan"}</button>
+      <button disabled={busy} className="mt-4 h-13 w-full rounded-[15px] bg-[#0c6478] text-[12px] font-extrabold text-white shadow-lg disabled:cursor-wait disabled:opacity-50">{busy ? "Mengunggah ke Cloudinary..." : reportKind === "road" ? "Kirim untuk diverifikasi" : "Kirim Laporan"}</button>
     </form> : <div className="mt-5"><p className="text-[10px] font-extrabold tracking-[.1em] text-[#99a1af]">LAPORAN YANG KAMU KIRIM</p><div className="mt-3 space-y-3">{reports.length === 0 && <p className="rounded-[15px] bg-[#f8fafc] p-4 text-[11px] text-[#667085]">Belum ada laporan dari {session ? "akun ini" : "guest pada perangkat ini"}.</p>}{reports.map(report=>{const status=reportStatus[report.verificationStatus]||reportStatus.UNVERIFIED;const open=selectedHistoryId===report.id;return <article key={report.id} className="rounded-[16px] border-2 border-[#f0f1f3] p-3"><Image unoptimized width={280} height={140} src={report.photoUrl} alt="Bukti laporan" className={`${open?'h-44':'h-28'} w-full rounded-xl object-cover transition-all`}/><div className="mt-3 flex items-start gap-2"><div className="min-w-0 flex-1"><b className="block truncate text-[11px]">{report.title || "Laporan hambatan"}</b><p className={`mt-1 text-[9px] leading-4 text-[#667085] ${open?'':'line-clamp-2'}`}>{report.description}</p><p className="mt-1 text-[9px] text-[#99a1af]">{new Date(report.createdAt).toLocaleString("id-ID")}</p></div><span className={`shrink-0 rounded-full px-2 py-1.5 text-[8px] font-bold ${status.tone}`}>{status.label}</span></div>{open&&<div className="mt-3 grid grid-cols-2 gap-2 border-t border-[#edf0f2] pt-3 text-[9px]"><div className="rounded-xl bg-[#f8fafc] p-2"><small className="text-[#98a2b3]">Jenis data</small><b className="mt-1 block">{report.targetType||report.obstacle?.type||'Hambatan'}</b></div><div className="rounded-xl bg-[#effaf8] p-2"><small className="text-[#667085]">Status</small><b className="mt-1 block text-[#0c6478]">{status.label}</b></div></div>}<button type="button" onClick={()=>setSelectedHistoryId(open?null:report.id)} className="mt-3 w-full rounded-xl bg-[#f2f4f7] py-2 text-[9px] font-bold text-[#475467]">{open?'Tutup detail':'Lihat detail riwayat'}</button></article>})}</div></div>}
   </SideShell>;
+}
+
+function RoadObservationSummary({ observation }) {
+  const values = [["Ramp",observation.hasRamp],["Tangga",observation.hasStairs],["Guiding block",observation.hasGuidingBlock],["Penerangan",observation.lightingAvailable],["Tempat duduk",observation.hasSeating]];
+  return <div className="mt-4 rounded-[15px] border border-[#d9e8e8] p-3"><b className="text-[10px] text-[#0c6478]">Nilai yang perlu kamu cocokkan</b><div className="mt-2 grid grid-cols-2 gap-2">{values.filter(([,value])=>typeof value==="boolean").map(([label,value])=><div key={label} className="rounded-xl bg-[#f6f8f9] p-2 text-[9px]"><span className="text-[#667085]">{label}</span><b className={`mt-1 block ${value?"text-[#06705f]":"text-[#b42318]"}`}>{value?"Ada":"Tidak ada"}</b></div>)}{typeof observation.shadeLevel==="number"&&<div className="rounded-xl bg-[#f6f8f9] p-2 text-[9px]"><span className="text-[#667085]">Keteduhan</span><b className="mt-1 block text-[#0c6478]">{observation.shadeLevel}%</b></div>}{observation.widthMeters&&<div className="rounded-xl bg-[#f6f8f9] p-2 text-[9px]"><span className="text-[#667085]">Lebar jalur</span><b className="mt-1 block text-[#0c6478]">{observation.widthMeters} m</b></div>}</div></div>;
 }
 
 function CommunityVerificationPanel({ reportId, session, onClose, onUpdated, onLogin }) {
@@ -940,7 +997,11 @@ function CommunityVerificationPanel({ reportId, session, onClose, onUpdated, onL
     setMessage("");
     try {
       const result = await apiRequest(`/reports/${reportId}/verify`, { method: "POST", body: JSON.stringify({ action }) });
-      setMessage(result.consensus.status === "VERIFIED" ? "Laporan mencapai ambang komunitas dan sudah terverifikasi." : `Verifikasi tersimpan. Dibutuhkan ${result.consensus.threshold} verifikasi unik.`);
+      setMessage(result.consensus.status === "VERIFIED"
+        ? result.roadImpact
+          ? `Terverifikasi. Agregat ruas diperbarui: akses ${Math.round(result.roadImpact.accessibilityScore ?? 0)}, nyaman ${Math.round(result.roadImpact.comfortScore ?? 0)}, keyakinan ${Math.round(result.roadImpact.dataConfidence ?? 0)}%.`
+          : "Laporan mencapai ambang komunitas dan sudah terverifikasi."
+        : `Verifikasi tersimpan. Dibutuhkan ${result.consensus.threshold} verifikasi unik.`);
       await loadReport();
       await onUpdated();
     } catch (error) {
@@ -1109,6 +1170,12 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
 
   const refreshReportsAndRoutes = useCallback(async () => {
     await refreshReports();
+    try {
+      const refreshedSegments = await apiRequest("/road-segments?lat=-6.5971&lng=106.8060&radiusMeters=10000");
+      setShadeSegments(Array.isArray(refreshedSegments) ? refreshedSegments : []);
+    } catch {
+      // Existing map layer remains visible when the refresh request is temporarily unavailable.
+    }
     if (routeOptions.length > 0 && originCoordinates && destinationCoordinates) {
       await searchRoutes(false);
     }

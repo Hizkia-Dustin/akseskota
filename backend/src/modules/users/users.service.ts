@@ -40,6 +40,7 @@ export async function getMyContributions(userId: string) {
       targetType: true,
       photoUrl: true,
       description: true,
+      observationData: true,
       verificationStatus: true,
       createdAt: true,
     },
