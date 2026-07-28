@@ -4,30 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, Check, CircleHelp, MousePointer2, X } from "lucide-react";
 import { directoryGuideSteps } from "./directoryGuideSteps";
+import {
+  getGuideSpotlightRect,
+  waitForGuideTarget,
+} from "../help-guide/guideTarget";
 
 const STORAGE_KEY = "akseskota-directory-guide-completed-v1";
-const PADDING = 9;
-
-function visibleTarget(name) {
-  if (!name) return null;
-  return Array.from(document.querySelectorAll(`[data-guide="${name}"]`)).find((element) => {
-    const rect = element.getBoundingClientRect();
-    const style = window.getComputedStyle(element);
-    return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
-  }) || null;
-}
-
-function targetRect(name) {
-  const element = visibleTarget(name);
-  if (!element) return null;
-  const rect = element.getBoundingClientRect();
-  return {
-    top: Math.max(8, rect.top - PADDING),
-    left: Math.max(8, rect.left - PADDING),
-    width: Math.min(window.innerWidth - 16, rect.width + PADDING * 2),
-    height: Math.min(window.innerHeight - 16, rect.height + PADDING * 2),
-  };
-}
 
 export default function DirectoryHelpGuide({
   onSetDirectoryOpen,
@@ -39,8 +21,10 @@ export default function DirectoryHelpGuide({
   const [index, setIndex] = useState(0);
   const [spotlight, setSpotlight] = useState(null);
   const [desktop, setDesktop] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const dialogRef = useRef(null);
   const autoStartedRef = useRef(false);
+  const transitionTokenRef = useRef(0);
   const step = directoryGuideSteps[index];
   const finalStep = index === directoryGuideSteps.length - 1;
   const progress = useMemo(() => ((index + 1) / directoryGuideSteps.length) * 100, [index]);
@@ -48,7 +32,9 @@ export default function DirectoryHelpGuide({
   const updateSpotlight = useCallback(() => {
     if (!open) return;
     setDesktop(window.innerWidth >= 768);
-    setSpotlight(targetRect(directoryGuideSteps[index].target));
+    const target = directoryGuideSteps[index].target;
+    const nextRect = getGuideSpotlightRect(target);
+    if (!target || nextRect) setSpotlight(nextRect);
   }, [index, open]);
 
   const applySetup = useCallback((setup) => {
@@ -65,24 +51,39 @@ export default function DirectoryHelpGuide({
     }
   }, [onCloseDetail, onOpenExample, onSetDirectoryOpen]);
 
-  const goTo = useCallback((nextIndex) => {
+  const goTo = useCallback(async (nextIndex) => {
     const next = directoryGuideSteps[nextIndex];
     if (!next) return;
+
+    const token = transitionTokenRef.current + 1;
+    transitionTokenRef.current = token;
+    setPreparing(true);
     applySetup(next.setup);
+
+    const nextSpotlight = await waitForGuideTarget(next.target, {
+      isCancelled: () => transitionTokenRef.current !== token,
+    });
+    if (transitionTokenRef.current !== token) return;
+
     setIndex(nextIndex);
+    setSpotlight(nextSpotlight);
+    setDesktop(window.innerWidth >= 768);
+    setPreparing(false);
   }, [applySetup]);
 
   const start = useCallback(() => {
-    goTo(0);
     setOpen(true);
+    void goTo(0);
   }, [goTo]);
 
   const close = useCallback((completed = false) => {
+    transitionTokenRef.current += 1;
     if (completed) {
       localStorage.setItem(STORAGE_KEY, "true");
       onCloseDetail();
       onSetDirectoryOpen(true);
     }
+    setPreparing(false);
     setOpen(false);
     setSpotlight(null);
   }, [onCloseDetail, onSetDirectoryOpen]);
@@ -96,11 +97,7 @@ export default function DirectoryHelpGuide({
 
   useEffect(() => {
     if (!open) return undefined;
-    const timers = [80, 360, 850, 1600].map((delay) => window.setTimeout(() => {
-      const target = visibleTarget(directoryGuideSteps[index].target);
-      target?.scrollIntoView({ block: "center", behavior: delay > 80 ? "smooth" : "auto" });
-      updateSpotlight();
-    }, delay));
+    const timers = [80, 520, 1000].map((delay) => window.setTimeout(updateSpotlight, delay));
     window.addEventListener("resize", updateSpotlight);
     window.addEventListener("scroll", updateSpotlight, true);
     return () => {
@@ -115,12 +112,12 @@ export default function DirectoryHelpGuide({
     dialogRef.current?.focus();
     function keyboard(event) {
       if (event.key === "Escape") close(false);
-      if (event.key === "ArrowLeft" && index > 0) goTo(index - 1);
-      if (event.key === "ArrowRight" && !finalStep) goTo(index + 1);
+      if (event.key === "ArrowLeft" && index > 0 && !preparing) void goTo(index - 1);
+      if (event.key === "ArrowRight" && !finalStep && !preparing) void goTo(index + 1);
     }
     window.addEventListener("keydown", keyboard);
     return () => window.removeEventListener("keydown", keyboard);
-  }, [close, finalStep, goTo, index, open]);
+  }, [close, finalStep, goTo, index, open, preparing]);
 
   const targetLowOnMobile = !desktop && spotlight && spotlight.top > window.innerHeight * 0.52;
   const targetOnLeft = desktop && spotlight && spotlight.left + spotlight.width < window.innerWidth * 0.62;
@@ -157,9 +154,9 @@ export default function DirectoryHelpGuide({
               <p className="mt-4 rounded-[12px] bg-[#f4f8f7] px-3 py-2.5 text-[9px] font-semibold leading-4 text-[#5f727c]"><CircleHelp className="mr-1.5 inline size-3 text-[#18aa96]" />{step.hint}</p>
               {step.setup === "open-place" && !hasDestinations && <p className="mt-2 text-[8px] font-bold text-[#a34b00]">Data tempat masih dimuat. Tunggu sebentar lalu ulangi langkah ini.</p>}
               <div className="mt-5 flex gap-2">
-                {index > 0 ? <button type="button" onClick={() => goTo(index - 1)} aria-label="Langkah sebelumnya" className="grid size-11 place-items-center rounded-[13px] border border-[#dbe5e6] text-[#0c6478]"><ArrowLeft className="size-4" /></button> : <button type="button" onClick={() => close(true)} className="h-11 px-3 text-[10px] font-extrabold text-[#71818c]">Lewati</button>}
-                <button type="button" disabled={step.setup === "open-place" && !hasDestinations} onClick={() => finalStep ? close(true) : goTo(index + 1)} className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[13px] bg-[#0c6478] text-[10px] font-extrabold text-white shadow-[0_8px_22px_rgba(12,100,120,.2)] disabled:opacity-50">
-                  {finalStep ? <>Selesai <Check className="size-4" /></> : <>Lanjut <ArrowRight className="size-4" /></>}
+                {index > 0 ? <button type="button" disabled={preparing} onClick={() => void goTo(index - 1)} aria-label="Langkah sebelumnya" className="grid size-11 place-items-center rounded-[13px] border border-[#dbe5e6] text-[#0c6478] disabled:opacity-50"><ArrowLeft className="size-4" /></button> : <button type="button" disabled={preparing} onClick={() => close(true)} className="h-11 px-3 text-[10px] font-extrabold text-[#71818c] disabled:opacity-50">Lewati</button>}
+                <button type="button" disabled={preparing || (step.setup === "open-place" && !hasDestinations)} onClick={() => finalStep ? close(true) : void goTo(index + 1)} className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[13px] bg-[#0c6478] text-[10px] font-extrabold text-white shadow-[0_8px_22px_rgba(12,100,120,.2)] disabled:cursor-wait disabled:opacity-50">
+                  {preparing ? "Menyiapkan tampilan…" : finalStep ? <>Selesai <Check className="size-4" /></> : <>Lanjut <ArrowRight className="size-4" /></>}
                 </button>
               </div>
             </div>

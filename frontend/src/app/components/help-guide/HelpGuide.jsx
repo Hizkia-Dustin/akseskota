@@ -3,33 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Camera, Check, CircleHelp, MapPin, MousePointer2, Route, X } from "lucide-react";
 import { helpGuideSteps } from "./guideSteps";
+import {
+  findVisibleGuideTarget,
+  getGuideSpotlightRect,
+  waitForGuideTarget,
+} from "./guideTarget";
 
 const STORAGE_KEY = "akseskota-help-guide-completed-v4";
-const TARGET_PADDING = 9;
-
-function findVisibleTarget(name) {
-  if (!name) return null;
-  const elements = Array.from(document.querySelectorAll(`[data-guide="${name}"]`));
-  return (
-    elements.find((element) => {
-      const rect = element.getBoundingClientRect();
-      const style = window.getComputedStyle(element);
-      return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
-    }) || null
-  );
-}
-
-function getSpotlightRect(targetName) {
-  const element = findVisibleTarget(targetName);
-  if (!element) return null;
-  const rect = element.getBoundingClientRect();
-  return {
-    top: Math.max(8, rect.top - TARGET_PADDING),
-    left: Math.max(8, rect.left - TARGET_PADDING),
-    width: Math.min(window.innerWidth - 16, rect.width + TARGET_PADDING * 2),
-    height: Math.min(window.innerHeight - 16, rect.height + TARGET_PADDING * 2),
-  };
-}
 
 function StepDemo({ type }) {
   if (type === "search") {
@@ -151,7 +131,9 @@ export default function HelpGuide({ onPanelChange }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [spotlight, setSpotlight] = useState(null);
   const [wideViewport, setWideViewport] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const dialogRef = useRef(null);
+  const transitionTokenRef = useRef(0);
   const step = helpGuideSteps[stepIndex];
   const finalStep = stepIndex === helpGuideSteps.length - 1;
   const progress = useMemo(
@@ -162,30 +144,48 @@ export default function HelpGuide({ onPanelChange }) {
   const updateSpotlight = useCallback(() => {
     if (!open) return;
     setWideViewport(window.innerWidth >= 640);
-    setSpotlight(getSpotlightRect(helpGuideSteps[stepIndex].target));
+    const target = helpGuideSteps[stepIndex].target;
+    const nextRect = getGuideSpotlightRect(target);
+    if (!target || nextRect) setSpotlight(nextRect);
   }, [open, stepIndex]);
 
   const closeGuide = useCallback((completed = false) => {
+    transitionTokenRef.current += 1;
     if (completed) localStorage.setItem(STORAGE_KEY, "true");
+    setPreparing(false);
     setOpen(false);
     setSpotlight(null);
   }, []);
 
-  const goToStep = useCallback((nextIndex) => {
+  const goToStep = useCallback(async (nextIndex) => {
     const nextStep = helpGuideSteps[nextIndex];
     if (!nextStep) return;
+
+    const token = transitionTokenRef.current + 1;
+    transitionTokenRef.current = token;
+    setPreparing(true);
     if (Object.prototype.hasOwnProperty.call(nextStep, "panel")) onPanelChange?.(nextStep.panel);
     if (nextStep.action) {
       window.setTimeout(() => {
+        if (transitionTokenRef.current !== token) return;
         window.dispatchEvent(new CustomEvent("akseskota:guide-action", { detail: { action: nextStep.action } }));
       }, 260);
     }
+
+    const nextSpotlight = await waitForGuideTarget(nextStep.target, {
+      isCancelled: () => transitionTokenRef.current !== token,
+    });
+    if (transitionTokenRef.current !== token) return;
+
     setStepIndex(nextIndex);
+    setSpotlight(nextSpotlight);
+    setWideViewport(window.innerWidth >= 640);
+    setPreparing(false);
   }, [onPanelChange]);
 
   const startGuide = useCallback(() => {
-    goToStep(0);
     setOpen(true);
+    void goToStep(0);
   }, [goToStep]);
 
   useEffect(() => {
@@ -197,7 +197,7 @@ export default function HelpGuide({ onPanelChange }) {
   useEffect(() => {
     if (!open) return undefined;
     const frame = window.requestAnimationFrame(() => {
-      const target = findVisibleTarget(helpGuideSteps[stepIndex].target);
+      const target = findVisibleGuideTarget(helpGuideSteps[stepIndex].target);
       target?.scrollIntoView({ block: "center", behavior: "smooth" });
       updateSpotlight();
     });
@@ -217,12 +217,12 @@ export default function HelpGuide({ onPanelChange }) {
     dialogRef.current?.focus();
     function handleKeyDown(event) {
       if (event.key === "Escape") closeGuide(false);
-      if (event.key === "ArrowLeft" && stepIndex > 0) goToStep(stepIndex - 1);
-      if (event.key === "ArrowRight" && !finalStep) goToStep(stepIndex + 1);
+      if (event.key === "ArrowLeft" && stepIndex > 0 && !preparing) void goToStep(stepIndex - 1);
+      if (event.key === "ArrowRight" && !finalStep && !preparing) void goToStep(stepIndex + 1);
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [closeGuide, finalStep, goToStep, open, stepIndex]);
+  }, [closeGuide, finalStep, goToStep, open, preparing, stepIndex]);
 
   const placeBesideTarget =
     wideViewport && spotlight && spotlight.left + spotlight.width < window.innerWidth * 0.58;
@@ -309,8 +309,9 @@ export default function HelpGuide({ onPanelChange }) {
                 {stepIndex > 0 ? (
                   <button
                     type="button"
-                    onClick={() => goToStep(stepIndex - 1)}
-                    className="grid size-11 shrink-0 place-items-center rounded-[14px] border border-[#dce6e7] text-[#0c6478] transition hover:bg-[#f2faf8]"
+                    disabled={preparing}
+                    onClick={() => void goToStep(stepIndex - 1)}
+                    className="grid size-11 shrink-0 place-items-center rounded-[14px] border border-[#dce6e7] text-[#0c6478] transition hover:bg-[#f2faf8] disabled:opacity-50"
                     aria-label="Langkah sebelumnya"
                   >
                     <ArrowLeft className="size-4" />
@@ -318,18 +319,20 @@ export default function HelpGuide({ onPanelChange }) {
                 ) : (
                   <button
                     type="button"
+                    disabled={preparing}
                     onClick={() => closeGuide(true)}
-                    className="h-11 rounded-[14px] px-3 text-[11px] font-extrabold text-[#71818c] transition hover:bg-[#f4f7f7]"
+                    className="h-11 rounded-[14px] px-3 text-[11px] font-extrabold text-[#71818c] transition hover:bg-[#f4f7f7] disabled:opacity-50"
                   >
                     Lewati
                   </button>
                 )}
                 <button
                   type="button"
-                  onClick={() => (finalStep ? closeGuide(true) : goToStep(stepIndex + 1))}
-                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[14px] bg-[#0c6478] px-5 text-[11px] font-extrabold text-white shadow-[0_8px_22px_rgba(12,100,120,.22)] transition hover:-translate-y-0.5 hover:bg-[#09596a] active:translate-y-0"
+                  disabled={preparing}
+                  onClick={() => (finalStep ? closeGuide(true) : void goToStep(stepIndex + 1))}
+                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[14px] bg-[#0c6478] px-5 text-[11px] font-extrabold text-white shadow-[0_8px_22px_rgba(12,100,120,.22)] transition hover:-translate-y-0.5 hover:bg-[#09596a] active:translate-y-0 disabled:cursor-wait disabled:opacity-50"
                 >
-                  {finalStep ? (
+                  {preparing ? "Menyiapkan tampilan…" : finalStep ? (
                     <>Mulai menjelajah <Check className="size-4" /></>
                   ) : (
                     <>Lanjut <ArrowRight className="size-4" /></>
