@@ -287,37 +287,131 @@ function CommunityPlacePanel({ place, session, onRoute, onClose, onLogin }) {
 
 function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHistory, onDestinations }) {
   const items = [
-    { id: "report", label: "Laporan", icon: Flag, action: onReport },
-    { id: "directory", label: "Direktori Bogor", icon: BookOpen, action: onDestinations },
-    { id: "assistant", label: "Asisten akses", icon: Bot, action: onAssistant },
-    { id: "history", label: "Riwayat", icon: History, action: onHistory },
-    { id: "profile", label: "Profil", icon: UserRound, action: onProfile },
+    { id: "report", label: "Laporan", mobileLabel: "Lapor", detail: "Kondisi jalur", icon: Flag, action: onReport },
+    { id: "directory", label: "Direktori", mobileLabel: "Direktori", detail: "Tempat aksesibel", icon: BookOpen, action: onDestinations },
+    { id: "assistant", label: "Asisten", mobileLabel: "Asisten", detail: "Bantuan perjalanan", icon: Bot, action: onAssistant },
+    { id: "history", label: "Riwayat", mobileLabel: "Riwayat", detail: "Perjalanan tersimpan", icon: History, action: onHistory },
+    { id: "profile", label: "Profil", mobileLabel: "Profil", detail: "Preferensi akses", icon: UserRound, action: onProfile },
   ];
 
   return (
     <>
-      <aside aria-label="Navigasi utama peta" className="absolute bottom-0 left-0 top-0 z-[60] hidden w-[48px] flex-col items-center border-r border-[#e7ebed] bg-white py-3 shadow-[4px_0_16px_rgba(24,46,58,.08)] sm:flex">
-        <button type="button" onClick={onHome} aria-label="Kembali ke peta" aria-current={!activePanel ? "page" : undefined} className={`group relative grid size-9 place-items-center rounded-full transition-all ${!activePanel ? "bg-[#15a995] text-white shadow-[0_5px_13px_rgba(12,100,120,.24)]" : "bg-[#effaf8] text-[#0c6478] hover:bg-[#def3ef]"}`}>
-          <MapPin className="size-[17px]" />
-          {!activePanel && <span className="absolute -right-[8px] size-1.5 rounded-full bg-[#35cbb0]" />}
-          <span className="pointer-events-none absolute left-11 z-[70] whitespace-nowrap rounded-md bg-[#173c61] px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Peta utama</span>
+      <MotionSurface
+        as="aside"
+        aria-label="Navigasi utama peta"
+        direction="left"
+        distance={18}
+        duration={0.5}
+        staggerSelector="[data-sidebar-item]"
+        stagger={0.045}
+        className="group/rail absolute inset-y-3 left-3 z-[60] hidden w-[56px] flex-col overflow-hidden rounded-[20px] border border-white/80 bg-white/95 p-[7px] shadow-[0_12px_34px_rgba(23,60,97,.14)] backdrop-blur-xl transition-[width,box-shadow] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:w-[202px] hover:shadow-[0_18px_44px_rgba(23,60,97,.2)] focus-within:w-[202px] sm:flex motion-reduce:transition-none"
+      >
+        <button
+          data-sidebar-item
+          type="button"
+          onClick={onHome}
+          aria-label="Kembali ke peta"
+          aria-current={!activePanel ? "page" : undefined}
+          className={`group/home relative flex h-[42px] w-full shrink-0 items-center overflow-hidden rounded-[14px] text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#35cbb0] focus-visible:ring-offset-2 ${
+            !activePanel
+              ? "bg-gradient-to-br from-[#15a995] to-[#0c7f83] text-white shadow-[0_7px_18px_rgba(12,100,120,.25)]"
+              : "bg-[#effaf8] text-[#0c6478] hover:bg-[#def3ef]"
+          }`}
+        >
+          <span className="grid size-[42px] shrink-0 place-items-center">
+            <MapPin className="size-[18px] transition-transform duration-300 group-hover/home:-translate-y-0.5 group-hover/home:scale-110 motion-reduce:transform-none" />
+          </span>
+          <span className="min-w-0 translate-x-2 whitespace-nowrap opacity-0 transition-all duration-300 group-hover/rail:translate-x-0 group-hover/rail:opacity-100 group-focus-within/rail:translate-x-0 group-focus-within/rail:opacity-100 motion-reduce:transition-none">
+            <span className="block text-[11px] font-extrabold leading-tight">Peta utama</span>
+            <span className={`block text-[8px] font-medium ${!activePanel ? "text-white/75" : "text-[#62818a]"}`}>Navigasi AksesKota</span>
+          </span>
+          {!activePanel && <span className="absolute right-2.5 size-1.5 rounded-full bg-[#a8ffe9] shadow-[0_0_0_4px_rgba(168,255,233,.16)]" />}
         </button>
-        <span className="my-3 h-px w-7 bg-[#edf0f2]" />
-        <nav className="flex w-full flex-1 flex-col items-center gap-2">
-          {items.map(({ id, label, icon: Icon, action }) => {
+
+        <span className="mx-1 my-2.5 h-px shrink-0 bg-[#e8eef0]" />
+
+        <nav className="flex min-h-0 w-full flex-1 flex-col gap-1.5" aria-label="Fitur AksesKota">
+          {items.map(({ id, label, detail, icon: Icon, action }) => {
             const active = activePanel === id;
-            return <button key={id} type="button" onClick={action} aria-label={label} aria-current={active ? "page" : undefined} title={label} className={`group relative grid size-9 place-items-center rounded-[9px] transition-all ${active ? "bg-[#e8f5f3] text-[#0c6478]" : "text-[#8d98a5] hover:bg-[#f3f6f7] hover:text-[#173c61]"}`}>{active && <span className="absolute -right-[8px] size-1.5 rounded-full bg-[#35cbb0]" />}<Icon className="size-[16px]" /><span className="pointer-events-none absolute left-11 z-[70] whitespace-nowrap rounded-md bg-[#173c61] px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{label}</span></button>;
+            return (
+              <button
+                data-sidebar-item
+                key={id}
+                type="button"
+                onClick={action}
+                aria-label={label}
+                aria-current={active ? "page" : undefined}
+                className={`group/item relative flex h-[43px] w-full shrink-0 items-center overflow-hidden rounded-[13px] text-left outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#35cbb0] ${
+                  active
+                    ? "bg-[#e5f6f2] text-[#0c6478]"
+                    : "text-[#8996a4] hover:bg-[#f2f7f7] hover:text-[#173c61]"
+                }`}
+              >
+                {active && (
+                  <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-[#15a995] shadow-[2px_0_8px_rgba(21,169,149,.35)]" />
+                )}
+                <span className="grid size-[42px] shrink-0 place-items-center">
+                  <Icon
+                    className={`size-[17px] transition-transform duration-300 group-hover/item:-translate-y-0.5 group-hover/item:scale-110 motion-reduce:transform-none ${
+                      active ? "stroke-[2.4]" : ""
+                    }`}
+                  />
+                </span>
+                <span className="min-w-0 translate-x-2 whitespace-nowrap opacity-0 transition-all duration-300 group-hover/rail:translate-x-0 group-hover/rail:opacity-100 group-focus-within/rail:translate-x-0 group-focus-within/rail:opacity-100 motion-reduce:transition-none">
+                  <span className="block text-[10px] font-extrabold leading-tight">{label}</span>
+                  <span className="block text-[8px] font-medium text-[#7d8c98]">{detail}</span>
+                </span>
+                {active && (
+                  <span className="absolute right-2.5 grid size-[16px] place-items-center rounded-full bg-white text-[#15a995] shadow-sm opacity-0 transition-opacity duration-300 group-hover/rail:opacity-100 group-focus-within/rail:opacity-100">
+                    <span className="size-1.5 rounded-full bg-current" />
+                  </span>
+                )}
+              </button>
+            );
           })}
         </nav>
-        <span className="mb-1 size-1.5 rounded-full bg-[#35cbb0]" title="Layanan peta aktif" />
-      </aside>
 
-      <nav aria-label="Navigasi utama peta" className="absolute inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[16px] border border-[#e7ebed] bg-white p-1.5 shadow-[0_8px_24px_rgba(24,46,58,.16)] sm:hidden">
-        {items.map(({ id, label, icon: Icon, action }) => {
+        <div data-sidebar-item className="mt-2 flex h-[35px] shrink-0 items-center overflow-hidden rounded-[11px] bg-[#f6f9fa]">
+          <span className="grid size-[42px] shrink-0 place-items-center">
+            <span className="size-2 rounded-full bg-[#35cbb0] shadow-[0_0_0_4px_rgba(53,203,176,.13)]" />
+          </span>
+          <span className="translate-x-2 whitespace-nowrap text-[8px] font-bold text-[#66818a] opacity-0 transition-all duration-300 group-hover/rail:translate-x-0 group-hover/rail:opacity-100 group-focus-within/rail:translate-x-0 group-focus-within/rail:opacity-100">
+            Layanan peta aktif
+          </span>
+        </div>
+      </MotionSurface>
+
+      <MotionSurface
+        as="nav"
+        aria-label="Navigasi utama peta"
+        direction="up"
+        distance={14}
+        duration={0.45}
+        staggerSelector="[data-mobile-nav-item]"
+        stagger={0.04}
+        className="absolute inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[18px] border border-white/80 bg-white/95 p-1.5 shadow-[0_12px_30px_rgba(24,46,58,.2)] backdrop-blur-xl sm:hidden"
+      >
+        {items.map(({ id, label, mobileLabel, icon: Icon, action }) => {
           const active = activePanel === id;
-          return <button key={id} type="button" onClick={action} aria-label={label} aria-current={active ? "page" : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-[11px] text-[8px] font-bold transition-colors ${active ? "bg-[#e8f5f3] text-[#0c6478]" : "text-[#667085]"}`}><Icon className="size-[17px]" /><span>{label === "Direktori Bogor" ? "Direktori" : label}</span></button>;
+          return (
+            <button
+              data-mobile-nav-item
+              key={id}
+              type="button"
+              onClick={action}
+              aria-label={label}
+              aria-current={active ? "page" : undefined}
+              className={`group/mobile relative flex min-h-12 flex-col items-center justify-center gap-1 overflow-hidden rounded-[12px] text-[8px] font-bold outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-[#35cbb0] ${
+                active ? "bg-[#e5f6f2] text-[#0c6478]" : "text-[#667085] active:scale-95"
+              }`}
+            >
+              {active && <span className="absolute inset-x-3 top-0 h-[2px] rounded-full bg-[#15a995]" />}
+              <Icon className={`size-[17px] transition-transform duration-300 ${active ? "-translate-y-0.5 scale-110 stroke-[2.4]" : "group-active/mobile:scale-90"} motion-reduce:transform-none`} />
+              <span>{mobileLabel}</span>
+            </button>
+          );
         })}
-      </nav>
+      </MotionSurface>
     </>
   );
 }

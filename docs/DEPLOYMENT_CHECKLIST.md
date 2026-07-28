@@ -19,6 +19,7 @@ JWT_ACCESS_SECRET=acak-minimal-32-karakter
 JWT_REFRESH_SECRET=acak-berbeda-minimal-32-karakter
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
+FIREBASE_PROJECT_ID=akseskota
 UPLOAD_STORAGE=cloudinary
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
@@ -38,9 +39,21 @@ VERIFICATION_RATE_LIMIT_MAX=60
 ```env
 NEXT_PUBLIC_API_URL=/api
 NEXT_PUBLIC_MAPBOX_TOKEN=pk....
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=akseskota.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=akseskota
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_APP_ID=...
 ```
 
 Batasi token Mapbox ke domain Vercel dan localhost melalui dashboard Mapbox.
+Backend cukup memakai `FIREBASE_PROJECT_ID` untuk memverifikasi ID token dengan
+sertifikat publik Firebase. Jangan memasukkan service-account private key ke
+frontend atau Vercel jika fitur Admin SDK lain tidak digunakan.
+
+Pada Firebase Authentication, aktifkan provider Google dan tambahkan domain
+production (misalnya `akseskota.vercel.app`) ke **Authorized domains**.
 
 ## Membuat database gratis
 
