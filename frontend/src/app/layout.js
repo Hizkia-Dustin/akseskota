@@ -5,6 +5,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 import SmoothScroll from "./components/SmoothScroll";
 import PageTransitionProvider from "./components/PageTransitionProvider";
+import SiteIntro from "./components/SiteIntro";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -19,8 +20,17 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" className={jakarta.variable}>
+    <html lang="id" className={jakarta.variable} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(sessionStorage.getItem('akseskota-intro-v1'))document.documentElement.dataset.introSeen='true'}catch(e){}",
+          }}
+        />
+      </head>
       <body className={jakarta.className}>
+        <SiteIntro />
         <PageTransitionProvider>
           <SmoothScroll />
           {children}
