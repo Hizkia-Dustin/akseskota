@@ -6,6 +6,7 @@ import MotionSurface from "./react-bits/MotionSurface";
 import MapboxMap from "./MapboxMap";
 import { DirectoryPanel } from "./DirectoryPanels";
 import DirectoryPlaceDetail from "./DirectoryPlaceDetail";
+import HelpGuide from "./help-guide/HelpGuide";
 import { usePageTransition } from "./PageTransitionProvider";
 import { geocodeMapboxPlace, isInsideBogor, openGoogleStreetView, requestMapboxWalkingRoutes, searchMapboxPlaces } from "../../lib/mapboxRouting";
 import { apiRequest, clearSession, getStoredSession } from "../../lib/api";
@@ -177,7 +178,7 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
   }
 
   return (
-    <div className="absolute left-4 right-4 top-[max(16px,env(safe-area-inset-top))] z-20 sm:left-[80px] sm:right-auto sm:top-3 sm:w-[340px] sm:max-w-[calc(100vw-92px)]">
+    <div data-guide="search" className="absolute left-4 right-4 top-[max(16px,env(safe-area-inset-top))] z-20 sm:left-[80px] sm:right-auto sm:top-3 sm:w-[340px] sm:max-w-[calc(100vw-92px)]">
       <div className="overflow-hidden rounded-[16px] border border-white/80 bg-white/95 shadow-[0_10px_28px_rgba(24,46,58,.15)] backdrop-blur-xl">
         <label className="relative z-10 flex h-[46px] items-center gap-3 border-b border-[#edf0f2] bg-white/95 px-4 sm:h-[52px]"><span className="size-2.5 shrink-0 rounded-full bg-[#0c6478]" /><input aria-label="Lokasi awal" autoComplete="off" placeholder="Cari titik awal" value={origin} onFocus={()=>setActiveField("origin")} onChange={(e) => updateOrigin(e.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')onSearch();}} className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-[#98a2b3] sm:text-[11px]" /><button type="button" onClick={()=>updateOrigin("")} aria-label="Hapus titik awal" className="grid size-7 shrink-0 place-items-center rounded-full transition hover:bg-[#f2f5f6]"><X className="size-3 text-[#b2bac5]" /></button></label>
         {activeField === "origin" && <PlaceSuggestions suggestions={originSuggestions} error={originSuggestionError} label="Saran titik awal" onChoose={chooseOrigin} />}
@@ -186,8 +187,9 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
         <button type="button" onClick={onSearch} disabled={loading} className="m-3.5 hidden h-[42px] w-[calc(100%-28px)] rounded-[12px] bg-[#0c6478] text-[11px] font-extrabold text-white shadow-[0_5px_14px_rgba(12,100,120,.18)] transition hover:-translate-y-0.5 hover:bg-[#09596a] active:translate-y-0 active:bg-[#084e5d] disabled:cursor-wait disabled:opacity-60 sm:block">{loading ? "Menghitung…" : "Cari rute"}</button>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <button type="button" onClick={onMode} className="flex h-11 min-w-0 items-center gap-2 rounded-[12px] border border-white/80 bg-white/95 px-3 text-[10px] font-bold text-[#0c6478] shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#f5fafa]"><ModeIcon className="size-4 shrink-0" /><span className="truncate">{mode.label}</span><span className="ml-auto text-[#98a2b3]">›</span></button>
+        <button data-guide="mode" type="button" onClick={onMode} className="flex h-11 min-w-0 items-center gap-2 rounded-[12px] border border-white/80 bg-white/95 px-3 text-[10px] font-bold text-[#0c6478] shadow-[0_7px_18px_rgba(24,46,58,.13)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#f5fafa]"><ModeIcon className="size-4 shrink-0" /><span className="truncate">{mode.label}</span><span className="ml-auto text-[#98a2b3]">›</span></button>
         <button
+          data-guide="shade"
           type="button"
           onClick={() => {
             if (shadeDataAvailable) onToggleShade();
@@ -411,6 +413,7 @@ function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHis
             return (
               <button
                 data-sidebar-item
+                data-guide={id}
                 key={id}
                 type="button"
                 onClick={action}
@@ -473,6 +476,7 @@ function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHis
           return (
             <button
               data-mobile-nav-item
+              data-guide={id}
               key={id}
               type="button"
               onClick={action}
@@ -1173,5 +1177,6 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
     {panel==='verify-report'&&selectedReportId&&<CommunityVerificationPanel reportId={selectedReportId} session={session} onClose={()=>setPanel(null)} onUpdated={refreshReportsAndRoutes} onLogin={()=>navigate('/masuk')} />}
     {panel==='profile'&&<ProfilePanel profile={profile} session={session} onClose={()=>setPanel(null)} onModerate={()=>navigate('/admin/laporan')} onLogout={()=>{clearSession();navigate('/masuk')}} />}
     {navigating&&activeRoute&&<SpeechNavigation route={activeRoute} destination={resolvedDestination} onStop={()=>setNavigating(false)}/>}
+    <HelpGuide />
   </main>;
 }
