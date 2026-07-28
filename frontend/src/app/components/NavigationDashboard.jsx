@@ -36,6 +36,8 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Star,
+  SunMedium,
+  TreePine,
   UserRound,
   Volume2,
   VolumeX,
@@ -71,8 +73,8 @@ const routeTone = {
   blue: { card: "bg-[#315fc4]", badge: "bg-white/12", ring: "border-white", accent: "text-[#315fc4]" },
 };
 
-function MapCanvas({ routes, reports, activeRoute = "A", origin, destination, reportDraft, onMapClick, highContrast = false }) {
-  return <MapboxMap routes={routes} reports={reports} activeRoute={activeRoute} origin={origin} destination={destination} reportDraft={reportDraft} onMapClick={onMapClick} highContrast={highContrast} />;
+function MapCanvas({ routes, reports, destinations, shadeSegments, heatEnabled, heatHour, weather, onDestinationSelect, activeRoute = "A", origin, destination, reportDraft, onMapClick, highContrast = false }) {
+  return <MapboxMap routes={routes} reports={reports} destinations={destinations} shadeSegments={shadeSegments} heatEnabled={heatEnabled} heatHour={heatHour} weather={weather} onDestinationSelect={onDestinationSelect} activeRoute={activeRoute} origin={origin} destination={destination} reportDraft={reportDraft} onMapClick={onMapClick} highContrast={highContrast} />;
 }
 
 function ScoreRing({ score, color = "border-white" }) {
@@ -102,7 +104,7 @@ function PlaceSuggestions({ suggestions, error, label, onChoose }) {
   return <div role="listbox" aria-label={label} className="border-b border-[#edf0f2] bg-white py-1.5">{suggestions.map((place)=><button key={place.id} type="button" role="option" aria-selected="false" onClick={()=>onChoose(place)} className="flex w-full items-start gap-3 px-4 py-2.5 text-left transition hover:bg-[#effaf8]"><MapPin className="mt-0.5 size-4 shrink-0 text-[#0c6478]"/><span className="min-w-0"><b className="block truncate text-[11px] text-[#1f2937]">{place.name}</b><small className="mt-0.5 block truncate text-[9px] text-[#8b96a5]">{place.address}</small></span></button>)}{error&&<p className="px-4 py-3 text-[10px] font-semibold text-[#b42318]">{error}</p>}</div>;
 }
 
-function SearchBox({ origin, destination, setOrigin, setDestination, originCoordinates, onSelectOrigin, onSelectDestination, onSearch, mode, onMode, loading }) {
+function SearchBox({ origin, destination, setOrigin, setDestination, originCoordinates, onSelectOrigin, onSelectDestination, onSearch, mode, onMode, loading, preferShade, onToggleShade, shadeDataAvailable }) {
   const ModeIcon = mode.icon;
   const [activeField, setActiveField] = useState(null);
   const [originSuggestions, setOriginSuggestions] = useState([]);
@@ -181,7 +183,33 @@ function SearchBox({ origin, destination, setOrigin, setDestination, originCoord
         {activeField === "destination" && <PlaceSuggestions suggestions={destinationSuggestions} error={destinationSuggestionError} label="Saran tujuan" onChoose={chooseDestination} />}
         <button type="button" onClick={onSearch} disabled={loading} className="m-3 hidden h-10 w-[calc(100%-24px)] rounded-[10px] bg-[#0c6478] text-[11px] font-extrabold text-white transition-colors hover:bg-[#09596a] active:bg-[#084e5d] disabled:cursor-wait disabled:opacity-60 sm:block">{loading ? "Menghitung…" : "Cari rute"}</button>
       </div>
-      <button type="button" onClick={onMode} className="mt-2 flex items-center gap-2 rounded-[10px] border border-[#e8ecee] bg-white px-3 py-2 text-[10px] font-bold text-[#0c6478] shadow-[0_4px_12px_rgba(24,46,58,.1)] transition-colors hover:bg-[#f5fafa]"><ModeIcon className="size-4" />{mode.label}<span className="ml-auto text-[#98a2b3]">›</span></button>
+      <div className="mt-2 flex gap-2">
+        <button type="button" onClick={onMode} className="flex min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-[#e8ecee] bg-white px-3 py-2 text-[10px] font-bold text-[#0c6478] shadow-[0_4px_12px_rgba(24,46,58,.1)] transition-colors hover:bg-[#f5fafa]"><ModeIcon className="size-4 shrink-0" /><span className="truncate">{mode.label}</span><span className="ml-auto text-[#98a2b3]">›</span></button>
+        <button type="button" onClick={onToggleShade} aria-pressed={preferShade} title={shadeDataAvailable ? "Prioritaskan rute yang lebih teduh" : "Observasi ruas teduh belum tersedia"} className={`flex items-center gap-1.5 rounded-[10px] border px-3 py-2 text-[10px] font-extrabold shadow-[0_4px_12px_rgba(24,46,58,.1)] transition ${preferShade ? "border-[#22a06b] bg-[#e9f8ef] text-[#087443]" : "border-[#e8ecee] bg-white text-[#52616b] hover:bg-[#f5fafa]"}`}><TreePine className="size-4" />Teduh{!shadeDataAvailable && <span className="size-1.5 rounded-full bg-[#f59e0b]" />}</button>
+      </div>
+    </div>
+  );
+}
+
+function MapLayerControls({ destinationCount, onDirectory, heatEnabled, setHeatEnabled, heatHour, setHeatHour, weather, shadeDataAvailable }) {
+  const hourLabel = `${String(heatHour).padStart(2, "0")}:00`;
+  return (
+    <div className="absolute right-3 top-[126px] z-30 flex max-w-[calc(100vw-24px)] flex-col items-end gap-2 sm:right-[76px] sm:top-3">
+      <div className="flex gap-2">
+        <button type="button" onClick={onDirectory} className="flex h-11 items-center gap-2 rounded-[13px] border border-white/80 bg-white/95 px-4 text-[11px] font-extrabold text-[#0c6478] shadow-[0_9px_24px_rgba(23,60,97,.16)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#effaf8]"><BookOpen className="size-4" /><span>Direktori</span><span className="rounded-full bg-[#e5f6f2] px-2 py-1 text-[9px]">{destinationCount || 0}</span></button>
+        <button type="button" onClick={() => setHeatEnabled((value) => !value)} aria-pressed={heatEnabled} className={`flex h-11 items-center gap-2 rounded-[13px] border px-4 text-[11px] font-extrabold shadow-[0_9px_24px_rgba(23,60,97,.16)] backdrop-blur transition hover:-translate-y-0.5 ${heatEnabled ? "border-[#f59e0b] bg-[#fff7e8] text-[#a34b00]" : "border-white/80 bg-white/95 text-[#0c6478]"}`}><SunMedium className="size-4" />Paparan panas</button>
+      </div>
+      {heatEnabled && (
+        <MotionSurface direction="down" distance={12} className="w-[300px] max-w-full rounded-[16px] border border-white/80 bg-white/95 p-4 shadow-[0_14px_34px_rgba(23,60,97,.18)] backdrop-blur-xl">
+          <div className="flex items-center justify-between"><div><p className="text-[11px] font-extrabold text-[#172b3a]">Estimasi paparan panas</p><p className="mt-0.5 text-[9px] text-[#687784]">Bogor · {hourLabel}</p></div>{Number.isFinite(weather?.apparentTemperature) && <span className="rounded-full bg-[#fff1db] px-2.5 py-1 text-[10px] font-extrabold text-[#b45309]">Terasa {Math.round(weather.apparentTemperature)}°C</span>}</div>
+          <input aria-label="Waktu estimasi paparan panas" type="range" min="6" max="18" step="1" value={heatHour} onChange={(event) => setHeatHour(Number(event.target.value))} className="mt-3 w-full accent-[#f59e0b]" />
+          <div className="mt-1 flex justify-between text-[8px] font-bold text-[#8b96a5]"><span>06.00</span><span>12.00</span><span>18.00</span></div>
+          <div className="mt-3 h-2.5 rounded-full bg-gradient-to-r from-[#22c55e] via-[#facc15] to-[#dc2626]" />
+          <div className="mt-1 flex justify-between text-[8px] text-[#667085]"><span>Lebih sejuk</span><span>Lebih terpapar</span></div>
+          <p className="mt-3 rounded-xl bg-[#f8fafc] p-2.5 text-[8px] leading-4 text-[#667085]">Estimasi berbasis jam, cuaca, kategori ruang hijau, dan observasi ruas. Bukan sensor suhu permukaan realtime.</p>
+          {!shadeDataAvailable && <p className="mt-2 flex items-start gap-2 rounded-xl bg-[#fff7e8] p-2.5 text-[8px] font-semibold leading-4 text-[#8a4b08]"><TreePine className="mt-0.5 size-3 shrink-0" />Data ruas teduh belum tersedia. Tambahkan observasi jalan untuk membedakan jalur secara akurat.</p>}
+        </MotionSurface>
+      )}
     </div>
   );
 }
@@ -285,10 +313,10 @@ function CommunityPlacePanel({ place, session, onRoute, onClose, onLogin }) {
   </div></SideShell>;
 }
 
-function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHistory, onDestinations }) {
+function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHistory, onDestinations, destinationCount = 0 }) {
   const items = [
+    { id: "directory", label: "Direktori", mobileLabel: "Direktori", detail: `${destinationCount || 0} tempat Bogor`, icon: BookOpen, action: onDestinations, featured: true },
     { id: "report", label: "Laporan", mobileLabel: "Lapor", detail: "Kondisi jalur", icon: Flag, action: onReport },
-    { id: "directory", label: "Direktori", mobileLabel: "Direktori", detail: "Tempat aksesibel", icon: BookOpen, action: onDestinations },
     { id: "assistant", label: "Asisten", mobileLabel: "Asisten", detail: "Bantuan perjalanan", icon: Bot, action: onAssistant },
     { id: "history", label: "Riwayat", mobileLabel: "Riwayat", detail: "Perjalanan tersimpan", icon: History, action: onHistory },
     { id: "profile", label: "Profil", mobileLabel: "Profil", detail: "Preferensi akses", icon: UserRound, action: onProfile },
@@ -331,7 +359,7 @@ function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHis
         <span className="mx-1 my-2.5 h-px shrink-0 bg-[#e8eef0]" />
 
         <nav className="flex min-h-0 w-full flex-1 flex-col gap-1.5" aria-label="Fitur AksesKota">
-          {items.map(({ id, label, detail, icon: Icon, action }) => {
+          {items.map(({ id, label, detail, icon: Icon, action, featured }) => {
             const active = activePanel === id;
             return (
               <button
@@ -344,7 +372,9 @@ function LeftRail({ activePanel, onHome, onReport, onProfile, onAssistant, onHis
                 className={`group/item relative flex h-[43px] w-full shrink-0 items-center overflow-hidden rounded-[13px] text-left outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#35cbb0] ${
                   active
                     ? "bg-[#e5f6f2] text-[#0c6478]"
-                    : "text-[#8996a4] hover:bg-[#f2f7f7] hover:text-[#173c61]"
+                    : featured
+                      ? "bg-[#f2faf8] text-[#0c6478] hover:bg-[#def3ef]"
+                      : "text-[#8996a4] hover:bg-[#f2f7f7] hover:text-[#173c61]"
                 }`}
               >
                 {active && (
@@ -843,6 +873,26 @@ function currentCoordinates() {
 
 export default function NavigationDashboard({ initialProfile="walking", initialDestination=null }) {
   const router=useRouter(); const [profile,setProfile]=useState(initialProfile); const [panel,setPanel]=useState(null); const [selected,setSelected]=useState("A"); const [detail,setDetail]=useState("A"); const [directoryDetail,setDirectoryDetail]=useState(null); const [origin,setOrigin]=useState("Lokasi saya"); const [originSelection,setOriginSelection]=useState(null); const [destination,setDestination]=useState(initialDestination?.name||""); const [destinationSelection,setDestinationSelection]=useState(initialDestination); const [session,setSession]=useState(null); const [mapReports,setMapReports]=useState([]); const [userReports,setUserReports]=useState([]); const [reportDraft,setReportDraft]=useState(null); const [selectedReportId,setSelectedReportId]=useState(null); const [navigating,setNavigating]=useState(false); const [routeOptions,setRouteOptions]=useState([]); const [routingStatus,setRoutingStatus]=useState("idle"); const [routeError,setRouteError]=useState(""); const [originCoordinates,setOriginCoordinates]=useState(null); const [destinationCoordinates,setDestinationCoordinates]=useState(initialDestination?.coordinates||null); const [resolvedDestination,setResolvedDestination]=useState(initialDestination?.name||"Tujuan"); const mode=modes.find(m=>m.id===profile)||modes[4]; const activeRoute=routeOptions.find(r=>r.id===detail)||routeOptions[0];
+  const [mapDestinations, setMapDestinations] = useState([]);
+  const [shadeSegments, setShadeSegments] = useState([]);
+  const [preferShade, setPreferShade] = useState(false);
+  const [heatEnabled, setHeatEnabled] = useState(false);
+  const [heatHour, setHeatHour] = useState(() => Math.max(6, Math.min(18, new Date().getHours())));
+  const [weatherForecast, setWeatherForecast] = useState(null);
+  const selectedWeather = useMemo(() => {
+    const hourly = weatherForecast?.hourly;
+    if (!hourly?.time?.length) return weatherForecast?.current ? {
+      apparentTemperature: weatherForecast.current.apparent_temperature,
+      cloudCover: weatherForecast.current.cloud_cover,
+    } : null;
+    const suffix = `T${String(heatHour).padStart(2, "0")}:00`;
+    const index = hourly.time.findIndex((time) => time.endsWith(suffix));
+    return {
+      apparentTemperature: hourly.apparent_temperature?.[index],
+      cloudCover: hourly.cloud_cover?.[index],
+      shortwaveRadiation: hourly.shortwave_radiation?.[index],
+    };
+  }, [heatHour, weatherForecast]);
   function changeMode(id){setProfile(id);localStorage.setItem("akseskota-profile",id);setPanel(null);}
 
   const searchRoutes = useCallback(async (openPanel = true) => {
@@ -893,7 +943,10 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
             matchedSegmentCount: evaluation.matchedSegmentCount,
             badge: evaluation.blocked ? "Tidak sesuai profil" : evaluation.labels[0] || (evaluation.dataStatus === "CUKUP" ? route.badge : "Data komunitas belum cukup"),
           };
-        }).sort((first, second) => (first.algorithmRank ?? 999) - (second.algorithmRank ?? 999));
+        }).sort((first, second) => {
+          if (preferShade && Number.isFinite(first.shade) && Number.isFinite(second.shade) && first.shade !== second.shade) return second.shade - first.shade;
+          return (first.algorithmRank ?? 999) - (second.algorithmRank ?? 999);
+        });
       } catch {
         evaluatedRoutes = calculatedRoutes.map((route) => ({ ...route, badge: "Data komunitas belum tersedia", dataCoverage: 0 }));
       }
@@ -910,7 +963,7 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
       setRouteError(error instanceof Error ? error.message : "Rute gagal dihitung.");
       setRoutingStatus("error");
     }
-  }, [destination, destinationSelection, origin, originSelection, profile]);
+  }, [destination, destinationSelection, origin, originSelection, preferShade, profile]);
 
   const refreshReports = useCallback(async () => {
     const storedSession = getStoredSession();
@@ -941,6 +994,26 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
       await searchRoutes(false);
     }
   }, [destinationCoordinates, originCoordinates, refreshReports, routeOptions.length, searchRoutes]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadMapContext() {
+      const [placesResult, segmentsResult, weatherResult] = await Promise.allSettled([
+        apiRequest("/destinations?limit=500"),
+        apiRequest("/road-segments?lat=-6.5971&lng=106.8060&radiusMeters=10000"),
+        fetch("https://api.open-meteo.com/v1/forecast?latitude=-6.5971&longitude=106.8060&current=apparent_temperature,cloud_cover&hourly=apparent_temperature,cloud_cover,shortwave_radiation&timezone=Asia%2FJakarta&forecast_days=1", { signal: controller.signal }).then((response) => {
+          if (!response.ok) throw new Error("Cuaca tidak tersedia");
+          return response.json();
+        }),
+      ]);
+      if (controller.signal.aborted) return;
+      setMapDestinations(placesResult.status === "fulfilled" && Array.isArray(placesResult.value) ? placesResult.value : []);
+      setShadeSegments(segmentsResult.status === "fulfilled" && Array.isArray(segmentsResult.value) ? segmentsResult.value : []);
+      setWeatherForecast(weatherResult.status === "fulfilled" ? weatherResult.value : null);
+    }
+    void loadMapContext();
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(refreshReports, 0);
@@ -1019,12 +1092,26 @@ export default function NavigationDashboard({ initialProfile="walking", initialD
     return () => { cancelled = true; };
   }, []);
 
+  const openMapDestination = useCallback(async (place) => {
+    setPanel("directory");
+    setDirectoryDetail(null);
+    try {
+      const detailResult = await apiRequest(`/destinations/${encodeURIComponent(place.externalId)}`);
+      setDirectoryDetail(detailResult);
+      if (detailResult?.coordinates) setDestinationCoordinates(detailResult.coordinates);
+    } catch {
+      setDirectoryDetail(place);
+      if (place?.coordinates) setDestinationCoordinates(place.coordinates);
+    }
+  }, []);
+
   const sidePanelOpen = ['report','profile','verify-report','community-place','assistant','history','directory'].includes(panel);
 
   return <main className={`relative h-dvh min-h-0 overflow-hidden bg-[#dfe5e8] sm:min-h-[620px] ${profile==='low-vision'?'contrast-[1.08]':''}`}>
-    <MapCanvas routes={routeOptions} reports={mapReports} activeRoute={selected||detail} origin={originCoordinates} destination={destinationCoordinates} reportDraft={reportDraft} onMapClick={panel==='report'?setReportDraft:null} highContrast={profile==='low-vision'} />
-    <LeftRail activePanel={panel} onHome={()=>{setDirectoryDetail(null);setPanel(null)}} onReport={()=>setPanel('report')} onAssistant={()=>setPanel('assistant')} onHistory={()=>setPanel('history')} onProfile={()=>setPanel('profile')} onDestinations={()=>{setDirectoryDetail(null);setPanel('directory')}} />
-    {!sidePanelOpen&&<SearchBox origin={origin} destination={destination} setOrigin={(value)=>{setOrigin(value);setOriginSelection(null);}} setDestination={(value)=>{setDestination(value);setDestinationSelection(null);}} originCoordinates={originCoordinates} onSelectOrigin={(place)=>{setOrigin(place.name);setOriginSelection(place);setOriginCoordinates(place.coordinates);}} onSelectDestination={(place)=>{setDestination(place.name);setDestinationSelection(place);setPanel('community-place');}} onSearch={()=>searchRoutes(true)} mode={mode} onMode={()=>setPanel(panel==='mode'?null:'mode')} loading={routingStatus==='loading'} />}
+    <MapCanvas routes={routeOptions} reports={mapReports} destinations={mapDestinations} shadeSegments={shadeSegments} heatEnabled={heatEnabled} heatHour={heatHour} weather={selectedWeather} onDestinationSelect={openMapDestination} activeRoute={selected||detail} origin={originCoordinates} destination={destinationCoordinates} reportDraft={reportDraft} onMapClick={panel==='report'?setReportDraft:null} highContrast={profile==='low-vision'} />
+    <LeftRail activePanel={panel} destinationCount={mapDestinations.length} onHome={()=>{setDirectoryDetail(null);setPanel(null)}} onReport={()=>setPanel('report')} onAssistant={()=>setPanel('assistant')} onHistory={()=>setPanel('history')} onProfile={()=>setPanel('profile')} onDestinations={()=>{setDirectoryDetail(null);setPanel('directory')}} />
+    {!sidePanelOpen&&<SearchBox origin={origin} destination={destination} setOrigin={(value)=>{setOrigin(value);setOriginSelection(null);}} setDestination={(value)=>{setDestination(value);setDestinationSelection(null);}} originCoordinates={originCoordinates} onSelectOrigin={(place)=>{setOrigin(place.name);setOriginSelection(place);setOriginCoordinates(place.coordinates);}} onSelectDestination={(place)=>{setDestination(place.name);setDestinationSelection(place);setPanel('community-place');}} onSearch={()=>searchRoutes(true)} mode={mode} onMode={()=>setPanel(panel==='mode'?null:'mode')} loading={routingStatus==='loading'} preferShade={preferShade} onToggleShade={()=>setPreferShade(value=>!value)} shadeDataAvailable={shadeSegments.length>0} />}
+    {!sidePanelOpen&&<MapLayerControls destinationCount={mapDestinations.length} onDirectory={()=>{setDirectoryDetail(null);setPanel('directory')}} heatEnabled={heatEnabled} setHeatEnabled={setHeatEnabled} heatHour={heatHour} setHeatHour={setHeatHour} weather={selectedWeather} shadeDataAvailable={shadeSegments.length>0} />}
     {!panel&&!navigating&&<MobileMapActions onSearch={()=>searchRoutes(true)} />}
     {panel==='mode'&&<ModePanel current={profile} onChange={changeMode} onClose={()=>setPanel(null)} />}
     {panel==='directory'&&<DirectoryPanel selectedId={directoryDetail?.externalId} onClose={()=>{setDirectoryDetail(null);setPanel(null)}} onSelect={(place)=>{setDirectoryDetail(place);setDestinationCoordinates(place.coordinates)}} />}

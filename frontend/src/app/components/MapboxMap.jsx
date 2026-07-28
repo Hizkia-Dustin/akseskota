@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BOGOR_BOUNDS, BOGOR_CENTER } from "../../lib/mapboxRouting";
+import { heatExposureCollection, shadeSegmentCollection } from "../../lib/heatExposure";
 
 const MAP_STYLE = "mapbox://styles/mapbox/standard";
 
@@ -41,12 +42,51 @@ function reportCollection(reports) {
   };
 }
 
-export default function MapboxMap({ routes = [], reports = [], activeRoute = "A", origin, destination, reportDraft, onMapClick, highContrast = false }) {
+function destinationCollection(destinations) {
+  return {
+    type: "FeatureCollection",
+    features: destinations
+      .filter((place) => Array.isArray(place.coordinates) && place.coordinates.length === 2)
+      .map((place) => ({
+        type: "Feature",
+        properties: {
+          externalId: place.externalId,
+          name: place.name,
+          category: place.category || place.placeType || "Tempat",
+          score: Number(place.accessibilityScore) || 0,
+        },
+        geometry: { type: "Point", coordinates: place.coordinates },
+      })),
+  };
+}
+
+export default function MapboxMap({
+  routes = [],
+  reports = [],
+  destinations = [],
+  shadeSegments = [],
+  heatEnabled = false,
+  heatHour = 12,
+  weather = null,
+  onDestinationSelect,
+  activeRoute = "A",
+  origin,
+  destination,
+  reportDraft,
+  onMapClick,
+  highContrast = false,
+}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const routesRef = useRef(routes);
   const pointsRef = useRef({ origin, destination });
   const reportsRef = useRef(reports);
+  const destinationsRef = useRef(destinations);
+  const shadeSegmentsRef = useRef(shadeSegments);
+  const heatEnabledRef = useRef(heatEnabled);
+  const heatHourRef = useRef(heatHour);
+  const weatherRef = useRef(weather);
+  const onDestinationSelectRef = useRef(onDestinationSelect);
   const reportDraftRef = useRef(reportDraft);
   const onMapClickRef = useRef(onMapClick);
   const activeRouteRef = useRef(activeRoute);
@@ -94,6 +134,23 @@ export default function MapboxMap({ routes = [], reports = [], activeRoute = "A"
   }, [onMapClick, reportDraft, reports]);
 
   useEffect(() => {
+    destinationsRef.current = destinations;
+    shadeSegmentsRef.current = shadeSegments;
+    heatEnabledRef.current = heatEnabled;
+    heatHourRef.current = heatHour;
+    weatherRef.current = weather;
+    onDestinationSelectRef.current = onDestinationSelect;
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    map.getSource("akseskota-destinations")?.setData(destinationCollection(destinations));
+    map.getSource("akseskota-heat")?.setData(heatExposureCollection(destinations, heatHour, weather));
+    map.getSource("akseskota-shade-segments")?.setData(shadeSegmentCollection(shadeSegments, heatHour));
+    const visibility = heatEnabled ? "visible" : "none";
+    if (map.getLayer("akseskota-heatmap")) map.setLayoutProperty("akseskota-heatmap", "visibility", visibility);
+    if (map.getLayer("akseskota-shade-segments")) map.setLayoutProperty("akseskota-shade-segments", "visibility", visibility);
+  }, [destinations, heatEnabled, heatHour, onDestinationSelect, shadeSegments, weather]);
+
+  useEffect(() => {
     const map = mapRef.current;
     activeRouteRef.current = activeRoute;
     if (!map?.getLayer("akseskota-route-active")) return;
@@ -139,6 +196,89 @@ export default function MapboxMap({ routes = [], reports = [], activeRoute = "A"
 
         map.once("load", () => {
           if (disposed) return;
+          map.addSource("akseskota-heat", {
+            type: "geojson",
+            data: heatExposureCollection(destinationsRef.current, heatHourRef.current, weatherRef.current),
+          });
+          map.addLayer({
+            id: "akseskota-heatmap",
+            type: "heatmap",
+            source: "akseskota-heat",
+            slot: "middle",
+            layout: { visibility: heatEnabledRef.current ? "visible" : "none" },
+            paint: {
+              "heatmap-weight": ["interpolate", ["linear"], ["get", "exposure"], 0, 0, 1, 1],
+              "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 11, 0.7, 16, 1.4],
+              "heatmap-color": [
+                "interpolate", ["linear"], ["heatmap-density"],
+                0, "rgba(34,197,94,0)",
+                0.2, "rgba(34,197,94,.42)",
+                0.45, "rgba(250,204,21,.58)",
+                0.7, "rgba(249,115,22,.7)",
+                1, "rgba(220,38,38,.82)",
+              ],
+              "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 11, 28, 16, 58],
+              "heatmap-opacity": 0.72,
+            },
+          });
+          map.addSource("akseskota-shade-segments", {
+            type: "geojson",
+            data: shadeSegmentCollection(shadeSegmentsRef.current, heatHourRef.current),
+          });
+          map.addLayer({
+            id: "akseskota-shade-segments",
+            type: "line",
+            source: "akseskota-shade-segments",
+            slot: "middle",
+            layout: { "line-cap": "round", "line-join": "round", visibility: heatEnabledRef.current ? "visible" : "none" },
+            paint: {
+              "line-color": ["interpolate", ["linear"], ["get", "shade"], 0, "#ef4444", 45, "#f59e0b", 75, "#22c55e", 100, "#047857"],
+              "line-width": ["interpolate", ["linear"], ["zoom"], 12, 3, 17, 8],
+              "line-opacity": ["case", ["get", "verified"], 0.88, 0],
+            },
+          });
+          map.addSource("akseskota-destinations", {
+            type: "geojson",
+            data: destinationCollection(destinationsRef.current),
+            cluster: true,
+            clusterMaxZoom: 14,
+            clusterRadius: 46,
+          });
+          map.addLayer({
+            id: "akseskota-destination-clusters",
+            type: "circle",
+            source: "akseskota-destinations",
+            slot: "top",
+            filter: ["has", "point_count"],
+            paint: {
+              "circle-color": ["step", ["get", "point_count"], "#16456b", 10, "#123b61", 30, "#0d304f"],
+              "circle-radius": ["step", ["get", "point_count"], 18, 10, 23, 30, 29],
+              "circle-stroke-color": "rgba(255,255,255,.92)",
+              "circle-stroke-width": 2,
+            },
+          });
+          map.addLayer({
+            id: "akseskota-destination-cluster-count",
+            type: "symbol",
+            source: "akseskota-destinations",
+            slot: "top",
+            filter: ["has", "point_count"],
+            layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 12, "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"] },
+            paint: { "text-color": "#ffffff" },
+          });
+          map.addLayer({
+            id: "akseskota-destination-points",
+            type: "circle",
+            source: "akseskota-destinations",
+            slot: "top",
+            filter: ["!", ["has", "point_count"]],
+            paint: {
+              "circle-radius": 7,
+              "circle-color": ["case", [">=", ["get", "score"], 70], "#0fa58f", [">=", ["get", "score"], 40], "#f59e0b", "#64748b"],
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 2.5,
+            },
+          });
           map.addSource("akseskota-routes", { type: "geojson", data: routeCollection(routesRef.current) });
           map.addLayer({
             id: "akseskota-route-alternatives",
@@ -200,6 +340,30 @@ export default function MapboxMap({ routes = [], reports = [], activeRoute = "A"
           map.getCanvas().style.cursor = onMapClickRef.current ? "crosshair" : "";
           setStatus("ready");
           fitActiveRoute(map, activeRouteRef.current, false);
+        });
+
+        map.on("click", "akseskota-destination-clusters", (event) => {
+          const feature = map.queryRenderedFeatures(event.point, { layers: ["akseskota-destination-clusters"] })[0];
+          const clusterId = feature?.properties?.cluster_id;
+          if (clusterId === undefined) return;
+          map.getSource("akseskota-destinations")?.getClusterExpansionZoom(clusterId, (error, zoom) => {
+            if (error || zoom === null || zoom === undefined) return;
+            map.easeTo({ center: feature.geometry.coordinates, zoom, duration: 600 });
+          });
+        });
+        map.on("click", "akseskota-destination-points", (event) => {
+          const feature = event.features?.[0];
+          if (!feature) return;
+          onDestinationSelectRef.current?.({
+            externalId: feature.properties?.externalId,
+            name: feature.properties?.name,
+            category: feature.properties?.category,
+            coordinates: feature.geometry.coordinates,
+          });
+        });
+        ["akseskota-destination-clusters", "akseskota-destination-points"].forEach((layer) => {
+          map.on("mouseenter", layer, () => { map.getCanvas().style.cursor = "pointer"; });
+          map.on("mouseleave", layer, () => { map.getCanvas().style.cursor = onMapClickRef.current ? "crosshair" : ""; });
         });
 
         map.on("click", "akseskota-reports", (event) => {

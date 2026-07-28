@@ -57,12 +57,18 @@ export default function Home() {
     <main id="top" className="overflow-hidden bg-white text-[#101828]">
       <div className="hidden h-[60px] lg:block" />
       <HeroEntrance>
-      <header className="hero-nav mx-auto flex h-[60px] w-[calc(100%-32px)] max-w-[1080px] items-center justify-between rounded-full bg-[#e7f1f3] px-6 md:px-8">
+      <header className="hero-nav mx-auto flex h-[64px] w-[calc(100%-32px)] max-w-[1180px] items-center justify-between gap-4 rounded-full bg-[#e7f1f3] px-5 md:px-8 lg:px-10">
         <Logo />
-        <nav className="hidden items-center gap-8 text-[12px] font-semibold text-[#6a7282] md:flex">
-          <a href="#cara-kerja">Cara Kerja</a><a href="#fitur">Fitur</a><a href="#dampak">Dampak</a>
+        <nav className="hidden items-center gap-7 text-[12px] font-semibold text-[#667085] md:flex lg:gap-9">
+          <a className="transition hover:text-[#0c6478]" href="#cara-kerja">Cara Kerja</a>
+          <a className="transition hover:text-[#0c6478]" href="#fitur">Fitur</a>
+          <Link className="rounded-full bg-white/75 px-4 py-2 font-extrabold text-[#0c6478] shadow-sm transition hover:bg-white" href="/destinasi">Direktori</Link>
+          <a className="transition hover:text-[#0c6478]" href="#dampak">Dampak</a>
         </nav>
-        <Link href="/masuk" className="rounded-full bg-[#0c6478] px-5 py-3 text-[12px] font-bold text-white shadow-[0_3px_8px_rgba(12,100,120,.25)]">Coba Sekarang</Link>
+        <div className="flex items-center gap-2">
+          <Link href="/destinasi" className="rounded-full bg-white/80 px-4 py-3 text-[11px] font-extrabold text-[#0c6478] shadow-sm md:hidden">Direktori</Link>
+          <Link href="/masuk" className="rounded-full bg-[#0c6478] px-5 py-3 text-[12px] font-bold text-white shadow-[0_3px_8px_rgba(12,100,120,.25)]">Coba Sekarang</Link>
+        </div>
       </header>
 
       <section className="mx-auto grid min-h-130.75 max-w-[1080px] items-center gap-8 px-[30px] py-12 lg:grid-cols-2 lg:py-0">
