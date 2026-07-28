@@ -61,6 +61,18 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(53, 203, 176, .4
   display: none;
 }
 
+.destinations-layout {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .destinations-layout {
+    display: grid;
+    grid-template-columns: var(--directory-sidebar) minmax(0, 1fr);
+    transition: grid-template-columns .58s cubic-bezier(.22, 1, .36, 1);
+  }
+}
+
 @keyframes directory-panel-main-in {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
