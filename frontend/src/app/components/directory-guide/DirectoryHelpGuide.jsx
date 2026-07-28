@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, Check, CircleHelp, MousePointer2, X } from "lucide-react";
 import { directoryGuideSteps } from "./directoryGuideSteps";
 
@@ -129,7 +130,7 @@ export default function DirectoryHelpGuide({
       <button type="button" onClick={start} aria-label="Buka panduan Direktori" className="grid size-10 shrink-0 place-items-center rounded-full border border-[#d8e4e5] bg-white text-[#0c6478] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#effaf8]">
         <CircleHelp className="size-4" />
       </button>
-      {open && (
+      {open && typeof document !== "undefined" && createPortal((
         <div className="fixed inset-0 z-[220]">
           {spotlight ? (
             <div
@@ -164,7 +165,7 @@ export default function DirectoryHelpGuide({
             </div>
           </section>
         </div>
-      )}
+      ), document.body)}
     </>
   );
 }
