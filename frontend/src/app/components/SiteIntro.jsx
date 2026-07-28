@@ -20,17 +20,65 @@ export default function SiteIntro() {
     }
 
     document.documentElement.classList.add("site-intro-active");
-    const exitTimer = window.setTimeout(() => setExiting(true), 1750);
-    const finishTimer = window.setTimeout(() => {
-      window.sessionStorage.setItem(INTRO_KEY, "true");
-      document.documentElement.dataset.introSeen = "true";
-      document.documentElement.classList.remove("site-intro-active");
-      setVisible(false);
-    }, 2350);
+    let cancelled = false;
+    let minimumTimer = 0;
+    let fallbackTimer = 0;
+    let finishTimer = 0;
+    let firstFrame = 0;
+    let secondFrame = 0;
+    let removeLoadListener = () => {};
+
+    const minimumDuration = new Promise((resolve) => {
+      minimumTimer = window.setTimeout(resolve, 1650);
+    });
+
+    const documentLoaded =
+      document.readyState === "complete"
+        ? Promise.resolve()
+        : new Promise((resolve) => {
+            const handleLoad = () => resolve();
+            window.addEventListener("load", handleLoad, { once: true });
+            removeLoadListener = () => window.removeEventListener("load", handleLoad);
+          });
+
+    const fontsLoaded = document.fonts?.ready
+      ? document.fonts.ready.catch(() => undefined)
+      : Promise.resolve();
+
+    const allInitialAssetsReady = Promise.all([
+      minimumDuration,
+      documentLoaded,
+      fontsLoaded,
+    ]);
+    const safeFallback = new Promise((resolve) => {
+      fallbackTimer = window.setTimeout(resolve, 10000);
+    });
+
+    Promise.race([allInitialAssetsReady, safeFallback]).then(() => {
+      if (cancelled) return;
+
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          if (cancelled) return;
+          setExiting(true);
+          finishTimer = window.setTimeout(() => {
+            window.sessionStorage.setItem(INTRO_KEY, "true");
+            document.documentElement.dataset.introSeen = "true";
+            document.documentElement.classList.remove("site-intro-active");
+            setVisible(false);
+          }, 700);
+        });
+      });
+    });
 
     return () => {
-      window.clearTimeout(exitTimer);
+      cancelled = true;
+      removeLoadListener();
+      window.clearTimeout(minimumTimer);
+      window.clearTimeout(fallbackTimer);
       window.clearTimeout(finishTimer);
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
       document.documentElement.classList.remove("site-intro-active");
     };
   }, []);
@@ -43,6 +91,7 @@ export default function SiteIntro() {
       role="status"
       aria-live="polite"
       aria-label="Memuat AksesKota"
+      data-loading-state={exiting ? "revealing" : "loading"}
     >
       <span aria-hidden="true" className="site-intro-panel site-intro-panel-main" />
       <span aria-hidden="true" className="site-intro-panel site-intro-panel-accent" />

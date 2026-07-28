@@ -47,11 +47,11 @@ export default function PageTransitionProvider({ children }) {
       navigationTimerRef.current = window.setTimeout(() => router.push(href), 680);
       fallbackRevealRef.current = window.setTimeout(() => {
         setTransition((current) => current ? { ...current, phase: "reveal" } : current);
-      }, 920);
+      }, 10000);
       fallbackFinishRef.current = window.setTimeout(() => {
         activeRef.current = false;
         setTransition(null);
-      }, 1540);
+      }, 10700);
     },
     [router],
   );
@@ -59,16 +59,67 @@ export default function PageTransitionProvider({ children }) {
   useEffect(() => {
     if (!activeRef.current) return;
 
-    const revealTimer = window.setTimeout(() => {
+    let cancelled = false;
+    let firstFrame = 0;
+    let secondFrame = 0;
+    let minimumTimer = 0;
+    let imageFallbackTimer = 0;
+    let finishTimer = 0;
+
+    const destinationPainted = new Promise((resolve) => {
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(resolve);
+      });
+    });
+    const minimumCover = new Promise((resolve) => {
+      minimumTimer = window.setTimeout(resolve, 180);
+    });
+    const fontsReady = document.fonts?.ready
+      ? document.fonts.ready.catch(() => undefined)
+      : Promise.resolve();
+    const visibleImagesReady = destinationPainted.then(() => {
+      const pendingImages = Array.from(document.images).filter((image) => {
+        if (image.complete) return false;
+        const bounds = image.getBoundingClientRect();
+        return bounds.top < window.innerHeight * 1.25 && bounds.bottom > -40;
+      });
+      if (!pendingImages.length) return undefined;
+
+      const decoded = Promise.all(
+        pendingImages.map((image) =>
+          typeof image.decode === "function"
+            ? image.decode().catch(() => undefined)
+            : Promise.resolve(),
+        ),
+      );
+      const imageFallback = new Promise((resolve) => {
+        imageFallbackTimer = window.setTimeout(resolve, 3500);
+      });
+      return Promise.race([decoded, imageFallback]);
+    });
+
+    Promise.all([
+      destinationPainted,
+      minimumCover,
+      fontsReady,
+      visibleImagesReady,
+    ]).then(() => {
+      if (cancelled) return;
       setTransition((current) => current ? { ...current, phase: "reveal" } : current);
-    }, 30);
-    const finishTimer = window.setTimeout(() => {
-      activeRef.current = false;
-      setTransition(null);
-    }, 700);
+      finishTimer = window.setTimeout(() => {
+        if (fallbackRevealRef.current) window.clearTimeout(fallbackRevealRef.current);
+        if (fallbackFinishRef.current) window.clearTimeout(fallbackFinishRef.current);
+        activeRef.current = false;
+        setTransition(null);
+      }, 700);
+    });
 
     return () => {
-      window.clearTimeout(revealTimer);
+      cancelled = true;
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+      window.clearTimeout(minimumTimer);
+      window.clearTimeout(imageFallbackTimer);
       window.clearTimeout(finishTimer);
     };
   }, [pathname]);
