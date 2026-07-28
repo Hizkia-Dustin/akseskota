@@ -4,11 +4,14 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
+  Camera,
   Check,
   ChevronDown,
   ChevronUp,
   Clock3,
   MapPin,
+  LocateFixed,
+  Plus,
   Route,
   Search,
   ShieldCheck,
@@ -88,7 +91,7 @@ function DirectoryHeader({ onClose }) {
   );
 }
 
-export function DirectoryPanel({ selectedId, onClose, onSelect }) {
+export function DirectoryPanel({ selectedId, onClose, onSelect, session, onLogin }) {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [places, setPlaces] = useState([]);
@@ -96,6 +99,13 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const [addingPlace, setAddingPlace] = useState(false);
+  const [newPlace, setNewPlace] = useState({ name: "", category: "", address: "", latitude: "", longitude: "", note: "" });
+  const [newPlacePhoto, setNewPlacePhoto] = useState(null);
+  const [submittingPlace, setSubmittingPlace] = useState(false);
+  const [reviewingProposals, setReviewingProposals] = useState(false);
+  const [placeProposals, setPlaceProposals] = useState([]);
+  const [proposalBusy, setProposalBusy] = useState("");
 
   const loadPlaces = useCallback(async () => {
     setStatus("loading");
@@ -132,6 +142,60 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
     }
   }
 
+  function useCurrentLocation() {
+    navigator.geolocation?.getCurrentPosition(
+      ({ coords }) => setNewPlace((value) => ({ ...value, latitude: String(coords.latitude), longitude: String(coords.longitude) })),
+      () => setMessage("Lokasi tidak dapat dibaca. Isi koordinat secara manual."),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  async function submitNewPlace(event) {
+    event.preventDefault();
+    if (!session) return onLogin();
+    setSubmittingPlace(true);
+    setMessage("");
+    try {
+      const form = new FormData();
+      form.append("kind", "NEW_PLACE");
+      Object.entries(newPlace).forEach(([key, value]) => form.append(key, value));
+      if (newPlacePhoto) form.append("photo", newPlacePhoto);
+      await apiRequest("/community-places/contributions", { method: "POST", body: form });
+      setAddingPlace(false);
+      setNewPlace({ name: "", category: "", address: "", latitude: "", longitude: "", note: "" });
+      setNewPlacePhoto(null);
+      setMessage("Usulan tempat dikirim. Tempat akan muncul setelah disetujui 3 warga lain.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Usulan tempat gagal dikirim.");
+    } finally {
+      setSubmittingPlace(false);
+    }
+  }
+
+  async function loadPlaceProposals() {
+    setMessage("");
+    try {
+      const rows = await apiRequest("/community-places/contributions");
+      setPlaceProposals(rows.filter((item) => item.kind === "NEW_PLACE"));
+      setReviewingProposals(true);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Usulan warga gagal dimuat.");
+    }
+  }
+
+  async function votePlaceProposal(id, decision) {
+    if (!session) return onLogin();
+    setProposalBusy(id);
+    try {
+      await apiRequest(`/community-places/contributions/${id}/votes`, { method: "POST", body: { decision } });
+      await loadPlaceProposals();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Validasi gagal disimpan.");
+    } finally {
+      setProposalBusy("");
+    }
+  }
+
   return (
     <MotionSurface
       as="aside"
@@ -153,6 +217,35 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
         {expanded ? <ChevronDown className="size-3.5" /> : <ChevronUp className="size-3.5" />}
       </button>
       <DirectoryHeader onClose={onClose} />
+      {addingPlace ? (
+        <form data-lenis-prevent="true" onSubmit={submitNewPlace} className="app-scroll-region min-h-0 flex-1 space-y-3 overflow-y-auto p-5">
+          <div className="flex items-start justify-between"><div><h3 className="text-[13px] font-extrabold text-[#172b34]">Usulkan tempat baru</h3><p className="mt-1 text-[8px] leading-4 text-[#667085]">Tempat belum langsung dipublikasikan. Foto dan lokasinya harus divalidasi komunitas.</p></div><button type="button" onClick={() => setAddingPlace(false)} className="grid size-8 place-items-center rounded-full bg-[#f3f5f6]"><X className="size-4" /></button></div>
+          {!session && <button type="button" onClick={onLogin} className="w-full rounded-xl bg-[#fff7ed] p-3 text-left text-[8px] font-bold text-[#9a3412]">Masuk untuk mengusulkan tempat.</button>}
+          {[["name", "Nama tempat"], ["category", "Kategori"], ["address", "Alamat lengkap"]].map(([key, label]) => <label key={key} className="block"><span className="text-[8px] font-extrabold uppercase tracking-[.08em] text-[#667085]">{label}</span><input required value={newPlace[key]} onChange={(event) => setNewPlace((value) => ({ ...value, [key]: event.target.value }))} className="mt-1.5 h-10 w-full rounded-[10px] border border-[#dce3e7] px-3 text-[9px] outline-none focus:border-[#35cbb0]" /></label>)}
+          <div className="grid grid-cols-2 gap-2">{[["latitude", "Latitude"], ["longitude", "Longitude"]].map(([key, label]) => <label key={key} className="block"><span className="text-[8px] font-extrabold uppercase text-[#667085]">{label}</span><input required type="number" step="any" value={newPlace[key]} onChange={(event) => setNewPlace((value) => ({ ...value, [key]: event.target.value }))} className="mt-1.5 h-10 w-full rounded-[10px] border border-[#dce3e7] px-3 text-[9px]" /></label>)}</div>
+          <button type="button" onClick={useCurrentLocation} className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-[#cfe2df] text-[8px] font-extrabold text-[#0c6478]"><LocateFixed className="size-4" />Gunakan lokasi saya</button>
+          <label className="block"><span className="text-[8px] font-extrabold uppercase tracking-[.08em] text-[#667085]">Kenapa tempat ini perlu masuk?</span><textarea required minLength={10} maxLength={1500} value={newPlace.note} onChange={(event) => setNewPlace((value) => ({ ...value, note: event.target.value }))} className="mt-1.5 h-24 w-full resize-none rounded-[10px] border border-[#dce3e7] p-3 text-[9px]" /></label>
+          <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-[11px] border border-dashed p-4 text-[8px] font-bold ${newPlacePhoto ? "border-[#35cbb0] bg-[#effaf8] text-[#0c6478]" : "border-[#cbd5dc] text-[#667085]"}`}><input required type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => setNewPlacePhoto(event.target.files?.[0] || null)} className="sr-only" /><Camera className="size-4" />{newPlacePhoto ? newPlacePhoto.name : "Foto papan nama atau tampak depan (wajib)"}</label>
+          {message && <p className="rounded-xl bg-[#f8fafc] p-3 text-[8px] font-bold text-[#667085]">{message}</p>}
+          <button disabled={submittingPlace || !session} className="h-11 w-full rounded-[11px] bg-[#12a594] text-[9px] font-extrabold text-white disabled:opacity-50">{submittingPlace ? "Mengirim..." : "Kirim usulan tempat"}</button>
+        </form>
+      ) : reviewingProposals ? (
+        <div data-lenis-prevent="true" className="app-scroll-region min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="flex items-start justify-between"><div><h3 className="text-[13px] font-extrabold text-[#172b34]">Validasi tempat baru</h3><p className="mt-1 text-[8px] leading-4 text-[#667085]">Cocokkan foto, nama, alamat, dan titik peta. Tiga persetujuan membuat tempat tampil di direktori.</p></div><button type="button" onClick={() => setReviewingProposals(false)} className="grid size-8 place-items-center rounded-full bg-[#f3f5f6]"><X className="size-4" /></button></div>
+          {!session && <button type="button" onClick={onLogin} className="mt-3 w-full rounded-xl bg-[#fff7ed] p-3 text-left text-[8px] font-bold text-[#9a3412]">Masuk untuk memberi validasi.</button>}
+          {message && <p className="mt-3 rounded-xl bg-[#fff7ed] p-3 text-[8px] font-bold text-[#9a3412]">{message}</p>}
+          <div className="mt-4 space-y-3">
+            {placeProposals.length === 0 && <p className="rounded-xl bg-[#f8fafc] p-4 text-[8px] leading-4 text-[#667085]">Tidak ada usulan tempat baru yang menunggu validasi.</p>}
+            {placeProposals.map((item) => <article key={item.id} className="overflow-hidden rounded-[14px] border border-[#e2e8ea] bg-white">
+              <Image unoptimized width={320} height={140} src={item.photoUrl} alt={`Bukti ${item.proposedName}`} className="h-28 w-full object-cover" />
+              <div className="p-3"><b className="block text-[10px] text-[#172b34]">{item.proposedName}</b><p className="mt-1 text-[8px] text-[#667085]">{item.proposedCategory} · {item.proposedAddress}</p><p className="mt-2 text-[8px] leading-4 text-[#475467]">{item.note}</p><p className="mt-2 text-[7px] font-bold text-[#0c6478]">{item.consensus.agree}/3 setuju · {item.consensus.disagree} menolak</p>
+                <div className="mt-3 grid grid-cols-3 gap-1.5"><button disabled={proposalBusy === item.id} onClick={() => votePlaceProposal(item.id, "VERIFIED")} className="rounded-lg bg-[#eaf8f3] px-2 py-2 text-[7px] font-extrabold text-[#0c796d]">Sesuai</button><button disabled={proposalBusy === item.id} onClick={() => votePlaceProposal(item.id, "REJECTED")} className="rounded-lg bg-[#fff1f2] px-2 py-2 text-[7px] font-extrabold text-[#b42318]">Tolak</button><button disabled={proposalBusy === item.id} onClick={() => votePlaceProposal(item.id, "NEEDS_RECHECK")} className="rounded-lg bg-[#fff7ed] px-2 py-2 text-[7px] font-extrabold text-[#9a3412]">Cek ulang</button></div>
+              </div>
+            </article>)}
+          </div>
+        </div>
+      ) : (
+      <>
       <div className="border-b border-[#edf0f2] px-5 py-4">
         <label className="flex h-10 items-center gap-2 rounded-[11px] bg-[#f3f6f7] px-3">
           <Search className="size-4 text-[#0c6478]" />
@@ -194,6 +287,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
               ? `${places.length} tempat dari database`
               : `${visiblePlaces.length} dari ${places.length} tempat`}
         </p>
+        <div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => session ? setAddingPlace(true) : onLogin()} className="flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#b9dcd7] bg-[#f2faf8] px-2 text-[7px] font-extrabold text-[#0c6478]"><Plus className="size-3.5" />Tambah tempat</button><button type="button" onClick={loadPlaceProposals} className="flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#e4e7ec] px-2 text-[7px] font-extrabold text-[#667085]"><ShieldCheck className="size-3.5" />Validasi warga</button></div>
       </div>
 
       <div data-lenis-prevent="true" className="app-scroll-region min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
@@ -282,6 +376,8 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
       </div>
       {message && status !== "error" && (
         <p className="mx-3 mb-3 rounded-xl bg-[#fff7ed] p-3 text-[8px] font-semibold text-[#9a3412]">{message}</p>
+      )}
+      </>
       )}
     </MotionSurface>
   );

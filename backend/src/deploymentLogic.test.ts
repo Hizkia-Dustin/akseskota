@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { registerSchema } from './modules/auth/auth.schema';
 import { createPlacePostSchema } from './modules/communityPlaces/communityPlaces.schema';
+import { resolveDirectoryContributionStatus } from './modules/communityPlaces/communityPlaces.service';
 import { reportObstacleSchema } from './modules/obstacles/obstacles.schema';
 import { addRoadSegmentSchema } from './modules/roadSegments/roadSegments.schema';
 import { aggregateRoadObservations } from './modules/roadSegments/roadSegments.service';
@@ -28,6 +29,18 @@ test('public submissions are restricted to Kota Bogor', () => {
 
 test('road survey JSON errors become validation errors instead of server errors', () => {
   assert.equal(addRoadSegmentSchema.safeParse({ geometry: '{invalid-json' }).success, false);
+});
+
+test('directory facts require three independent agreeing validations', () => {
+  assert.equal(resolveDirectoryContributionStatus([{ decision: 'VERIFIED' }, { decision: 'VERIFIED' }]), 'UNVERIFIED');
+  assert.equal(resolveDirectoryContributionStatus([{ decision: 'VERIFIED' }, { decision: 'VERIFIED' }, { decision: 'VERIFIED' }]), 'VERIFIED');
+  assert.equal(resolveDirectoryContributionStatus([{ decision: 'REJECTED' }, { decision: 'REJECTED' }, { decision: 'REJECTED' }]), 'REJECTED');
+  assert.equal(resolveDirectoryContributionStatus([
+    { decision: 'VERIFIED' },
+    { decision: 'VERIFIED' },
+    { decision: 'REJECTED' },
+    { decision: 'REJECTED' },
+  ]), 'NEEDS_RECHECK');
 });
 
 test('verified road observations use median values and conservative tie breaking', () => {

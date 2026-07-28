@@ -46,5 +46,49 @@ export const searchCommunityPlacesSchema = z.object({
   }),
 });
 
+export const createDirectoryContributionSchema = z.object({
+  kind: z.enum(['NEW_PLACE', 'FEATURE_STATUS']),
+  externalId: z.string().trim().max(191).optional(),
+  featureCode: accessibilityFeatureSchema.optional(),
+  proposedAvailable: z.preprocess((value) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  }, z.boolean().optional()),
+  name: z.string().trim().min(2).max(191).optional(),
+  category: z.string().trim().min(2).max(100).optional(),
+  address: z.string().trim().min(5).max(500).optional(),
+  latitude: z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
+  note: z.string().trim().min(10).max(1500),
+}).superRefine((input, context) => {
+  if (input.kind === 'FEATURE_STATUS') {
+    if (!input.externalId) context.addIssue({ code: z.ZodIssueCode.custom, path: ['externalId'], message: 'Tempat wajib dipilih.' });
+    if (!input.featureCode) context.addIssue({ code: z.ZodIssueCode.custom, path: ['featureCode'], message: 'Fasilitas wajib dipilih.' });
+    if (typeof input.proposedAvailable !== 'boolean') context.addIssue({ code: z.ZodIssueCode.custom, path: ['proposedAvailable'], message: 'Pilih apakah fasilitas ada atau tidak ada.' });
+  }
+  if (input.kind === 'NEW_PLACE') {
+    for (const field of ['name', 'category', 'address', 'latitude', 'longitude'] as const) {
+      if (input[field] === undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: `${field} wajib diisi.` });
+    }
+    if (input.latitude !== undefined && input.longitude !== undefined && !isInsideBogor(input.longitude, input.latitude)) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['latitude'], message: 'Tempat harus berada di Kota Bogor.' });
+    }
+  }
+});
+
+export const listDirectoryContributionsSchema = z.object({
+  externalId: z.string().trim().max(191).optional(),
+  status: z.enum(['UNVERIFIED', 'VERIFIED', 'REJECTED', 'NEEDS_RECHECK']).optional(),
+});
+
+export const voteDirectoryContributionSchema = z.object({
+  decision: z.enum(['VERIFIED', 'REJECTED', 'NEEDS_RECHECK']),
+  note: z.string().trim().max(500).optional(),
+});
+
 export type CreatePlacePostInput = z.infer<typeof createPlacePostSchema>;
 export type SearchCommunityPlacesInput = z.infer<typeof searchCommunityPlacesSchema>;
+export type CreateDirectoryContributionInput = z.infer<typeof createDirectoryContributionSchema>;
+export type ListDirectoryContributionsInput = z.infer<typeof listDirectoryContributionsSchema>;
+export type VoteDirectoryContributionInput = z.infer<typeof voteDirectoryContributionSchema>;

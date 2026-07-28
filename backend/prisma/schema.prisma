@@ -72,16 +72,18 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  preferences   UserPreference?
-  reports       Report[]
-  verifications Verification[]
-  routeHistory  RouteHistory[]
-  notifications Notification[]
-  navigationSessions NavigationSession[]
-  favoriteRoutes FavoriteRoute[]
-  searchHistory SearchHistory[]
-  auditLogs     AuditLog[]
-  placePosts    PlacePost[]
+  preferences            UserPreference?
+  reports                Report[]
+  verifications          Verification[]
+  routeHistory           RouteHistory[]
+  notifications          Notification[]
+  navigationSessions     NavigationSession[]
+  favoriteRoutes         FavoriteRoute[]
+  searchHistory          SearchHistory[]
+  auditLogs              AuditLog[]
+  placePosts             PlacePost[]
+  directoryContributions DirectoryContribution[]     @relation("DirectoryContributionAuthor")
+  directoryVotes         DirectoryContributionVote[]
 
   @@map("users")
 }
@@ -103,26 +105,26 @@ model UserPreference {
 
 /// LineString geometry — a walkable street segment
 model RoadSegment {
-  id                 String                     @id @default(uuid())
+  id                        String                     @id @default(uuid())
   // MySQL LINESTRING SRID 4326 — written/read via raw SQL, see spatial.ts
-  geometry           Unsupported("linestring")?
-  surfaceCondition   String? // e.g. "good", "cracked", "unpaved"
-  widthMeters        Float?
-  hasRamp            Boolean                    @default(false)
-  hasStairs          Boolean                    @default(false)
-  hasGuidingBlock    Boolean                    @default(false)
-  hasSeating         Boolean                    @default(false)
-  shadeLevel         Float? // 0-100, latest aggregated observation
-  lightingAvailable  Boolean                    @default(false)
-  accessibilityScore Float? // 0-100, computed
-  comfortScore       Float? // 0-100, computed
-  communityObservationCount Int                 @default(0)
-  dataConfidence     Float? // 0-100, based on verified independent observations
-  lastCommunityUpdateAt DateTime?
-  baselineData       Json? // original imported/survey values restored if community evidence is withdrawn
-  source             String? // "OSM" | "field_survey" | "community"
-  createdAt          DateTime                   @default(now())
-  updatedAt          DateTime                   @updatedAt
+  geometry                  Unsupported("linestring")?
+  surfaceCondition          String? // e.g. "good", "cracked", "unpaved"
+  widthMeters               Float?
+  hasRamp                   Boolean                    @default(false)
+  hasStairs                 Boolean                    @default(false)
+  hasGuidingBlock           Boolean                    @default(false)
+  hasSeating                Boolean                    @default(false)
+  shadeLevel                Float? // 0-100, latest aggregated observation
+  lightingAvailable         Boolean                    @default(false)
+  accessibilityScore        Float? // 0-100, computed
+  comfortScore              Float? // 0-100, computed
+  communityObservationCount Int                        @default(0)
+  dataConfidence            Float? // 0-100, based on verified independent observations
+  lastCommunityUpdateAt     DateTime?
+  baselineData              Json? // original imported/survey values restored if community evidence is withdrawn
+  source                    String? // "OSM" | "field_survey" | "community"
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
 
   shadeObservations ShadeObservation[]
   reports           Report[]
@@ -343,6 +345,7 @@ model CommunityPlace {
   accessibilityEvidence    PlaceAccessibilityEvidence[]
   scrapedReviews           ScrapedPlaceReview[]
   images                   PlaceImage[]
+  directoryContributions   DirectoryContribution[]
 
   @@map("community_places")
 }
@@ -418,4 +421,49 @@ model PlacePost {
   @@unique([placeId, authorId])
   @@index([placeId, createdAt])
   @@map("place_posts")
+}
+
+/// A community proposal is deliberately separate from scraped/source data.
+/// Nothing here becomes a public accessibility fact before community consensus.
+model DirectoryContribution {
+  id                String                      @id @default(uuid())
+  kind              String
+  placeId           String?
+  place             CommunityPlace?             @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  authorId          String
+  author            User                        @relation("DirectoryContributionAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  featureCode       String?
+  proposedAvailable Boolean?
+  proposedName      String?
+  proposedCategory  String?
+  proposedAddress   String?                     @db.VarChar(500)
+  latitude          Float?
+  longitude         Float?
+  note              String                      @db.Text
+  photoUrl          String                      @db.Text
+  status            VerificationStatus          @default(UNVERIFIED)
+  resolvedAt        DateTime?
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  votes             DirectoryContributionVote[]
+
+  @@index([placeId, status, createdAt])
+  @@index([kind, status, createdAt])
+  @@map("directory_contributions")
+}
+
+model DirectoryContributionVote {
+  id             String                @id @default(uuid())
+  contributionId String
+  contribution   DirectoryContribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  voterId        String
+  voter          User                  @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  decision       VerificationStatus
+  note           String?               @db.VarChar(500)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@unique([contributionId, voterId])
+  @@index([contributionId, decision])
+  @@map("directory_contribution_votes")
 }

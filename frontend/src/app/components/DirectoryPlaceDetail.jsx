@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useState } from "react";
 import {
   ArrowLeft,
+  AlertCircle,
+  Camera,
   Check,
   Clock3,
   ExternalLink,
@@ -11,7 +13,9 @@ import {
   MapPin,
   MessageCircle,
   Route,
+  ShieldCheck,
   Star,
+  X,
 } from "lucide-react";
 import { apiRequest } from "../../lib/api";
 import MotionSurface from "./react-bits/MotionSurface";
@@ -183,9 +187,89 @@ function ReviewForm({ detail, onBack, onPublished, session, onLogin }) {
   );
 }
 
+function FacilityEvidenceForm({ detail, onBack, onPublished, session, onLogin }) {
+  const [featureCode, setFeatureCode] = useState("ACCESSIBLE_PARKING");
+  const [proposedAvailable, setProposedAvailable] = useState("true");
+  const [note, setNote] = useState("");
+  const [photo, setPhoto] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function submit(event) {
+    event.preventDefault();
+    if (!session) return onLogin();
+    setBusy(true);
+    setMessage("");
+    try {
+      const form = new FormData();
+      form.append("kind", "FEATURE_STATUS");
+      form.append("externalId", detail.externalId);
+      form.append("featureCode", featureCode);
+      form.append("proposedAvailable", proposedAvailable);
+      form.append("note", note);
+      if (photo) form.append("photo", photo);
+      await apiRequest("/community-places/contributions", { method: "POST", body: form });
+      await onPublished();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Bukti fasilitas gagal dikirim.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="min-h-full bg-white">
+      <div className="sticky top-0 z-10 flex items-center border-b border-[#edf0f2] bg-white px-4 py-3">
+        <button type="button" onClick={onBack} aria-label="Kembali" className="grid size-8 place-items-center rounded-full bg-[#f3f5f6]"><ArrowLeft className="size-4" /></button>
+        <div className="ml-3"><span className="block text-[8px] font-bold text-[#98a2b3]">Bukti komunitas</span><b className="text-[13px]">Perbarui fasilitas</b></div>
+      </div>
+      <div className="space-y-4 p-4">
+        <div className="rounded-[14px] bg-[#effaf8] p-3"><b className="block text-[10px] text-[#0c6478]">{detail.name}</b><p className="mt-1 text-[8px] leading-4 text-[#667085]">Status baru belum tampil sebagai fakta sampai disetujui 3 warga lain.</p></div>
+        {!session && <button type="button" onClick={onLogin} className="w-full rounded-xl bg-[#fff7ed] p-3 text-left text-[8px] font-bold text-[#9a3412]">Masuk untuk mengirim bukti.</button>}
+        <label className="block"><span className="text-[8px] font-extrabold uppercase tracking-[.08em] text-[#667085]">Fasilitas</span><select value={featureCode} onChange={(event) => setFeatureCode(event.target.value)} className="mt-2 h-11 w-full rounded-[11px] border border-[#dce3e7] bg-white px-3 text-[9px] font-bold">{reviewFeatures.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <fieldset><legend className="text-[8px] font-extrabold uppercase tracking-[.08em] text-[#667085]">Yang kamu lihat langsung</legend><div className="mt-2 grid grid-cols-2 gap-2">{[["true", "Ada dan bisa digunakan"], ["false", "Tidak ada / tidak bisa"]].map(([value, label]) => <label key={value} className={`cursor-pointer rounded-[11px] border p-3 text-[8px] font-bold ${proposedAvailable === value ? "border-[#35cbb0] bg-[#effaf8] text-[#0c6478]" : "border-[#e4e7ec] text-[#667085]"}`}><input type="radio" className="mr-2 accent-[#0c6478]" name="availability" value={value} checked={proposedAvailable === value} onChange={(event) => setProposedAvailable(event.target.value)} />{label}</label>)}</div></fieldset>
+        <label className="block"><span className="text-[8px] font-extrabold uppercase tracking-[.08em] text-[#667085]">Catatan pengamatan</span><textarea required minLength={10} maxLength={1500} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Contoh: Parkir difabel ada di sisi pintu timur, marka terlihat jelas." className="mt-2 h-24 w-full resize-none rounded-[11px] border border-[#dce3e7] p-3 text-[9px] leading-4 outline-none focus:border-[#35cbb0]" /></label>
+        <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-[11px] border border-dashed p-4 text-[8px] font-bold ${photo ? "border-[#35cbb0] bg-[#effaf8] text-[#0c6478]" : "border-[#cbd5dc] text-[#667085]"}`}><input required type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => setPhoto(event.target.files?.[0] || null)} className="sr-only" /><Camera className="size-4" />{photo ? photo.name : "Ambil atau unggah foto bukti (wajib)"}</label>
+        <p className="rounded-xl bg-[#f8fafc] p-3 text-[8px] leading-4 text-[#667085]"><ShieldCheck className="mr-1 inline size-3 text-[#12a594]" />Foto, waktu, dan akun pengirim dicatat. Pengusul tidak boleh memvalidasi laporannya sendiri.</p>
+        {message && <p role="alert" className="rounded-xl bg-[#fff1f2] p-3 text-[8px] font-bold text-[#b42318]">{message}</p>}
+        <button disabled={busy || !session} className="h-11 w-full rounded-[11px] bg-[#12a594] text-[9px] font-extrabold text-white disabled:opacity-50">{busy ? "Mengirim bukti..." : "Kirim untuk divalidasi"}</button>
+      </div>
+    </form>
+  );
+}
+
+function PendingContribution({ contribution, session, onLogin, onVoted }) {
+  const [busy, setBusy] = useState(false);
+  async function vote(decision) {
+    if (!session) return onLogin();
+    setBusy(true);
+    try {
+      await apiRequest(`/community-places/contributions/${contribution.id}/votes`, {
+        method: "POST",
+        body: { decision },
+      });
+      await onVoted();
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <article className="rounded-[13px] border border-[#dce8e6] bg-[#fbfefd] p-3">
+      <div className="flex items-start gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={contribution.photoUrl} alt="Bukti fasilitas dari warga" className="size-16 shrink-0 rounded-[10px] object-cover" />
+        <div className="min-w-0 flex-1"><b className="block text-[8px]">{featureNames[contribution.featureCode] || contribution.featureCode}</b><p className="mt-1 text-[8px] font-bold text-[#0c6478]">{contribution.proposedAvailable ? "Diklaim tersedia" : "Diklaim tidak tersedia"}</p><p className="mt-1 line-clamp-3 text-[7px] leading-3 text-[#667085]">{contribution.note}</p></div>
+      </div>
+      <div className="mt-2 flex items-center justify-between text-[7px] text-[#667085]"><span>{contribution.author.name}</span><span>{contribution.consensus.agree}/3 setuju · {contribution.consensus.disagree} menolak</span></div>
+      <div className="mt-2 grid grid-cols-3 gap-1.5"><button disabled={busy} onClick={() => vote("VERIFIED")} className="rounded-lg bg-[#eaf8f3] px-2 py-2 text-[7px] font-extrabold text-[#0c796d]">Sesuai</button><button disabled={busy} onClick={() => vote("REJECTED")} className="rounded-lg bg-[#fff1f2] px-2 py-2 text-[7px] font-extrabold text-[#b42318]">Tidak sesuai</button><button disabled={busy} onClick={() => vote("NEEDS_RECHECK")} className="rounded-lg bg-[#fff7ed] px-2 py-2 text-[7px] font-extrabold text-[#9a3412]">Cek ulang</button></div>
+    </article>
+  );
+}
+
 export default function DirectoryPlaceDetail({ detail, onClose, onUseAsDestination, session, onLogin }) {
   const [place, setPlace] = useState(detail);
   const [view, setView] = useState("detail");
+  const [pending, setPending] = useState([]);
 
   function switchView(nextView) {
     setView(nextView);
@@ -200,8 +284,24 @@ export default function DirectoryPlaceDetail({ detail, onClose, onUseAsDestinati
     switchView("detail");
   }
 
+  async function loadPending() {
+    const rows = await apiRequest(`/community-places/contributions?externalId=${encodeURIComponent(place.externalId)}`);
+    setPending(rows);
+  }
+
+  async function refreshAfterEvidence() {
+    await loadPending();
+    switchView("detail");
+  }
+
   const imageUrl = place.images?.[0]?.imageUrl || place.primaryImageUrl;
-  const availableEvidence = (place.accessibilityEvidence || []).filter((item) => item.available === true).slice(0, 8);
+  const availableEvidence = (place.accessibilityEvidence || []).filter((item) => item.available === true && item.verificationStatus === "VERIFIED").slice(0, 8);
+  const verifiedEvidence = (place.accessibilityEvidence || []).filter((item) => item.verificationStatus === "VERIFIED");
+  const featureStates = reviewFeatures.map(([featureCode, label]) => {
+    const verified = verifiedEvidence.find((item) => item.featureCode === featureCode);
+    const indicated = (place.accessibilityEvidence || []).some((item) => item.featureCode === featureCode && item.available === true);
+    return { featureCode, label, state: verified ? (verified.available ? "present" : "absent") : indicated ? "indicated" : "unknown" };
+  });
   const reviews = place.posts || [];
   const overview = reviews[0]?.content || place.description;
   const todayHours = place.openingHours?.[todayNames().id];
@@ -210,6 +310,8 @@ export default function DirectoryPlaceDetail({ detail, onClose, onUseAsDestinati
     <MotionSurface data-directory-place-detail data-lenis-prevent="true" as="aside" direction="left" distance={26} className="app-scroll-region absolute inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-[55] h-[76dvh] overflow-y-auto rounded-[24px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.22)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:h-auto lg:w-[360px] lg:rounded-[16px] lg:shadow-[0_14px_36px_rgba(24,46,58,.22)]">
       {view === "review" ? (
         <ReviewForm detail={place} onBack={() => switchView("detail")} onPublished={refreshAfterReview} session={session} onLogin={onLogin} />
+      ) : view === "evidence" ? (
+        <FacilityEvidenceForm detail={place} onBack={() => switchView("detail")} onPublished={refreshAfterEvidence} session={session} onLogin={onLogin} />
       ) : (
         <>
           <div className="relative h-[154px] overflow-hidden bg-[#dff4f0]">
@@ -235,8 +337,13 @@ export default function DirectoryPlaceDetail({ detail, onClose, onUseAsDestinati
             <button type="button" onClick={() => onUseAsDestination(place)} className="flex h-10 w-full items-center justify-center gap-2 rounded-[11px] bg-[#0c6478] text-[9px] font-extrabold text-white"><Route className="size-4" />Gunakan sebagai tujuan</button>
 
             <section>
-              <h3 className="text-[8px] font-extrabold uppercase tracking-[.1em] text-[#667085]">Fasilitas aksesibel</h3>
-              {availableEvidence.length ? <div className="mt-2 grid grid-cols-2 gap-2">{availableEvidence.map((item) => <div key={item.featureCode} className="flex items-center gap-2 rounded-[10px] bg-[#effaf8] p-2.5 text-[#0c796d]"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-white"><Check className="size-3" /></span><b className="text-[7px]">{featureNames[item.featureCode] || item.featureName}</b></div>)}</div> : <p className="mt-2 rounded-xl bg-[#fff7ed] p-3 text-[8px] leading-4 text-[#9a3412]">Belum ada bukti fasilitas aksesibel.</p>}
+              <div className="flex items-center justify-between"><div><h3 className="text-[8px] font-extrabold uppercase tracking-[.1em] text-[#667085]">Status fasilitas</h3><p className="mt-1 text-[7px] text-[#98a2b3]">Centang hijau hanya dari konsensus warga</p></div><button type="button" onClick={() => switchView("evidence")} className="rounded-full bg-[#12a594] px-3 py-1.5 text-[7px] font-extrabold text-white">+ Perbarui</button></div>
+              <div className="mt-2 grid grid-cols-2 gap-2">{featureStates.map((item) => <div key={item.featureCode} className={`rounded-[10px] p-2.5 ${item.state === "present" ? "bg-[#effaf8] text-[#0c796d]" : item.state === "absent" ? "bg-[#fff1f2] text-[#b42318]" : item.state === "indicated" ? "bg-[#fff7ed] text-[#9a3412]" : "bg-[#f3f5f6] text-[#667085]"}`}><div className="flex items-center gap-2">{item.state === "present" ? <Check className="size-3" /> : item.state === "absent" ? <X className="size-3" /> : <AlertCircle className="size-3" />}<b className="text-[7px]">{item.label}</b></div><small className="mt-1 block text-[6px] font-bold">{item.state === "present" ? "Terverifikasi ada" : item.state === "absent" ? "Terverifikasi tidak ada" : item.state === "indicated" ? "Indikasi sumber, belum terbukti" : "Belum ada bukti"}</small></div>)}</div>
+            </section>
+
+            <section>
+              <div className="flex items-center justify-between"><div><h3 className="text-[8px] font-extrabold uppercase tracking-[.1em] text-[#667085]">Perlu divalidasi</h3><p className="mt-1 text-[7px] text-[#98a2b3]">Periksa foto sebelum memberi suara</p></div><button type="button" onClick={loadPending} className="text-[7px] font-extrabold text-[#0c796d]">Muat usulan</button></div>
+              {pending.length > 0 ? <div className="mt-2 space-y-2">{pending.map((item) => <PendingContribution key={item.id} contribution={item} session={session} onLogin={onLogin} onVoted={loadPending} />)}</div> : <p className="mt-2 rounded-xl bg-[#f8fafc] p-3 text-[8px] leading-4 text-[#667085]">Tekan “Muat usulan” untuk melihat bukti warga yang menunggu validasi.</p>}
             </section>
 
             <section className="grid grid-cols-2 gap-3">

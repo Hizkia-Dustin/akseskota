@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma';
 import { SearchDestinationsInput } from './destinations.schema';
+import { VerificationStatus } from '@prisma/client';
 
 const average = (values: number[]) => values.length
   ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10
@@ -10,6 +11,12 @@ function accessibilitySummary(place: {
   wheelchairSeating: boolean | null;
   wheelchairRestroom: boolean | null;
   wheelchairParking: boolean | null;
+  accessibilityEvidence?: Array<{
+    featureCode: string;
+    available: boolean | null;
+    evidenceSource: string;
+    verificationStatus: string;
+  }>;
 }) {
   const entries = [
     ['WHEELCHAIR_ENTRANCE', place.wheelchairEntrance],
@@ -17,13 +24,19 @@ function accessibilitySummary(place: {
     ['WHEELCHAIR_RESTROOM', place.wheelchairRestroom],
     ['WHEELCHAIR_PARKING', place.wheelchairParking],
   ] as const;
-  const known = entries.filter(([, value]) => value !== null);
-  const available = entries.filter(([, value]) => value === true).map(([code]) => code);
+  const verifiedEvidence = (place.accessibilityEvidence || []).filter((item) => item.verificationStatus === 'VERIFIED');
+  const verifiedByFeature = new Map(verifiedEvidence.map((item) => [item.featureCode, item.available]));
+  const indicatedFeatures = entries.filter(([, value]) => value === true).map(([code]) => code);
+  const known = [...verifiedByFeature.entries()].filter(([, value]) => value !== null);
+  const available = known.filter(([, value]) => value === true).map(([code]) => code);
+  const unavailable = known.filter(([, value]) => value === false).map(([code]) => code);
   return {
     availableFeatures: available,
+    unavailableFeatures: unavailable,
+    indicatedFeatures,
     knownFeatureCount: known.length,
     accessibilityScore: known.length ? Math.round((available.length / known.length) * 100) : null,
-    dataCoverage: Math.round((known.length / entries.length) * 100),
+    dataCoverage: Math.round((known.length / 6) * 100),
   };
 }
 
@@ -69,12 +82,15 @@ export async function searchDestinations(input: SearchDestinationsInput) {
         ] } : {},
         input.type ? { placeType: input.type } : {},
         ...input.features.map((featureCode) => ({
-          accessibilityEvidence: { some: { featureCode, available: true } },
+          accessibilityEvidence: { some: { featureCode, available: true, verificationStatus: VerificationStatus.VERIFIED } },
         })),
       ],
     },
     select: {
       ...destinationSelect,
+      accessibilityEvidence: {
+        select: { featureCode: true, available: true, evidenceSource: true, verificationStatus: true },
+      },
       _count: { select: { posts: true, accessibilityEvidence: true } },
     },
     orderBy: [
