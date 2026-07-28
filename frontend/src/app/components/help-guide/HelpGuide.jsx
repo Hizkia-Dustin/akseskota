@@ -173,21 +173,19 @@ export default function HelpGuide({ onPanelChange }) {
       {open && (
         <div className="fixed inset-0 z-[200]">
           {spotlight ? (
-            <>
-              <div className="absolute inset-x-0 top-0 bg-[#061f29]/72 backdrop-blur-[1px] transition-all duration-300" style={{ height: spotlight.top }} />
-              <div className="absolute left-0 bg-[#061f29]/72 backdrop-blur-[1px] transition-all duration-300" style={{ top: spotlight.top, width: spotlight.left, height: spotlight.height }} />
-              <div className="absolute right-0 bg-[#061f29]/72 backdrop-blur-[1px] transition-all duration-300" style={{ top: spotlight.top, left: spotlight.left + spotlight.width, height: spotlight.height }} />
-              <div className="absolute inset-x-0 bottom-0 bg-[#061f29]/72 backdrop-blur-[1px] transition-all duration-300" style={{ top: spotlight.top + spotlight.height }} />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute rounded-[18px] border-2 border-[#8ef0dc] shadow-[0_0_0_5px_rgba(142,240,220,.17),0_18px_60px_rgba(0,0,0,.24)] transition-all duration-300 ease-[cubic-bezier(.22,1,.36,1)]"
-                style={spotlight}
-              >
-                <span className="absolute -bottom-3 -right-3 grid size-9 animate-bounce place-items-center rounded-full bg-[#8ef0dc] text-[#073c47] shadow-lg motion-reduce:animate-none">
-                  <MousePointer2 className="size-4 fill-current" />
-                </span>
-              </div>
-            </>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute rounded-[18px] border-2 border-[#8ef0dc] transition-all duration-300 ease-[cubic-bezier(.22,1,.36,1)]"
+              style={{
+                ...spotlight,
+                boxShadow:
+                  "0 0 0 9999px rgba(6,31,41,.72), 0 0 0 5px rgba(142,240,220,.17), 0 18px 60px rgba(0,0,0,.24)",
+              }}
+            >
+              <span className="absolute -bottom-3 -right-3 grid size-9 animate-bounce place-items-center rounded-full bg-[#8ef0dc] text-[#073c47] shadow-lg motion-reduce:animate-none">
+                <MousePointer2 className="size-4 fill-current" />
+              </span>
+            </div>
           ) : (
             <div className="absolute inset-0 bg-[#061f29]/78 backdrop-blur-[2px]" />
           )}
