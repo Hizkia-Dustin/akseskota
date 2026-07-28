@@ -90,6 +90,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [places, setPlaces] = useState([]);
+  const [visibleLimit, setVisibleLimit] = useState(40);
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
 
@@ -97,7 +98,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
     setStatus("loading");
     setMessage("");
     try {
-      const params = new URLSearchParams({ query: query.trim(), limit: "200" });
+      const params = new URLSearchParams({ query: query.trim(), limit: "500" });
       const rows = await apiRequest(`/destinations?${params}`);
       setPlaces(rows);
       setStatus("ready");
@@ -117,6 +118,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
     () => places.filter((place) => matchesCategory(place, activeCategory)),
     [activeCategory, places],
   );
+  const displayedPlaces = visiblePlaces.slice(0, visibleLimit);
 
   async function selectPlace(place) {
     setMessage("");
@@ -132,7 +134,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
       as="aside"
       direction="right"
       distance={24}
-      className="absolute inset-x-3 bottom-3 z-50 flex h-[58dvh] min-h-0 flex-col overflow-hidden rounded-[20px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.2)] sm:left-[72px] sm:right-3 lg:bottom-3 lg:left-[60px] lg:right-auto lg:top-3 lg:h-auto lg:w-[330px] lg:rounded-[16px] lg:shadow-[0_12px_32px_rgba(24,46,58,.18)]"
+      className="absolute inset-x-3 bottom-3 z-50 flex h-[58dvh] min-h-0 flex-col overflow-hidden rounded-[20px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.2)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-[80px] lg:right-auto lg:top-3 lg:h-auto lg:w-[330px] lg:rounded-[16px] lg:shadow-[0_12px_32px_rgba(24,46,58,.18)]"
     >
       <span className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-[#d0d5dd] lg:hidden" />
       <DirectoryHeader onClose={onClose} />
@@ -141,12 +143,15 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
           <Search className="size-4 text-[#0c6478]" />
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setVisibleLimit(40);
+            }}
             placeholder="Cari tempat..."
             className="min-w-0 flex-1 bg-transparent text-[10px] font-semibold outline-none placeholder:font-normal placeholder:text-[#98a2b3]"
           />
           {query && (
-            <button type="button" onClick={() => setQuery("")} aria-label="Hapus pencarian">
+            <button type="button" onClick={() => { setQuery(""); setVisibleLimit(40); }} aria-label="Hapus pencarian">
               <X className="size-3.5 text-[#98a2b3]" />
             </button>
           )}
@@ -156,7 +161,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
             <button
               key={category.id}
               type="button"
-              onClick={() => setActiveCategory(category.id)}
+              onClick={() => { setActiveCategory(category.id); setVisibleLimit(40); }}
               className={`shrink-0 rounded-full px-3 py-1.5 text-[8px] font-extrabold transition ${
                 activeCategory === category.id
                   ? "bg-[#0c6478] text-white"
@@ -168,7 +173,11 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
           ))}
         </div>
         <p className="mt-2 text-[8px] font-semibold text-[#98a2b3]">
-          {status === "loading" ? "Memuat tempat..." : `${visiblePlaces.length} tempat dari database`}
+          {status === "loading"
+            ? "Memuat seluruh tempat..."
+            : activeCategory === "all" && !query.trim()
+              ? `${places.length} tempat dari database`
+              : `${visiblePlaces.length} dari ${places.length} tempat`}
         </p>
       </div>
 
@@ -189,7 +198,7 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
             <p className="mt-1 text-[8px] leading-4 text-[#98a2b3]">Coba kategori lain atau ubah kata pencarian.</p>
           </div>
         )}
-        {visiblePlaces.map((place) => {
+        {displayedPlaces.map((place) => {
           const active = selectedId === place.externalId;
           return (
             <button
@@ -246,6 +255,15 @@ export function DirectoryPanel({ selectedId, onClose, onSelect }) {
             </button>
           );
         })}
+        {visibleLimit < visiblePlaces.length && (
+          <button
+            type="button"
+            onClick={() => setVisibleLimit((value) => value + 40)}
+            className="w-full rounded-[12px] border border-[#cfe2df] bg-[#f2faf8] px-4 py-3 text-[9px] font-extrabold text-[#0c6478] transition hover:bg-[#e4f5f1]"
+          >
+            Tampilkan 40 tempat berikutnya
+          </button>
+        )}
       </div>
       {message && status !== "error" && (
         <p className="mx-3 mb-3 rounded-xl bg-[#fff7ed] p-3 text-[8px] font-semibold text-[#9a3412]">{message}</p>
@@ -280,7 +298,7 @@ export function DirectoryDetailPanel({ detail, onClose, onUseAsDestination }) {
       as="aside"
       direction="left"
       distance={26}
-      className="absolute inset-x-3 bottom-3 z-[55] h-[72dvh] overflow-y-auto rounded-[20px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.22)] sm:left-[72px] sm:right-3 lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:h-auto lg:w-[360px] lg:rounded-[16px] lg:shadow-[0_14px_36px_rgba(24,46,58,.22)]"
+      className="absolute inset-x-3 bottom-3 z-[55] h-[72dvh] overflow-y-auto rounded-[20px] border border-[#e7ebed] bg-white shadow-[0_-10px_34px_rgba(24,46,58,.22)] sm:left-[80px] sm:right-3 lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:h-auto lg:w-[360px] lg:rounded-[16px] lg:shadow-[0_14px_36px_rgba(24,46,58,.22)]"
     >
       <div className="relative h-44 overflow-hidden bg-[#dff4f0]">
         {imageUrl ? (
