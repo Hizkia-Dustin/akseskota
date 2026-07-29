@@ -240,15 +240,22 @@ function FacilityEvidenceForm({ detail, onBack, onPublished, session, onLogin })
 
 function PendingContribution({ contribution, session, onLogin, onVoted }) {
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const isOwnContribution = session?.user?.id === contribution.author?.id;
   async function vote(decision) {
     if (!session) return onLogin();
+    if (isOwnContribution) return setMessage("Kamu tidak dapat memvalidasi usulanmu sendiri. Tunggu penilaian dari anggota komunitas lain.");
     setBusy(true);
+    setMessage("");
     try {
       await apiRequest(`/community-places/contributions/${contribution.id}/votes`, {
         method: "POST",
         body: { decision },
       });
+      setMessage("Penilaianmu tersimpan. Terima kasih sudah membantu memvalidasi data.");
       await onVoted();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Penilaian belum dapat disimpan. Coba lagi.");
     } finally {
       setBusy(false);
     }
@@ -261,7 +268,8 @@ function PendingContribution({ contribution, session, onLogin, onVoted }) {
         <div className="min-w-0 flex-1"><b className="block text-[8px]">{featureNames[contribution.featureCode] || contribution.featureCode}</b><p className="mt-1 text-[8px] font-bold text-[#0c6478]">{contribution.proposedAvailable ? "Diklaim tersedia" : "Diklaim tidak tersedia"}</p><p className="mt-1 line-clamp-3 text-[7px] leading-3 text-[#667085]">{contribution.note}</p></div>
       </div>
       <div className="mt-2 flex items-center justify-between text-[7px] text-[#667085]"><span>{contribution.author.name}</span><span>{contribution.consensus.agree}/3 setuju · {contribution.consensus.disagree} menolak</span></div>
-      <div className="mt-2 grid grid-cols-3 gap-1.5"><button disabled={busy} onClick={() => vote("VERIFIED")} className="rounded-lg bg-[#eaf8f3] px-2 py-2 text-[7px] font-extrabold text-[#0c796d]">Sesuai</button><button disabled={busy} onClick={() => vote("REJECTED")} className="rounded-lg bg-[#fff1f2] px-2 py-2 text-[7px] font-extrabold text-[#b42318]">Tidak sesuai</button><button disabled={busy} onClick={() => vote("NEEDS_RECHECK")} className="rounded-lg bg-[#fff7ed] px-2 py-2 text-[7px] font-extrabold text-[#9a3412]">Cek ulang</button></div>
+      {!session ? <button type="button" onClick={onLogin} className="mt-2 w-full rounded-lg bg-[#fff7ed] px-2 py-2 text-[7px] font-extrabold text-[#9a3412]">Masuk untuk memberi penilaian</button> : isOwnContribution ? <p className="mt-2 rounded-lg bg-[#f8fafc] px-2 py-2 text-[7px] font-semibold leading-3 text-[#667085]">Ini usulanmu. Penilaian akan dilakukan akun komunitas lain.</p> : <div className="mt-2 grid grid-cols-3 gap-1.5"><button disabled={busy} onClick={() => vote("VERIFIED")} className="rounded-lg bg-[#eaf8f3] px-2 py-2 text-[7px] font-extrabold text-[#0c796d] disabled:opacity-50">Sesuai</button><button disabled={busy} onClick={() => vote("REJECTED")} className="rounded-lg bg-[#fff1f2] px-2 py-2 text-[7px] font-extrabold text-[#b42318] disabled:opacity-50">Tidak sesuai</button><button disabled={busy} onClick={() => vote("NEEDS_RECHECK")} className="rounded-lg bg-[#fff7ed] px-2 py-2 text-[7px] font-extrabold text-[#9a3412] disabled:opacity-50">Cek ulang</button></div>}
+      {message && <p role="status" className="mt-2 rounded-lg bg-[#f8fafc] px-2 py-2 text-[7px] font-semibold leading-3 text-[#475467]">{message}</p>}
     </article>
   );
 }
