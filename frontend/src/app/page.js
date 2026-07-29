@@ -47,7 +47,7 @@ const routes = [
 ];
 
 function Logo({ light = false }) {
-  return <a href="#top" className={`brand-link flex items-center gap-2.5 font-extrabold ${light ? "text-white" : "text-[#101828]"}`}><span className={`brand-mark grid size-7 place-items-center rounded-full ${light ? "bg-white/15 text-white" : "bg-[#0c6478] text-[#7ce8db]"}`}><AksesKotaMark priority className="brand-mark-icon size-[18px]"/><span className="brand-mark-pulse"/></span><span className="text-[17px] tracking-[-.04em]">AksesKota</span></a>;
+  return <a href="/" aria-label="Muat ulang beranda AksesKota" className={`brand-link flex items-center gap-2.5 font-extrabold ${light ? "text-white" : "text-[#101828]"}`}><span className={`brand-mark grid size-7 place-items-center rounded-full ${light ? "bg-white/15 text-white" : "bg-[#0c6478] text-[#7ce8db]"}`}><AksesKotaMark priority className="brand-mark-icon size-[18px]"/><span className="brand-mark-pulse"/></span><span className="text-[17px] tracking-[-.04em]">AksesKota</span></a>;
 }
 
 function Wave({ dark = false, flip = false }) {
