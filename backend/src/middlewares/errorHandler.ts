@@ -31,6 +31,10 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return fail(res, 415, err.message);
   }
 
+  if (err instanceof SyntaxError && (err as { type?: string }).type === 'entity.parse.failed') {
+    return fail(res, 400, 'Format data tidak valid. Silakan muat ulang halaman lalu coba kembali.');
+  }
+
   console.error('[Unhandled Error]', err);
   return fail(res, 500, 'Terjadi kesalahan pada server. Silakan coba lagi nanti.');
 }

@@ -33,9 +33,16 @@ export async function apiRequest(path, options = {}) {
   const session = getStoredSession();
   const headers = new Headers(options.headers || {});
   if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
-  if (options.body && !(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
+  const isFormData = options.body instanceof FormData;
+  const isJsonBody = Boolean(options.body) && !isFormData && typeof options.body !== "string";
+  if (isJsonBody) headers.set("Content-Type", "application/json");
+  const requestOptions = {
+    ...options,
+    headers,
+    body: isJsonBody ? JSON.stringify(options.body) : options.body,
+  };
 
-  let response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  let response = await fetch(`${API_URL}${path}`, requestOptions);
   if (response.status === 401 && session?.refreshToken && path !== "/auth/refresh") {
     try {
       if (!refreshPromise) {
@@ -53,7 +60,7 @@ export async function apiRequest(path, options = {}) {
       }
       const accessToken = await refreshPromise;
       headers.set("Authorization", `Bearer ${accessToken}`);
-      response = await fetch(`${API_URL}${path}`, { ...options, headers });
+      response = await fetch(`${API_URL}${path}`, { ...requestOptions, headers });
     } catch {
       clearSession();
       throw new Error("Sesi kamu berakhir. Silakan masuk kembali.");
