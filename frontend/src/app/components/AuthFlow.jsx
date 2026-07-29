@@ -184,7 +184,7 @@ export default function AuthFlow() {
       const result = await signInWithPopup(auth, provider);
       const data = await apiRequest("/auth/google", {
         method: "POST",
-        body: JSON.stringify({ idToken: await result.user.getIdToken() }),
+        body: { idToken: await result.user.getIdToken() },
       });
       storeSession(data);
       setStage("profile");

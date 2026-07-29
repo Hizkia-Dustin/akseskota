@@ -34,12 +34,13 @@ export async function apiRequest(path, options = {}) {
   const headers = new Headers(options.headers || {});
   if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
   const isFormData = options.body instanceof FormData;
-  const isJsonBody = Boolean(options.body) && !isFormData && typeof options.body !== "string";
-  if (isJsonBody) headers.set("Content-Type", "application/json");
+  const hasBody = Boolean(options.body);
+  const isJsonBody = hasBody && !isFormData;
+  if (isJsonBody && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const requestOptions = {
     ...options,
     headers,
-    body: isJsonBody ? JSON.stringify(options.body) : options.body,
+    body: isJsonBody && typeof options.body !== "string" ? JSON.stringify(options.body) : options.body,
   };
 
   let response = await fetch(`${API_URL}${path}`, requestOptions);
