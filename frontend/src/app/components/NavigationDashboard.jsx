@@ -689,9 +689,40 @@ function AssistantPanel({ onChoose, onClose }) {
     try {
       const params = new URLSearchParams({ query: prompt.trim() });
       if (activeFilters.length) params.set("features", activeFilters.join(","));
-      const places = await apiRequest(`/community-places?${params}`);
+      let places = [];
+      try { places = await apiRequest(`/community-places?${params}`); } catch { places = []; }
+      if (!places.length) {
+        const directoryParams = new URLSearchParams({ query: prompt.trim(), limit: "100" });
+        const directoryPlaces = await apiRequest(`/destinations?${directoryParams}`);
+        const directoryFeatureMap = {
+          RAMP: "WHEELCHAIR_ENTRANCE",
+          ACCESSIBLE_TOILET: "WHEELCHAIR_RESTROOM",
+          ACCESSIBLE_PARKING: "WHEELCHAIR_PARKING",
+        };
+        places = directoryPlaces.map((place) => {
+          const features = [
+            place.wheelchairEntrance && "RAMP",
+            place.wheelchairRestroom && "ACCESSIBLE_TOILET",
+            place.wheelchairParking && "ACCESSIBLE_PARKING",
+            ...(place.availableFeatures || []),
+          ].filter(Boolean);
+          return {
+            ...place,
+            id: place.externalId,
+            features: [...new Set(features)],
+            latestPhotoUrl: place.primaryImageUrl || null,
+            accessibilityRating: place.accessibilityScore ? Math.round(place.accessibilityScore / 20) : null,
+            evidenceCount: place.knownFeatureCount || 0,
+            dataSource: "Data direktori — perlu verifikasi",
+            requiresVerification: true,
+          };
+        }).filter((place) => activeFilters.every((feature) => {
+          const mappedFeature = directoryFeatureMap[feature];
+          return mappedFeature ? place.features.includes(feature) : false;
+        }));
+      }
       setResults(places);
-      setMessage(places.length ? `${places.length} tempat ditemukan dari pengalaman komunitas.` : "Belum ada tempat dengan bukti komunitas yang cocok. Coba kurangi filter atau tambahkan kontribusi tempat.");
+      setMessage(places.length ? `${places.length} tempat ditemukan. Label pada setiap hasil menjelaskan apakah datanya sudah diverifikasi komunitas atau masih data direktori.` : "Belum ada tempat yang cocok. Coba kurangi filter atau tambahkan observasi tempat agar data komunitas bertambah.");
       setStatus("ready");
     } catch (error) { setResults([]); setMessage(error instanceof Error ? error.message : "Pencarian gagal."); setStatus("error"); }
   }
@@ -709,13 +740,14 @@ function AssistantPanel({ onChoose, onClose }) {
   }
 
   return <SideShell title="Asisten Akses" icon={<Bot className="size-5" />} onClose={onClose}><div className="mt-5">
-    <div className="rounded-[14px] bg-[#0c6478] p-4 text-white shadow-[0_8px_20px_rgba(12,100,120,.18)]"><span className="grid size-8 place-items-center rounded-[9px] bg-white/12"><Bot className="size-[18px] text-[#8ef0dc]"/></span><h2 className="mt-3 text-[15px] font-extrabold">Cari tempat sesuai kebutuhanmu</h2><p className="mt-1 text-[10px] leading-5 text-white/70">Asisten hanya menyaring artikel, rating, dan fasilitas yang dilaporkan komunitas AksesKota.</p></div>
+    <div className="rounded-[14px] bg-[#0c6478] p-4 text-white shadow-[0_8px_20px_rgba(12,100,120,.18)]"><span className="grid size-8 place-items-center rounded-[9px] bg-white/12"><Bot className="size-[18px] text-[#8ef0dc]"/></span><h2 className="mt-3 text-[15px] font-extrabold">Cari tempat sesuai kebutuhanmu</h2><p className="mt-1 text-[10px] leading-5 text-white/70">Mencari dari direktori Bogor, lalu memberi tanda jelas untuk bukti yang sudah diverifikasi komunitas.</p></div>
+    <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={()=>{setPrompt('tempat dengan ramp');setFilters(['RAMP']);}} className="rounded-full bg-[#effaf8] px-3 py-1.5 text-[9px] font-bold text-[#0c6478]">Ada ramp</button><button type="button" onClick={()=>{setPrompt('toilet aksesibel');setFilters(['ACCESSIBLE_TOILET']);}} className="rounded-full bg-[#effaf8] px-3 py-1.5 text-[9px] font-bold text-[#0c6478]">Toilet aksesibel</button><button type="button" onClick={()=>{setPrompt('bebas tangga');setFilters(['STEP_FREE']);}} className="rounded-full bg-[#effaf8] px-3 py-1.5 text-[9px] font-bold text-[#0c6478]">Bebas tangga</button></div>
     <form onSubmit={search} className="mt-4"><div className="relative"><textarea value={prompt} onChange={(event)=>setPrompt(event.target.value)} placeholder="Contoh: Aku pakai kursi roda, cari kafe tanpa tangga dekat IPB" className="h-24 w-full resize-none rounded-[15px] border-2 border-[#e4e7ec] p-3 pr-12 text-[11px] outline-none focus:border-[#35cbb0]"/><button type="button" onClick={startListening} aria-label="Ucapkan pencarian" className={`absolute bottom-3 right-3 grid size-8 place-items-center rounded-full ${listening?'animate-pulse bg-[#fee2e2] text-[#b42318]':'bg-[#effaf8] text-[#0c6478]'}`}><Mic className="size-4"/></button></div>
       <fieldset className="mt-4"><legend className="flex items-center gap-2 text-[10px] font-extrabold text-[#475467]"><SlidersHorizontal className="size-4"/>Quick Filter</legend><div className="mt-2 grid grid-cols-2 gap-2">{accessibilityFeatures.map(feature=><label key={feature.value} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-2.5 text-[9px] font-semibold ${filters.includes(feature.value)?'border-[#35cbb0] bg-[#effaf8] text-[#0c6478]':'border-[#e4e7ec] text-[#667085]'}`}><input type="checkbox" checked={filters.includes(feature.value)} onChange={()=>toggleFilter(feature.value)} className="accent-[#0c6478]"/>{feature.label}</label>)}</div></fieldset>
       <button disabled={status==='loading'} className="mt-4 h-11 w-full rounded-xl bg-[#0c6478] text-[11px] font-extrabold text-white disabled:opacity-50">{status==='loading'?'Mencari data komunitas...':'Cari tempat ramah disabilitas'}</button>
     </form>
     {message&&<p role="status" className="mt-3 rounded-xl bg-[#f8fafc] p-3 text-[9px] font-semibold leading-4 text-[#475467]">{message}</p>}
-    <div className="mt-4 space-y-3">{results.map(place=><article key={place.id} className="rounded-[16px] border-2 border-[#edf0f2] p-3">{place.latestPhotoUrl&&<Image unoptimized width={280} height={120} src={place.latestPhotoUrl} alt={`Foto ${place.name}`} className="mb-3 h-24 w-full rounded-xl object-cover"/>}<div className="flex items-start gap-2"><div className="min-w-0 flex-1"><b className="block text-[12px]">{place.name}</b><p className="mt-1 text-[9px] leading-4 text-[#667085]">{place.address}</p></div><span className="rounded-full bg-[#effaf8] px-2 py-1 text-[9px] font-extrabold text-[#0c6478]">Akses {place.accessibilityRating ?? '—'}/5</span></div><div className="mt-2 flex flex-wrap gap-1">{place.features.map(feature=><span key={feature} className="rounded-full bg-[#f2f4f7] px-2 py-1 text-[8px] font-semibold text-[#475467]">{featureLabel(feature)}</span>)}</div><p className="mt-2 text-[8px] text-[#98a2b3]">Berdasarkan {place.evidenceCount} pengalaman komunitas</p><button onClick={()=>onChoose(place)} className="mt-3 h-9 w-full rounded-xl bg-[#173c61] text-[10px] font-bold text-white">Lihat detail & cari rute</button></article>)}</div>
+    <div className="mt-4 space-y-3">{results.map(place=><article key={place.id} className="rounded-[16px] border-2 border-[#edf0f2] p-3">{place.latestPhotoUrl&&<Image unoptimized width={280} height={120} src={place.latestPhotoUrl} alt={`Foto ${place.name}`} className="mb-3 h-24 w-full rounded-xl object-cover"/>}<div className="flex items-start gap-2"><div className="min-w-0 flex-1"><b className="block text-[12px]">{place.name}</b><p className="mt-1 text-[9px] leading-4 text-[#667085]">{place.address}</p></div><span className="rounded-full bg-[#effaf8] px-2 py-1 text-[9px] font-extrabold text-[#0c6478]">Akses {place.accessibilityRating ?? '—'}/5</span></div><div className="mt-2 flex flex-wrap gap-1">{place.features.map(feature=><span key={feature} className="rounded-full bg-[#f2f4f7] px-2 py-1 text-[8px] font-semibold text-[#475467]">{featureLabel(feature)}</span>)}</div><p className={`mt-2 inline-flex rounded-full px-2 py-1 text-[8px] font-bold ${place.requiresVerification?'bg-[#fff4df] text-[#9a5707]':'bg-[#e9f8ef] text-[#087443]'}`}>{place.dataSource}</p><p className="mt-1 text-[8px] text-[#98a2b3]">{place.evidenceCount ? `${place.evidenceCount} bukti komunitas tersedia` : 'Fasilitas dari data direktori'}</p><button onClick={()=>onChoose(place)} className="mt-3 h-9 w-full rounded-xl bg-[#173c61] text-[10px] font-bold text-white">Lihat detail & cari rute</button></article>)}</div>
   </div></SideShell>;
 }
 

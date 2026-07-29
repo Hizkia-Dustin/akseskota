@@ -11,6 +11,15 @@ import { ApiError } from '../../middlewares/errorHandler';
 import { Prisma } from '@prisma/client';
 
 const featureList = (posts: Array<{ features: unknown }>) => [...new Set(posts.flatMap((post) => Array.isArray(post.features) ? post.features.filter((feature): feature is string => typeof feature === 'string') : []))];
+const importedFeatureList = (place: {
+  wheelchairEntrance: boolean | null;
+  wheelchairRestroom: boolean | null;
+  wheelchairParking: boolean | null;
+}) => [
+  place.wheelchairEntrance ? 'RAMP' : null,
+  place.wheelchairRestroom ? 'ACCESSIBLE_TOILET' : null,
+  place.wheelchairParking ? 'ACCESSIBLE_PARKING' : null,
+].filter((feature): feature is string => Boolean(feature));
 const average = (values: number[]) => values.length ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : null;
 const confidence = (count: number) => count >= 4 ? 'TINGGI' : count >= 2 ? 'SEDANG' : 'RENDAH';
 
@@ -47,6 +56,9 @@ export async function searchCommunityPlaces(input: SearchCommunityPlacesInput) {
         take: 50,
         select: { title: true, content: true, rating: true, accessibilityRating: true, features: true, photoUrl: true, createdAt: true },
       },
+      accessibilityEvidence: {
+        select: { featureCode: true, available: true, verificationStatus: true },
+      },
     },
     orderBy: { updatedAt: 'desc' },
     take: 100,
@@ -56,9 +68,21 @@ export async function searchCommunityPlaces(input: SearchCommunityPlacesInput) {
   const terms = input.query.toLowerCase().split(/[^a-z0-9]+/).filter((term) => term.length > 2 && !stopWords.has(term));
 
   return places.map((place) => {
-    const features = featureList(place.posts);
-    const searchable = [place.name, place.address, ...place.posts.flatMap((post) => [post.title, post.content])].filter(Boolean).join(' ').toLowerCase();
+    const communityFeatures = featureList(place.posts);
+    const verifiedFeatures = place.accessibilityEvidence
+      .filter((evidence) => evidence.available === true && evidence.verificationStatus === 'VERIFIED')
+      .map((evidence) => evidence.featureCode);
+    const directoryFeatures = importedFeatureList(place);
+    const features = [...new Set([...communityFeatures, ...verifiedFeatures, ...directoryFeatures])];
+    const verifiedCount = verifiedFeatures.length;
+    const communityCount = place.posts.length;
+    const searchable = [place.name, place.address, place.category, place.placeType, place.description, ...place.posts.flatMap((post) => [post.title, post.content])].filter(Boolean).join(' ').toLowerCase();
     const matchedTerms = terms.filter((term) => searchable.includes(term)).length;
+    const dataSource = verifiedCount > 0
+      ? 'Terverifikasi komunitas'
+      : communityCount > 0
+        ? 'Pengalaman komunitas'
+        : 'Data direktori — perlu verifikasi';
     return {
       id: place.id,
       externalId: place.externalId,
@@ -67,8 +91,10 @@ export async function searchCommunityPlaces(input: SearchCommunityPlacesInput) {
       coordinates: [place.longitude, place.latitude],
       rating: average(place.posts.map((post) => post.rating)),
       accessibilityRating: average(place.posts.map((post) => post.accessibilityRating)),
-      evidenceCount: place.posts.length,
-      confidence: confidence(place.posts.length),
+      evidenceCount: communityCount + verifiedCount,
+      confidence: verifiedCount > 0 ? 'TINGGI' : communityCount > 0 ? confidence(communityCount) : 'RENDAH',
+      dataSource,
+      requiresVerification: verifiedCount === 0,
       features,
       latestPhotoUrl: place.posts.find((post) => post.photoUrl)?.photoUrl ?? null,
       matchedTerms,
