@@ -64,7 +64,7 @@ export async function searchCommunityPlaces(input: SearchCommunityPlacesInput) {
     take: 100,
   });
 
-  const stopWords = new Set(['aku', 'saya', 'kami', 'pakai', 'menggunakan', 'cari', 'carikan', 'tempat', 'yang', 'bisa', 'dekat', 'untuk', 'dengan', 'ramah', 'disabilitas', 'difabel', 'kursi', 'roda', 'ada', 'punya', 'tanpa', 'dan', 'atau', 'di']);
+  const stopWords = new Set(['aku', 'saya', 'kami', 'pakai', 'menggunakan', 'cari', 'carikan', 'tempat', 'yang', 'bisa', 'dekat', 'untuk', 'dengan', 'ramah', 'disabilitas', 'difabel', 'kursi', 'roda', 'ada', 'punya', 'tanpa', 'dan', 'atau', 'di', 'ramp', 'lift', 'toilet', 'aksesibel', 'parkir', 'guiding', 'block', 'tangga', 'bebas']);
   const terms = input.query.toLowerCase().split(/[^a-z0-9]+/).filter((term) => term.length > 2 && !stopWords.has(term));
 
   return places.map((place) => {

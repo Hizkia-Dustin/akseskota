@@ -693,13 +693,13 @@ function AssistantPanel({ onChoose, onClose }) {
       try { places = await apiRequest(`/community-places?${params}`); } catch { places = []; }
       if (!places.length) {
         const directoryParams = new URLSearchParams({ query: prompt.trim(), limit: "100" });
-        const directoryPlaces = await apiRequest(`/destinations?${directoryParams}`);
+        let directoryPlaces = await apiRequest(`/destinations?${directoryParams}`);
         const directoryFeatureMap = {
           RAMP: "WHEELCHAIR_ENTRANCE",
           ACCESSIBLE_TOILET: "WHEELCHAIR_RESTROOM",
           ACCESSIBLE_PARKING: "WHEELCHAIR_PARKING",
         };
-        places = directoryPlaces.map((place) => {
+        const fromDirectory = (rows) => rows.map((place) => {
           const features = [
             place.wheelchairEntrance && "RAMP",
             place.wheelchairRestroom && "ACCESSIBLE_TOILET",
@@ -720,6 +720,12 @@ function AssistantPanel({ onChoose, onClose }) {
           const mappedFeature = directoryFeatureMap[feature];
           return mappedFeature ? place.features.includes(feature) : false;
         }));
+        places = fromDirectory(directoryPlaces);
+        if (!places.length && prompt.trim()) {
+          const broadDirectoryParams = new URLSearchParams({ query: "", limit: "500" });
+          directoryPlaces = await apiRequest(`/destinations?${broadDirectoryParams}`);
+          places = fromDirectory(directoryPlaces);
+        }
       }
       setResults(places);
       setMessage(places.length ? `${places.length} tempat ditemukan. Label pada setiap hasil menjelaskan apakah datanya sudah diverifikasi komunitas atau masih data direktori.` : "Belum ada tempat yang cocok. Coba kurangi filter atau tambahkan observasi tempat agar data komunitas bertambah.");
