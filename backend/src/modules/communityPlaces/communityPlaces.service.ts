@@ -324,11 +324,29 @@ export async function voteDirectoryContribution(
     throw new ApiError(409, 'Usulan ini sudah selesai divalidasi.');
   }
 
-  await prisma.directoryContributionVote.upsert({
-    where: { contributionId_voterId: { contributionId, voterId: userId } },
-    update: { decision: input.decision, note: input.note },
-    create: { contributionId, voterId: userId, decision: input.decision, note: input.note },
+  // A token can remain in a browser after the corresponding local/user record
+  // has been removed or replaced. Check it first so a foreign-key error is not
+  // exposed to the UI as a generic 500 response.
+  const voter = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
   });
+  if (!voter) {
+    throw new ApiError(401, 'Sesi akun penilai tidak valid. Keluar lalu masuk kembali.');
+  }
+
+  try {
+    await prisma.directoryContributionVote.upsert({
+      where: { contributionId_voterId: { contributionId, voterId: userId } },
+      update: { decision: input.decision, note: input.note },
+      create: { contributionId, voterId: userId, decision: input.decision, note: input.note },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+      throw new ApiError(409, 'Data usulan atau akun penilai sudah tidak tersedia. Muat ulang halaman lalu masuk kembali.');
+    }
+    throw error;
+  }
 
   const updated = await prisma.$transaction(async (transaction) => {
     const current = await transaction.directoryContribution.findUniqueOrThrow({
