@@ -44,3 +44,6 @@ service-account*.json
 credentials*.json
 
 .vercel
+
+# Local working notes and handoff documents (kept outside GitHub)
+/docs/
